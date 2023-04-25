@@ -1,0 +1,16 @@
+hardhat.config.ts
+scripts
+test
+artifacts
+typechain
+cache
+coverage
+.env
+.env.*
+.secret
+.sol*
+.eslint*
+walletUtils.*
+coverage.json
+arguments.js
+typings/
