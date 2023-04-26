@@ -22,6 +22,7 @@
   },
   "homepage": "https://github.com/bcnmy/biconomy-paymasters#readme",
   "devDependencies": {
+    "@chainlink/contracts": "^0.6.0",
     "@nomicfoundation/hardhat-chai-matchers": "^1.0.6",
     "@nomicfoundation/hardhat-network-helpers": "^1.0.8",
     "@nomicfoundation/hardhat-toolbox": "^2.0.2",
@@ -41,8 +42,8 @@
     "typescript": "^5.0.4"
   },
   "dependencies": {
+    "@chainlink/contracts": "^0.6.0",
     "@account-abstraction/contracts": "^0.6.0",
-    "@chainlink/contracts": "^0.4.1",
     "@ethersproject/abstract-signer": "^5.6.2",
     "@ethersproject/constants": "^5.6.1",
     "@openzeppelin/contracts": "4.8.1",
