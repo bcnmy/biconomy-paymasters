@@ -12,12 +12,14 @@ contract USDCPriceFeed {
 
 
     constructor() {
-        // todo // do not hard code
-        priceFeed1 = AggregatorV3Interface(0xAB594600376Ec9fD91F8e885dADF0CE036862dE0);     
-        priceFeed2 = AggregatorV3Interface(0xfE4A8cc5b5B2366C1B58Bea3858e81843581b2F7);  
+        // todo // do not hard code // polygon values
+        priceFeed1 = AggregatorV3Interface(0xAB594600376Ec9fD91F8e885dADF0CE036862dE0);     // matic usd 
+        priceFeed2 = AggregatorV3Interface(0xfE4A8cc5b5B2366C1B58Bea3858e81843581b2F7);     // usdc usd
     }
 
     function getThePrice() public view returns (int) {   
+
+      // Review: If either of the base or quote price feeds have mismatch in decimal then it could be a problem  
          
       /**
        * Returns the latest price of MATIC-USD
@@ -44,6 +46,7 @@ contract USDCPriceFeed {
        ) = priceFeed2.latestRoundData();  
      
     
+    // Always using decimals 18 for derived price feeds
     int usdcMatic = price2*(10**18)/price1;
     return usdcMatic;
     }
