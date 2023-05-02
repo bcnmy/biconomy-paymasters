@@ -233,7 +233,7 @@ describe("EntryPoint with Biconomy Token Paymaster : Paying in ERC20", function 
       const AccountFactory = await ethers.getContractFactory(
         "SmartAccountFactory"
       );
-      const deploymnetData = AccountFactory.interface.encodeFunctionData(
+      const deploymentData = AccountFactory.interface.encodeFunctionData(
         "deployCounterFactualAccount",
         [owner, 0]
       );
@@ -242,7 +242,7 @@ describe("EntryPoint with Biconomy Token Paymaster : Paying in ERC20", function 
         {
           sender: walletAddress,
           // verificationGasLimit: 500000,
-          // initCode: hexConcat([walletFactory.address, deploymnetData]),
+          // initCode: hexConcat([walletFactory.address, deploymentData]),
           paymasterAndData: ethers.utils.hexConcat([
             paymasterAddress,
             ethers.utils.hexlify(1).slice(0, 4),
