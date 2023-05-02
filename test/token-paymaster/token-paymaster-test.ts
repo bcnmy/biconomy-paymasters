@@ -208,7 +208,7 @@ describe("EntryPoint with Biconomy Token Paymaster : Paying in ERC20", function 
       const userOpPrior = await fillAndSign(
         {
           sender: walletAddress,
-          verificationGasLimit: 200000,
+          // verificationGasLimit: 200000,
           paymasterAndData: "0x",
           callData: encodeERC20Approval(
             userSCW,
@@ -241,7 +241,7 @@ describe("EntryPoint with Biconomy Token Paymaster : Paying in ERC20", function 
       const userOp1 = await fillAndSign(
         {
           sender: walletAddress,
-          verificationGasLimit: 5000000,
+          // verificationGasLimit: 500000,
           // initCode: hexConcat([walletFactory.address, deploymnetData]),
           paymasterAndData: ethers.utils.hexConcat([
             paymasterAddress,
