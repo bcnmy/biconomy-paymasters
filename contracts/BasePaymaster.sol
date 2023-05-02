@@ -7,7 +7,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IPaymaster} from "@account-abstraction/contracts/interfaces/IPaymaster.sol";
 import {IEntryPoint} from "@account-abstraction/contracts/interfaces/IEntryPoint.sol";
 import {UserOperation, UserOperationLib} from "@account-abstraction/contracts/interfaces/UserOperation.sol";
-import {PaymasterErrors} from "./common/Errors.sol";
+import {BasePaymasterErrors} from "./common/Errors.sol";
 import "@account-abstraction/contracts/core/Helpers.sol";
 
 /**
@@ -16,7 +16,7 @@ import "@account-abstraction/contracts/core/Helpers.sol";
  * validates that the postOp is called only by the entryPoint
  */
 // @notice Could have Ownable2Step
-abstract contract BasePaymaster is IPaymaster, Ownable, PaymasterErrors {
+abstract contract BasePaymaster is IPaymaster, Ownable, BasePaymasterErrors {
     IEntryPoint public immutable entryPoint;
 
     constructor(address _owner, IEntryPoint _entryPoint) {
