@@ -17,6 +17,10 @@ contract USDCPriceFeed {
         priceFeed2 = AggregatorV3Interface(0xfE4A8cc5b5B2366C1B58Bea3858e81843581b2F7);     // usdc usd
     }
 
+    function decimals() public view returns (uint8) { 
+      return 18;
+    }
+
     function getThePrice() public view returns (int) {   
 
       // Review: If either of the base or quote price feeds have mismatch in decimal then it could be a problem  

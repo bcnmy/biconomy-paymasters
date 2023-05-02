@@ -38,7 +38,7 @@ contract OracleAggregator is Ownable{
     }
 
     // exchangeRate basically
-    function getTokenValueOfOneEth(address token) internal view virtual returns (uint256 exchangeRate) {
+    function getTokenValueOfOneEth(address token) external view virtual returns (uint256 exchangeRate) {
        // we'd actually want eth / token
        uint256 tokenPriceUnadjusted = _getTokenPrice(token);
        uint8 _tokenOracleDecimals = tokensInfo[token].decimals;
