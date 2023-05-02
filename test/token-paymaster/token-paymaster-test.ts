@@ -40,6 +40,8 @@ const MOCK_FEE = "0";
 const MOCK_FX: BigNumberish = "977100"; // matic to usdc approx
 console.log("MOCK FX ", MOCK_FX); // 1000000000000000000000
 
+const PRICE_FEED_SOURCE = 1; // 1 = Use Oracle Aggregator , 0 = Keep relying on external exchange rate 
+
 export async function deployEntryPoint(
   provider = ethers.provider
 ): Promise<EntryPoint> {
@@ -193,6 +195,8 @@ describe("EntryPoint with Biconomy Token Paymaster : Paying in ERC20", function 
   describe("#validatePaymasterUserOp", () => {
 
     it("succeed with valid signature and valid erc20 approval", async () => {
+      // Just doing prior approval here
+
       const userSCW: any = BiconomyAccountImplementation__factory.connect(walletAddress, deployer)
       
       await token
@@ -229,6 +233,9 @@ describe("EntryPoint with Biconomy Token Paymaster : Paying in ERC20", function 
 
       console.log("approval successful");
 
+
+      /////////////////////////////////////////////////////////////////
+
       const owner = await walletOwner.getAddress();
       const AccountFactory = await ethers.getContractFactory(
         "SmartAccountFactory"
@@ -245,7 +252,7 @@ describe("EntryPoint with Biconomy Token Paymaster : Paying in ERC20", function 
           // initCode: hexConcat([walletFactory.address, deploymentData]),
           paymasterAndData: ethers.utils.hexConcat([
             paymasterAddress,
-            ethers.utils.hexlify(1).slice(0, 4),
+            ethers.utils.hexlify(PRICE_FEED_SOURCE).slice(0, 4),
             encodePaymasterData(token.address, MOCK_FX),
             "0x" + "00".repeat(65),
           ]),
@@ -267,7 +274,7 @@ describe("EntryPoint with Biconomy Token Paymaster : Paying in ERC20", function 
 
       const hash = await sampleTokenPaymaster.getHash(
         userOp1,
-        ethers.utils.hexlify(1).slice(2, 4),
+        ethers.utils.hexlify(PRICE_FEED_SOURCE).slice(2, 4),
         MOCK_VALID_UNTIL,
         MOCK_VALID_AFTER,
         token.address,
@@ -280,7 +287,7 @@ describe("EntryPoint with Biconomy Token Paymaster : Paying in ERC20", function 
           ...userOp1,
           paymasterAndData: ethers.utils.hexConcat([
             paymasterAddress,
-            ethers.utils.hexlify(1).slice(0, 4),
+            ethers.utils.hexlify(PRICE_FEED_SOURCE).slice(0, 4),
             encodePaymasterData(token.address, MOCK_FX),
             sig,
           ]),
