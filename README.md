@@ -1,6 +1,6 @@
 # biconomy-paymasters
 
-### Playground for ERC4337 Paymasters built with <3 by Biconomy 
+### Playground for ERC4337 Paymasters built with :heart_eyes: by Biconomy 
 #### Some examples 
 
 1. Singleton Verifying Paymaster: Acts as a sponsorship paymaster and lets Dapps manage deposit without deploying a new one for each Dapp.
