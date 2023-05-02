@@ -54,7 +54,7 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
 
     // Review it's basically same as above
     // calculated cost of the postOp
-    uint256 private constant COST_OF_POST = 40000; // TBD
+    uint256 private constant COST_OF_POST = 45000; // TBD
 
     // (Potentially) Always rely on verifyingSigner..
     address public verifyingSigner;
@@ -129,7 +129,7 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
             sstore(verifyingSigner.slot, _verifyingSigner)
         }
         oracleAggregator = _oracleAggregator;
-        unaccountedEPGasOverhead = 40000; // TBD
+        unaccountedEPGasOverhead = 45000; // TBD
         feeReceiver = address(this); // initialize with self (could also be _owner)
     }
 
