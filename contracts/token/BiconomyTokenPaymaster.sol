@@ -168,7 +168,7 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
         assembly {
             sstore(feeReceiver.slot, _newFeeReceiver)
         }
-        emit OracleAggregatorChanged(oldFeeReceiver, _newFeeReceiver, msg.sender);
+        emit FeeReceiverChanged(oldFeeReceiver, _newFeeReceiver, msg.sender);
 
     }
 
