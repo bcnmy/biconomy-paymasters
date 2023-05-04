@@ -78,6 +78,8 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
     // account implementation defines approval check method in deployment transaaction but binds to a wallet
     // address public immutable smartAccountFactory;
 
+    // review
+    // notice: Since it's always verified by the signing sevrice, below gated mapping state could be avoided.
     mapping(address => bool) private supportedTokens;
 
     IOracleAggregator public oracleAggregator;
