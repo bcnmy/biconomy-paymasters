@@ -47,6 +47,7 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
         CHAINLINK_PRICE_ORACLE_BASED
     }
 
+    // review can be removed
     struct PaymasterData {
       ExchangeRateSource priceSource;
       uint48 validUntil;

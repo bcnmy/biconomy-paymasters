@@ -1,6 +1,7 @@
 /* eslint-disable no-unused-expressions */
 /* eslint-disable node/no-missing-import */
 /* eslint-disable camelcase */
+
 import { expect } from "chai";
 import { ethers } from "hardhat";
 
@@ -33,14 +34,11 @@ const MOCK_VALID_AFTER = "0x0000000000001234";
 const MOCK_SIG = "0x1234";
 const MOCK_ERC20_ADDR = "0x" + "01".repeat(20);
 const MOCK_FEE = "0";
-
 // Assume TOKEN decimals is 18, then 1 ETH = 1000 TOKENS
 // const MOCK_FX = ethers.constants.WeiPerEther.mul(1000);
 
 const MOCK_FX: BigNumberish = "977100"; // matic to usdc approx
 console.log("MOCK FX ", MOCK_FX); // 1000000000000000000000
-
-const PRICE_FEED_SOURCE = 1; // 1 = Use Oracle Aggregator , 0 = Keep relying on external exchange rate 
 
 export async function deployEntryPoint(
   provider = ethers.provider
@@ -49,23 +47,23 @@ export async function deployEntryPoint(
 }
 
 export const encodePaymasterData = (
-  token = ethers.constants.AddressZero,
-  fx: BigNumberish = ethers.constants.Zero,
+  feeToken = ethers.constants.AddressZero,
+  exchangeRate: BigNumberish = ethers.constants.Zero,
   fee: BigNumberish = ethers.constants.Zero
 ) => {
   return ethers.utils.defaultAbiCoder.encode(
     ["uint48", "uint48", "address", "uint256", "uint256"],
-    [MOCK_VALID_UNTIL, MOCK_VALID_AFTER, token, fx, fee]
+    [MOCK_VALID_UNTIL, MOCK_VALID_AFTER, feeToken, exchangeRate, fee]
   );
 };
 
-const getUserOpEvent = async (ep: EntryPoint) => {
+export async function getUserOpEvent(ep: EntryPoint) {
   const [log] = await ep.queryFilter(
     ep.filters.UserOperationEvent(),
     await ethers.provider.getBlockNumber()
   );
   return log;
-};
+}
 
 export const encodeERC20Approval = (
   account: BiconomyAccountImplementation,
@@ -80,7 +78,7 @@ export const encodeERC20Approval = (
   ]);
 };
 
-describe("EntryPoint with Biconomy Token Paymaster : Paying in ERC20", function () {
+describe("Biconomy Token Paymaster", function () {
   let entryPoint: EntryPoint;
   let entryPointStatic: EntryPoint;
   let depositorSigner: Signer;
@@ -100,7 +98,7 @@ describe("EntryPoint with Biconomy Token Paymaster : Paying in ERC20", function 
   let walletFactory: BiconomyAccountFactory;
   const abi = ethers.utils.defaultAbiCoder;
 
-  beforeEach(async function () {
+  before(async function () {
     ethersSigner = await ethers.getSigners();
     entryPoint = await deployEntryPoint();
     entryPointStatic = entryPoint.connect(AddressZero);
@@ -186,19 +184,62 @@ describe("EntryPoint with Biconomy Token Paymaster : Paying in ERC20", function 
       .addStake(0, { value: parseEther("2") });
     console.log("paymaster staked"); */
 
-    await entryPoint.depositTo(paymasterAddress, { value: parseEther("1") });
+    await entryPoint.depositTo(paymasterAddress, { value: parseEther("2") });
 
     // const resultSet = await entryPoint.getDepositInfo(paymasterAddress);
     // console.log("deposited state ", resultSet);
   });
 
-  describe("#validatePaymasterUserOp", () => {
+  describe("Token Payamster read methods and state checks", () => {
+    it("Should parse data properly", async () => {
+      const paymasterAndData = ethers.utils.hexConcat([
+        paymasterAddress,
+        ethers.utils.hexlify(1).slice(0, 4),
+        encodePaymasterData(token.address, MOCK_FX),
+        "0x" + "00".repeat(65),
+      ]);
 
-    it("succeed with valid signature and valid erc20 approval", async () => {
-      // Just doing prior approval here
+      const res = await sampleTokenPaymaster.parsePaymasterAndData(
+        paymasterAndData
+      );
 
+      expect(res.priceSource).to.equal(1);
+      expect(res.fee).to.equal(ethers.constants.Zero);
+      expect(res.validUntil).to.equal(ethers.BigNumber.from(MOCK_VALID_UNTIL));
+      expect(res.validAfter).to.equal(ethers.BigNumber.from(MOCK_VALID_AFTER));
+      expect(res.feeToken).to.equal(token.address);
+      expect(res.exchangeRate).to.equal(MOCK_FX);
+      expect(res.signature).to.equal("0x" + "00".repeat(65));
+    });
+
+    it("should check the correct states set on the paymaster", async () => {
+      const owner = await sampleTokenPaymaster.owner();
+
+      const verifyingSigner = await sampleTokenPaymaster.verifyingSigner();
+
+      const feeReceiver = await sampleTokenPaymaster.feeReceiver();
+
+      const oa = await sampleTokenPaymaster.oracleAggregator();
+
+      console.log(
+        "current values from contracts",
+        owner,
+        verifyingSigner,
+        feeReceiver,
+        oa
+      );
+
+      expect(owner).to.be.equal(await walletOwner.getAddress());
+      expect(verifyingSigner).to.be.equal(await offchainSigner.getAddress());
+      expect(feeReceiver).to.be.equal(paymasterAddress);
+      expect(oa).to.be.equal(oracleAggregator.address);
+    });
+  });
+
+  describe("Token Payamster functionality: positive test", () => {
+    it("succeed with valid signature and valid erc20 pre approval for allowed ERC20 token: Deployed account", async () => {
       const userSCW: any = BiconomyAccountImplementation__factory.connect(walletAddress, deployer)
-      
+
       await token
         .connect(deployer)
         .transfer(walletAddress, ethers.utils.parseEther("100"));
@@ -212,7 +253,7 @@ describe("EntryPoint with Biconomy Token Paymaster : Paying in ERC20", function 
       const userOpPrior = await fillAndSign(
         {
           sender: walletAddress,
-          // verificationGasLimit: 200000,
+          verificationGasLimit: 200000,
           paymasterAndData: "0x",
           callData: encodeERC20Approval(
             userSCW,
@@ -233,9 +274,6 @@ describe("EntryPoint with Biconomy Token Paymaster : Paying in ERC20", function 
 
       console.log("approval successful");
 
-
-      /////////////////////////////////////////////////////////////////
-
       const owner = await walletOwner.getAddress();
       const AccountFactory = await ethers.getContractFactory(
         "SmartAccountFactory"
@@ -248,11 +286,11 @@ describe("EntryPoint with Biconomy Token Paymaster : Paying in ERC20", function 
       const userOp1 = await fillAndSign(
         {
           sender: walletAddress,
-          // verificationGasLimit: 500000,
+          verificationGasLimit: 5000000,
           // initCode: hexConcat([walletFactory.address, deploymentData]),
           paymasterAndData: ethers.utils.hexConcat([
             paymasterAddress,
-            ethers.utils.hexlify(PRICE_FEED_SOURCE).slice(0, 4),
+            ethers.utils.hexlify(1).slice(0, 4),
             encodePaymasterData(token.address, MOCK_FX),
             "0x" + "00".repeat(65),
           ]),
@@ -274,7 +312,7 @@ describe("EntryPoint with Biconomy Token Paymaster : Paying in ERC20", function 
 
       const hash = await sampleTokenPaymaster.getHash(
         userOp1,
-        ethers.utils.hexlify(PRICE_FEED_SOURCE).slice(2, 4),
+        ethers.utils.hexlify(1).slice(2, 4),
         MOCK_VALID_UNTIL,
         MOCK_VALID_AFTER,
         token.address,
@@ -287,7 +325,7 @@ describe("EntryPoint with Biconomy Token Paymaster : Paying in ERC20", function 
           ...userOp1,
           paymasterAndData: ethers.utils.hexConcat([
             paymasterAddress,
-            ethers.utils.hexlify(PRICE_FEED_SOURCE).slice(0, 4),
+            ethers.utils.hexlify(1).slice(0, 4),
             encodePaymasterData(token.address, MOCK_FX),
             sig,
           ]),
@@ -304,9 +342,7 @@ describe("EntryPoint with Biconomy Token Paymaster : Paying in ERC20", function 
 
       console.log("required prefund ", requiredPrefund.toString());
 
-      const initBalance = await token.balanceOf(
-        paymasterAddress
-      );
+      const initBalance = await token.balanceOf(paymasterAddress);
       console.log("fee receiver token balance before ", initBalance.toString());
 
       const preTokenBalanceForAccount = await token.balanceOf(walletAddress);
@@ -328,9 +364,7 @@ describe("EntryPoint with Biconomy Token Paymaster : Paying in ERC20", function 
       console.log("gas used ");
       console.log(receipt.gasUsed.toNumber());
 
-      const postBalance = await token.balanceOf(
-        paymasterAddress
-      );
+      const postBalance = await token.balanceOf(paymasterAddress);
       console.log("fee receiver token balance after ", postBalance.toString());
 
       const postTokenBalanceForAccount = await token.balanceOf(walletAddress);
@@ -361,5 +395,13 @@ describe("EntryPoint with Biconomy Token Paymaster : Paying in ERC20", function 
         entryPoint.handleOps([userOp], await offchainSigner.getAddress())
       ).to.be.reverted;
     });
+  });
+
+  describe("Negative scenarios", () => {
+    it("Reverts for invalid and wrong signatures", async () => {});
+  });
+
+  describe("Token paymaster Access control", () => {
+    it("Should not allow anyone else to add new tokens support", async () => {});
   });
 });

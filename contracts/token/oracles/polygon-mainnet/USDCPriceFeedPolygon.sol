@@ -5,7 +5,7 @@ import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
 //@review againsnt chainlink reference PriceConverter https://docs.chain.link/docs/get-the-latest-price/ 
 //@review decimals for individual feeds
-contract USDCPriceFeed {
+contract USDCPriceFeedPolygon {
 
     AggregatorV3Interface internal priceFeed1;
     AggregatorV3Interface internal priceFeed2;
@@ -19,6 +19,10 @@ contract USDCPriceFeed {
 
     function decimals() public view returns (uint8) { 
       return 18;
+    }
+
+    function description() public view returns(string memory) {
+      return "USDC / MATIC";
     }
 
     function getThePrice() public view returns (int) {   
