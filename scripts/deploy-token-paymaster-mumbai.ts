@@ -22,6 +22,8 @@ console.log(
   `OracleAggregator deployed at ${oracleAggregator.address}`
 );
 
+console.log('owner before ', earlyOwner)
+
 const BiconomyTokenPaymaster = await ethers.getContractFactory("BiconomyTokenPaymaster");
 const tokenPaymaster = await BiconomyTokenPaymaster.deploy(earlyOwner, entryPoint, verifyingSigner, oracleAggregator.address);
 
