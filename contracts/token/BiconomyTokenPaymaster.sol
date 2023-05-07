@@ -6,7 +6,8 @@ import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import { IEntryPoint } from "@account-abstraction/contracts/interfaces/IEntryPoint.sol";
 import { UserOperation } from "@account-abstraction/contracts/interfaces/UserOperation.sol";
-import { UserOperationLib } from "@account-abstraction/contracts/interfaces/UserOperation.sol";import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import { UserOperationLib } from "@account-abstraction/contracts/interfaces/UserOperation.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import { BasePaymaster } from "../BasePaymaster.sol";
 import { IOracleAggregator } from "./oracles/IOracleAggregator.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -34,14 +35,6 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
     using UserOperationLib for UserOperation;
     using SafeERC20 for IERC20;
 
-    // todo: Marked for removal
-    // In case we also add gasless aspect and more (hybrid) (based on paymasterAndData)
-    /*enum PaymentMode {
-      GASLESS,
-      ERC20,
-      FIXED_FEE
-    }*/
-
     enum ExchangeRateSource {
         EXTERNAL_EXCHANGE_RATE,
         CHAINLINK_PRICE_ORACLE_BASED
@@ -54,8 +47,7 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
       uint48 validAfter;
       IERC20 feeToken; 
       uint256 exchangeRate;
-      uint256 fee;
-      // PaymentMode mode; //todo: cleanup
+      uint256 fee; // review instead of flat fee in token terms it could also be a fee multiplier set at token level
       bytes signature;
     }
 
@@ -79,7 +71,7 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
     // address public immutable smartAccountFactory;
 
     // review
-    // notice: Since it's always verified by the signing sevrice, below gated mapping state could be avoided.
+    // notice: Since it's always verified by the signing service, below gated mapping state could be avoided.
     mapping(address => bool) private supportedTokens;
 
     IOracleAggregator public oracleAggregator;
@@ -225,7 +217,7 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
      */
     function exchangePrice(
         address _token
-    ) external view virtual returns (uint256 exchangeRate) {
+    ) public view virtual returns (uint256 exchangeRate) {
         // get price from oracle aggregator. could be in yul / staticcall then try catch / if else on success and data
         exchangeRate = IOracleAggregator(oracleAggregator).getTokenValueOfOneEth(_token);
         // exchangeRate = (exchangeRate * 99) / 100; // 1% conver chainlink `Deviation threshold`
@@ -244,18 +236,6 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
         token.safeTransfer(target, amount);
     }
 
-    function pack(UserOperation calldata userOp) internal pure returns (bytes memory ret) {
-        bytes calldata pnd = userOp.paymasterAndData;
-        // solhint-disable-next-line no-inline-assembly
-        assembly {
-            let ofs := userOp
-            let len := sub(sub(pnd.offset, ofs), 32)
-            ret := mload(0x40)
-            mstore(0x40, add(ret, add(len, 32)))
-            mstore(ret, len)
-            calldatacopy(add(ret, 32), ofs, len)
-        }
-    }
 
      /**
      * @dev This method is called by the off-chain service, to sign the request.
@@ -274,12 +254,18 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
         uint256 fee
     ) public view returns (bytes32) {
         //can't use userOp.hash(), since it contains also the paymasterAndData itself.
-        address sender = userOp.getSender();
         return
             keccak256(
                 abi.encode(
-                    // todo: review could remove pack and use just like verifying paymaster and use --via-ir flag while compiling
-                    pack(userOp),
+                    userOp.getSender(),
+                    userOp.nonce,
+                    keccak256(userOp.initCode),
+                    keccak256(userOp.callData),
+                    userOp.callGasLimit,
+                    userOp.verificationGasLimit,
+                    userOp.preVerificationGas,
+                    userOp.maxFeePerGas,
+                    userOp.maxPriorityFeePerGas,
                     block.chainid,
                     address(this),
                     priceSource,
@@ -350,17 +336,19 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
         }
 
         address account = userOp.getSender();
-        uint256 gasPriceUserOp = userOp.gasPrice();
 
         require(_isSupportedToken(feeToken), "TokenPaymaster: token is not supported as fee token") ;
 
-        uint256 costOfPost = userOp.gasPrice() * UNACCOUNTED_COST; // unaccountedEPGasOverhead
+        uint256 costOfPost = userOp.maxFeePerGas * UNACCOUNTED_COST; // unaccountedEPGasOverhead
 
         // This model assumes irrespective of priceSource exchangeRate is always sent from outside
         // for below checks you would either need maxCost or some exchangeRate
         uint256 tokenRequiredPreFund = ((requiredPreFund + costOfPost) * exchangeRate) / 10 ** 18;
 
-        if (userOp.initCode.length != 0) {
+        // todo 
+        // review: allowance check possibly can be marked for removal and just rely on balance check
+        // postOp would fail anyway if user removes allowance or doesn't have balance
+        /*if (userOp.initCode.length != 0) {
         _validateConstructor(userOp, feeToken, tokenRequiredPreFund + fee);
         } else {
             require(
@@ -368,14 +356,15 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
                 (tokenRequiredPreFund + fee),
                 "Paymaster: not enough allowance"
             );
-        }
+        }*/
 
         require(
             IERC20(feeToken).balanceOf(account) >= (tokenRequiredPreFund + fee),
             "Paymaster: not enough balance"
         );
 
-        context = abi.encode(account, feeToken, priceSource, exchangeRate, fee, gasPriceUserOp);
+        context = abi.encode(account, feeToken, priceSource, exchangeRate, fee, userOp.maxFeePerGas,
+                userOp.maxPriorityFeePerGas);
        
         return (context, Helpers._packValidationData(false, validUntil, validAfter));
     }
@@ -392,18 +381,29 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
         uint256 actualGasCost
     ) internal virtual override {
 
-        (address account, IERC20 feeToken, ExchangeRateSource priceSource, uint256 exchangeRate, uint256 fee, uint256 gasPriceUserOp) = abi
-            .decode(context, (address, IERC20, ExchangeRateSource, uint256, uint256, uint256));
+        (address account, IERC20 feeToken, ExchangeRateSource priceSource, uint256 exchangeRate, uint256 fee, uint256 maxFeePerGas, uint256 maxPriorityFeePerGas) = abi
+            .decode(context, (address, IERC20, ExchangeRateSource, uint256, uint256, uint256, uint256));
 
         uint256 effectiveExchangeRate = exchangeRate;
 
         if (priceSource == ExchangeRateSource.CHAINLINK_PRICE_ORACLE_BASED) {
-            effectiveExchangeRate = this.exchangePrice(address(feeToken));
+            effectiveExchangeRate = exchangePrice(address(feeToken));
         } 
+
+        uint256 gasPriceUserOp = maxFeePerGas;
+        // review Could do below if we're okay to touch BASEFEE in postOp call
+        /*unchecked {
+            if (maxFeePerGas == maxPriorityFeePerGas) {
+            } else {
+                gasPriceUserOp = Math.min(maxFeePerGas, maxPriorityFeePerGas + block.basefee);
+            }
+        }*/
 
         uint256 actualTokenCost = ((actualGasCost + (UNACCOUNTED_COST * gasPriceUserOp)) * effectiveExchangeRate) / 1e18;
         if (mode != PostOpMode.postOpReverted) {
             // review if below silently fails should notify in event accordingly
+            // failure example
+            // https://dashboard.tenderly.co/yashasvi/project/tx/mumbai/0xa01f4f57eb28b430b287e55e9baf2e2fd7f45b565ee932b0d96d28211d0272ff?trace=0.3.1.1.2.1.0 
             feeToken.safeTransferFrom(account, feeReceiver, actualTokenCost + fee);
             emit TokenPaymasterOperation(account, address(feeToken), actualTokenCost + fee);
         } 

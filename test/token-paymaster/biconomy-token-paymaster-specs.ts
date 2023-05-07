@@ -111,7 +111,7 @@ describe("Biconomy Token Paymaster", function () {
     // const offchainSignerAddress = await deployer.getAddress();
     const walletOwnerAddress = await walletOwner.getAddress();
 
-    oracleAggregator = await new OracleAggregator__factory(deployer).deploy();
+    oracleAggregator = await new OracleAggregator__factory(deployer).deploy(walletOwnerAddress);
 
     const MockToken = await ethers.getContractFactory("MockToken");
     token = await MockToken.deploy();
@@ -286,14 +286,8 @@ describe("Biconomy Token Paymaster", function () {
       const userOp1 = await fillAndSign(
         {
           sender: walletAddress,
-          verificationGasLimit: 5000000,
+          // verificationGasLimit: 500000,
           // initCode: hexConcat([walletFactory.address, deploymentData]),
-          paymasterAndData: ethers.utils.hexConcat([
-            paymasterAddress,
-            ethers.utils.hexlify(1).slice(0, 4),
-            encodePaymasterData(token.address, MOCK_FX),
-            "0x" + "00".repeat(65),
-          ]),
           // nonce: 0,
           /* callData: encodeERC20Approval(
             userSCW,
