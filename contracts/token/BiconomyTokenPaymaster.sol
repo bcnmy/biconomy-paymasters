@@ -408,9 +408,9 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
             emit TokenPaymasterOperation(account, address(feeToken), actualTokenCost + fee);
         } 
         // there could be else bit acting as deposit paymaster
-        /*else {
-
-        }*/
+        else {
+            //in case above transferFrom failed, pay with deposit / notify at least
+        }
     }
 
     function parsePaymasterAndData(
