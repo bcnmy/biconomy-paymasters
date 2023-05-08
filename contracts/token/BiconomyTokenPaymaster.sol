@@ -13,9 +13,11 @@ import { IOracleAggregator } from "./oracles/IOracleAggregator.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@account-abstraction/contracts/core/Helpers.sol" as Helpers;
+import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
+import "../utils/Exec.sol";
 import {TokenPaymasterErrors} from "../common/Errors.sol";
 
-// todo add revert codes in errors. structure errors.sol
+// todo add revert codes in errors. structure Errors.sol
 // todo add try and catch for certain flows (call/static call and if else based on success and fallback)
 // todo formal verification
 // todo add and review natspecs
@@ -49,16 +51,10 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
     // receiver of withdrawn fee tokens
     address public feeReceiver;
     
-    // review offsets and define more if needed
-    // others in between if we just do concat and not abi.encode
     uint256 private constant VALID_PND_OFFSET = 21;
 
     uint256 private constant SIGNATURE_OFFSET = 181;
     
-    // if we make use of validateConstructor
-    // account implementation defines approval check method in deployment transaaction but binds to a wallet
-    // address public immutable smartAccountFactory;
-
     // review
     // notice: Since it's always verified by the signing service, below gated mapping state could be avoided.
     mapping(address => bool) private supportedTokens;
@@ -267,15 +263,6 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
             );
     }
 
-    function _validateConstructor(
-        UserOperation calldata userOp,
-        address token,
-        uint256 tokenRequiredPreFund
-    ) internal view {
-        address factory = address(bytes20(userOp.initCode));
-        // checking allowance being given in first userOp for an account would depend on implementation of factory as well
-    }
-
     /**
      * @dev Verify that an external signer signed the paymaster data of a user operation.
      * The paymaster data is expected to be the paymaster and a signature over the entire request parameters.
@@ -334,19 +321,6 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
         // for below checks you would either need maxCost or some exchangeRate
         uint256 tokenRequiredPreFund = ((requiredPreFund + costOfPost) * exchangeRate) / 10 ** 18;
 
-        // todo 
-        // review: allowance check possibly can be marked for removal and just rely on balance check
-        // postOp would fail anyway if user removes allowance or doesn't have balance
-        /*if (userOp.initCode.length != 0) {
-        _validateConstructor(userOp, feeToken, tokenRequiredPreFund + fee);
-        } else {
-            require(
-             IERC20(feeToken).allowance(account, address(this)) >=
-                (tokenRequiredPreFund + fee),
-                "Paymaster: not enough allowance"
-            );
-        }*/
-
         require(
             IERC20(feeToken).balanceOf(account) >= (tokenRequiredPreFund + fee),
             "Paymaster: not enough balance"
@@ -380,19 +354,17 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
         } 
 
         uint256 gasPriceUserOp = maxFeePerGas;
+
         // review Could do below if we're okay to touch BASEFEE in postOp call
-        /*unchecked {
-            if (maxFeePerGas == maxPriorityFeePerGas) {
-            } else {
+        unchecked {
+            if (maxFeePerGas != maxPriorityFeePerGas) {
                 gasPriceUserOp = Math.min(maxFeePerGas, maxPriorityFeePerGas + block.basefee);
             }
-        }*/
+        }
 
         uint256 actualTokenCost = ((actualGasCost + (UNACCOUNTED_COST * gasPriceUserOp)) * effectiveExchangeRate) / 1e18;
         if (mode != PostOpMode.postOpReverted) {
-            // review if below silently fails should notify in event accordingly
-            // failure example
-            // https://dashboard.tenderly.co/yashasvi/project/tx/mumbai/0xa01f4f57eb28b430b287e55e9baf2e2fd7f45b565ee932b0d96d28211d0272ff?trace=0.3.1.1.2.1.0 
+            // review if below fails should notify in event / revert at the risk of reputation
             feeToken.safeTransferFrom(account, feeReceiver, actualTokenCost + fee);
             emit TokenPaymasterOperation(account, address(feeToken), actualTokenCost + fee);
         } 
