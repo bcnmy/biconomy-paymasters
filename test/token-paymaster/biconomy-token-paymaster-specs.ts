@@ -244,36 +244,6 @@ describe("Biconomy Token Paymaster", function () {
         .connect(deployer)
         .transfer(walletAddress, ethers.utils.parseEther("100"));
 
-      await depositorSigner.sendTransaction({
-        from: await depositorSigner.getAddress(),
-        to: walletAddress,
-        value: ethers.utils.parseEther("5"),
-      });
-
-      const userOpPrior = await fillAndSign(
-        {
-          sender: walletAddress,
-          verificationGasLimit: 200000,
-          paymasterAndData: "0x",
-          callData: encodeERC20Approval(
-            userSCW,
-            token,
-            paymasterAddress,
-            ethers.constants.MaxUint256
-          ),
-        },
-        walletOwner,
-        entryPoint,
-        "nonce"
-      );
-
-      await entryPoint.handleOps(
-        [userOpPrior],
-        await offchainSigner.getAddress()
-      );
-
-      console.log("approval successful");
-
       const owner = await walletOwner.getAddress();
       const AccountFactory = await ethers.getContractFactory(
         "SmartAccountFactory"
@@ -289,12 +259,12 @@ describe("Biconomy Token Paymaster", function () {
           // verificationGasLimit: 500000,
           // initCode: hexConcat([walletFactory.address, deploymentData]),
           // nonce: 0,
-          /* callData: encodeERC20Approval(
+          callData: encodeERC20Approval(
             userSCW,
             token,
             paymasterAddress,
             ethers.constants.MaxUint256
-          ), */
+          ),
         },
         walletOwner,
         entryPoint,
