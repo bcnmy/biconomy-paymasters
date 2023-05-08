@@ -40,17 +40,6 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
         CHAINLINK_PRICE_ORACLE_BASED
     }
 
-    // review can be removed
-    struct PaymasterData {
-      ExchangeRateSource priceSource;
-      uint48 validUntil;
-      uint48 validAfter;
-      IERC20 feeToken; 
-      uint256 exchangeRate;
-      uint256 fee; // review instead of flat fee in token terms it could also be a fee multiplier set at token level
-      bytes signature;
-    }
-
     // Gas used in EntryPoint._handlePostOp() method (including this#postOp() call)
     uint256 private UNACCOUNTED_COST = 45000; // TBD
 
