@@ -16,6 +16,7 @@ import "@account-abstraction/contracts/core/Helpers.sol" as Helpers;
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import "../utils/Exec.sol";
 import {TokenPaymasterErrors} from "../common/Errors.sol";
+import "@openzeppelin/contracts/utils/Address.sol";
 
 // todo add revert codes in errors. structure Errors.sol
 // todo add try and catch for certain flows (call/static call and if else based on success and fallback)
@@ -34,6 +35,7 @@ import {TokenPaymasterErrors} from "../common/Errors.sol";
 contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymasterErrors {
 
     using ECDSA for bytes32;
+    using Address for address;
     using UserOperationLib for UserOperation;
     using SafeERC20 for IERC20;
 
@@ -203,11 +205,13 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
     function exchangePrice(
         address _token
     ) public view virtual returns (uint256 exchangeRate) {
-        // get price from oracle aggregator. could be in yul / staticcall then try catch / if else on success and data
-        exchangeRate = IOracleAggregator(oracleAggregator).getTokenValueOfOneEth(_token);
-        // exchangeRate = (exchangeRate * 99) / 100; // 1% conver chainlink `Deviation threshold`
-
-        // if price feed is not available in aggregator then fallback to exchange rate or throw (depending on priceSource)
+        // get price from oracle aggregator.
+        bytes memory _data = abi.encodeWithSelector(IOracleAggregator.getTokenValueOfOneEth.selector, _token);
+        (bool success, bytes memory returndata) = address(oracleAggregator).staticcall(_data);
+        exchangeRate = 0;
+        if(success) {
+            exchangeRate = abi.decode(returndata, (uint256));
+        }
     }
 
     /**
@@ -350,7 +354,8 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
         uint256 effectiveExchangeRate = exchangeRate;
 
         if (priceSource == ExchangeRateSource.CHAINLINK_PRICE_ORACLE_BASED) {
-            effectiveExchangeRate = exchangePrice(address(feeToken));
+            uint256 result = exchangePrice(address(feeToken));
+            if(result > 0) effectiveExchangeRate = exchangePrice(address(feeToken));
         } 
 
         uint256 gasPriceUserOp = maxFeePerGas;
@@ -365,7 +370,15 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
         uint256 actualTokenCost = ((actualGasCost + (UNACCOUNTED_COST * gasPriceUserOp)) * effectiveExchangeRate) / 1e18;
         if (mode != PostOpMode.postOpReverted) {
             // review if below fails should notify in event / revert at the risk of reputation
-            feeToken.safeTransferFrom(account, feeReceiver, actualTokenCost + fee);
+
+           bytes memory _data = abi.encodeWithSelector(feeToken.transferFrom.selector, account, feeReceiver, actualTokenCost + fee);
+           bytes memory returndata = address(feeToken).functionCall(_data, "SafeERC20: low-level call failed");
+           if (returndata.length > 0) {
+            // Return data is optional
+            require(abi.decode(returndata, (bool)), "SafeERC20: ERC20 operation did not succeed");
+            // instead of require could emit an event TokenPaymentDue()
+           }
+
             emit TokenPaymasterOperation(account, address(feeToken), actualTokenCost + fee);
         } 
         // there could be else bit acting as deposit paymaster
