@@ -1,8 +1,18 @@
 import { ethers } from "hardhat";
 
+function delay(ms: number) {
+  return new Promise<void>((resolve) => {
+    setTimeout(() => {
+      resolve();
+    }, ms);
+  });
+}
+
 async function main() {
   let tx, receipt;
   const provider = ethers.provider;
+
+  const gasPrices = {maxFeePerGas: 250e9, maxPriorityFeePerGas: 60e9}
 
   const accounts = await ethers.getSigners();
   const earlyOwner = await accounts[0].getAddress();
@@ -18,6 +28,8 @@ async function main() {
   const OracleAggregator = await ethers.getContractFactory("OracleAggregator");
   const oracleAggregator = await OracleAggregator.deploy(earlyOwner);
 
+  await delay(5000)
+
   await oracleAggregator.deployed();
 
   console.log(`oracleAggregator deployed at ${oracleAggregator.address}`);
@@ -31,6 +43,8 @@ async function main() {
     verifyingSigner,
     oracleAggregator.address
   );
+
+  await delay(5000)
 
   console.log(`TokenPaymaster deployed at ${tokenPaymaster.address}`);
 
@@ -49,6 +63,9 @@ async function main() {
     priceFeedTxUsdc.data,
     true
   );
+
+  await delay(5000)
+
   receipt = await tx.wait();
   console.log("Oracle set for USDC");
 
@@ -56,13 +73,19 @@ async function main() {
   receipt = await tx.wait();
   console.log("Token is marked allowed");
 
+  await delay(5000)
+
   tx = await tokenPaymaster.transferOwnership(owner);
   receipt = await tx.wait();
   console.log("ownership transferred: Token paymaster");
 
+  await delay(5000)
+
   tx = await oracleAggregator.transferOwnership(owner);
   receipt = await tx.wait();
   console.log("ownership transferred: OA");
+
+  await delay(5000)
 }
 
 // We recommend this pattern to be able to use async/await everywhere
