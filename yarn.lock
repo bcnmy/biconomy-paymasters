@@ -2,9 +2,9 @@
 # yarn lockfile v1
 
 
-"@0xsequence/create3@git+https://github.com/0xsequence/create3.git":
+"@0xsequence/create3@https://github.com/0xsequence/create3":
   version "3.0.0"
-  resolved "git+https://github.com/0xsequence/create3.git#acc4703a21ec1d71dc2a99db088c4b1f467530fd"
+  resolved "https://github.com/0xsequence/create3#acc4703a21ec1d71dc2a99db088c4b1f467530fd"
   dependencies:
     csv-writer "^1.6.0"
 
