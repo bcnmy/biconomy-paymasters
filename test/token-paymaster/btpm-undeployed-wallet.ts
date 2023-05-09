@@ -256,7 +256,8 @@ describe("Biconomy Token Paymaster", function () {
       const userOp1 = await fillAndSign(
         {
           sender: walletAddress,
-          verificationGasLimit: 500000,
+          verificationGasLimit: 400000, // defaults 200k + account deployment gas
+          callGasLimit: 200000, // need to pass this because for undeployed account it wouldn't estimate accurately
           initCode: hexConcat([walletFactory.address, deploymentData]),
           nonce: 0,
           callData: encodeERC20Approval(

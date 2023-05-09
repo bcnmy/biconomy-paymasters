@@ -256,7 +256,7 @@ describe("Biconomy Token Paymaster", function () {
       const userOp1 = await fillAndSign(
         {
           sender: walletAddress,
-          // verificationGasLimit: 500000,
+          verificationGasLimit: 200000,
           // initCode: hexConcat([walletFactory.address, deploymentData]),
           // nonce: 0,
           callData: encodeERC20Approval(

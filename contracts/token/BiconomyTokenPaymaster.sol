@@ -89,7 +89,7 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
         address indexed _actor
     );
 
-    event TokenPaymasterOperation(address indexed sender, address indexed token, uint256 cost);
+    event TokenPaymasterOperation(address indexed sender, address indexed token, uint256 charge, uint256 premium);
 
     constructor(
         address _owner,
@@ -158,7 +158,7 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
         emit NewFeeTokenSupported(_token, msg.sender);
     }
 
-    function setUnaccountedEPGasOverhead(uint256 value) external onlyOwner {
+    function setUnaccountedEPGasOverhead(uint256 value) external payable onlyOwner {
         uint256 oldValue = UNACCOUNTED_COST;
         UNACCOUNTED_COST = value;
         emit EPGasOverheadChanged(oldValue, value);
@@ -277,7 +277,7 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
         UserOperation calldata userOp,
         bytes32 /*userOpHash*/,
         uint256 requiredPreFund
-    ) internal override returns (bytes memory context, uint256 validationData) {
+    ) internal view override returns (bytes memory context, uint256 validationData) {
 
         // verificationGasLimit is dual-purposed, as gas limit for postOp. make sure it is high enough
         // make sure that verificationGasLimit is high enough to handle postOp
@@ -323,7 +323,7 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
 
         require(
             IERC20(feeToken).balanceOf(account) >= (tokenRequiredPreFund + fee),
-            "Paymaster: not enough balance"
+            "Token Paymaster: not enough balance"
         );
 
         context = abi.encode(account, feeToken, priceSource, exchangeRate, fee, userOp.maxFeePerGas,
@@ -366,7 +366,7 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
         if (mode != PostOpMode.postOpReverted) {
             // review if below fails should notify in event / revert at the risk of reputation
             feeToken.safeTransferFrom(account, feeReceiver, actualTokenCost + fee);
-            emit TokenPaymasterOperation(account, address(feeToken), actualTokenCost + fee);
+            emit TokenPaymasterOperation(account, address(feeToken), actualTokenCost, fee);
         } 
         // there could be else bit acting as deposit paymaster
         /*else {
