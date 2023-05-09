@@ -14,7 +14,7 @@ const usdcAddress = "0xdA5289fCAAF71d52a80A254da614a192b693e977";
 const usdcPriceFeedAddress = "0x0B99544394582DFb7b3334e8e8032491C36FDCa9";
 
 const OracleAggregator = await ethers.getContractFactory("OracleAggregator");
-const oracleAggregator = await OracleAggregator.deploy();
+const oracleAggregator = await OracleAggregator.deploy(earlyOwner);
 
 await oracleAggregator.deployed();
 
@@ -55,7 +55,11 @@ console.log("Token is marked allowed");
 
 tx = await tokenPaymaster.transferOwnership(owner);
 receipt = await tx.wait();
-console.log("ownership transferred");
+console.log("ownership transferred: Token Paymaster");
+
+tx = await oracleAggregator.transferOwnership(owner);
+receipt = await tx.wait();
+console.log("ownership transferred: OA");
 }
 
 
