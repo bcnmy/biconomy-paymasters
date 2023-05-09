@@ -355,7 +355,7 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
 
         if (priceSource == ExchangeRateSource.CHAINLINK_PRICE_ORACLE_BASED) {
             uint256 result = exchangePrice(address(feeToken));
-            if(result > 0) effectiveExchangeRate = exchangePrice(address(feeToken));
+            if(result > 0) effectiveExchangeRate = result;
         } 
 
         uint256 gasPriceUserOp = maxFeePerGas;
