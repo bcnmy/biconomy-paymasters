@@ -117,7 +117,7 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
     /**
      * Designed to enable tracking how much fees were charged from the sender and in which ERC20 token
      * More information can be emitted like exchangeRate used, what was the source of exchangeRate etc*/
-    event TokenPaymasterOperation(address indexed sender, address indexed token, uint256 indexed charge, uint256 premium);
+    event TokenPaymasterOperation(address indexed sender, address indexed token, uint256 indexed totalCharge, uint256 premium, bytes32 userOpHash, uint256 exchangeRate, ExchangeRateSource priceSource);
 
     constructor(
         address _owner,
@@ -328,7 +328,7 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
     // review try to avoid stack too deep. currently need to use viaIR
     function _validatePaymasterUserOp(
         UserOperation calldata userOp,
-        bytes32 /*userOpHash*/,
+        bytes32 userOpHash,
         uint256 requiredPreFund
     ) internal view override returns (bytes memory context, uint256 validationData) {
 
@@ -382,7 +382,7 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
         );
 
         context = abi.encode(account, feeToken, priceSource, exchangeRate, fee, userOp.maxFeePerGas,
-                userOp.maxPriorityFeePerGas);
+                userOp.maxPriorityFeePerGas, userOpHash);
        
         return (context, Helpers._packValidationData(false, validUntil, validAfter));
     }
@@ -399,8 +399,8 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
         uint256 actualGasCost
     ) internal virtual override {
 
-        (address account, IERC20 feeToken, ExchangeRateSource priceSource, uint256 exchangeRate, uint256 fee, uint256 maxFeePerGas, uint256 maxPriorityFeePerGas) = abi
-            .decode(context, (address, IERC20, ExchangeRateSource, uint256, uint256, uint256, uint256));
+        (address account, IERC20 feeToken, ExchangeRateSource priceSource, uint256 exchangeRate, uint256 fee, uint256 maxFeePerGas, uint256 maxPriorityFeePerGas, bytes32 userOpHash) = abi
+            .decode(context, (address, IERC20, ExchangeRateSource, uint256, uint256, uint256, uint256, bytes32));
 
         uint256 effectiveExchangeRate = exchangeRate;
 
@@ -421,7 +421,7 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
         if (mode != PostOpMode.postOpReverted) {
             // review if below fails should notify in event / revert at the risk of reputation
             feeToken.safeTransferFrom(account, feeReceiver, actualTokenCost + fee);
-            emit TokenPaymasterOperation(account, address(feeToken), actualTokenCost, fee);
+            emit TokenPaymasterOperation(account, address(feeToken), actualTokenCost + fee, fee, userOpHash, effectiveExchangeRate, priceSource);
         } 
         // there could be else bit acting as deposit paymaster
         /*else {
