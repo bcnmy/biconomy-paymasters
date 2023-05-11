@@ -19,6 +19,10 @@ contract OracleAggregator is Ownable{
  
     mapping(address => TokenInfo) internal tokensInfo;
 
+    constructor(address _owner) {
+        _transferOwnership(_owner);
+    }
+
     function setTokenOracle(address token, address callAddress, uint8 decimals, bytes calldata callData, bool signed) external onlyOwner{
         require(callAddress != address(0),"OracleAggregator:: call address can not be zero");
         require(token != address(0),"OracleAggregator:: token address can not be zero");

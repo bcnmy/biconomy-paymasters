@@ -163,7 +163,7 @@ describe("Biconomy Token Paymaster", function () {
       smartWalletImp.address
     );
 
-    await walletFactory.deployCounterFactualAccount(walletOwnerAddress, 0);
+    // await walletFactory.deployCounterFactualAccount(walletOwnerAddress, 0);
 
     const expected = await walletFactory.getAddressForCounterFactualAccount(
       walletOwnerAddress,
@@ -256,9 +256,10 @@ describe("Biconomy Token Paymaster", function () {
       const userOp1 = await fillAndSign(
         {
           sender: walletAddress,
-          verificationGasLimit: 200000,
-          // initCode: hexConcat([walletFactory.address, deploymentData]),
-          // nonce: 0,
+          verificationGasLimit: 400000, // defaults 200k + account deployment gas
+          callGasLimit: 200000, // need to pass this because for undeployed account it wouldn't estimate accurately
+          initCode: hexConcat([walletFactory.address, deploymentData]),
+          nonce: 0,
           callData: encodeERC20Approval(
             userSCW,
             token,
@@ -345,6 +346,9 @@ describe("Biconomy Token Paymaster", function () {
           .toString()
       );
 
+      const code = await ethers.provider.getCode(walletAddress)
+      console.log(code)
+
       const ev = await getUserOpEvent(entryPoint);
       expect(ev.args.success).to.be.true;
 
@@ -354,6 +358,8 @@ describe("Biconomy Token Paymaster", function () {
       expect(postBalance.sub(initBalance)).to.be.lessThanOrEqual(
         requiredPrefund.mul(MOCK_FX).div(ethers.constants.WeiPerEther)
       ); */
+
+      
 
       await expect(
         entryPoint.handleOps([userOp], await offchainSigner.getAddress())

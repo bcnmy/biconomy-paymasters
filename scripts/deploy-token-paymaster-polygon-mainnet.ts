@@ -14,7 +14,7 @@ const usdcAddress = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174";
 const usdcPriceFeedAddress = "0xbe4cd782679AD4876456b82934De7Fc1dADd251C";
 
 const OracleAggregator = await ethers.getContractFactory("OracleAggregator");
-const oracleAggregator = await OracleAggregator.deploy();
+const oracleAggregator = await OracleAggregator.deploy(earlyOwner);
 
 await oracleAggregator.deployed();
 
@@ -47,13 +47,17 @@ tx = await oracleAggregator.setTokenOracle(
 receipt = await tx.wait();
 console.log("Oracle set for USDC");
 
-tx = await tokenPaymaster.setTokenAllowed(usdcAddress);
+tx = await tokenPaymaster.setTokenAllowed(usdcAddress, true);
 receipt = await tx.wait();
 console.log("Token is marked allowed");
 
 tx = await tokenPaymaster.transferOwnership(owner);
 receipt = await tx.wait();
-console.log("ownership transferred");
+console.log("ownership transferred: Paymaster");
+
+tx = await oracleAggregator.transferOwnership(owner);
+receipt = await tx.wait();
+console.log("ownership transferred: OA");
 }
 
 // We recommend this pattern to be able to use async/await everywhere
