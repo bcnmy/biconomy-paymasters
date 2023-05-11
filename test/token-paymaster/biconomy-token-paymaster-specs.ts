@@ -153,8 +153,6 @@ describe("Biconomy Token Paymaster", function () {
       oracleAggregator.address
     );
 
-    await sampleTokenPaymaster.setTokenAllowed(token.address, true);
-
     smartWalletImp = await new BiconomyAccountImplementation__factory(deployer).deploy(
       entryPoint.address
     );
