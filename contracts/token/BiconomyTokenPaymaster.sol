@@ -18,8 +18,7 @@ import "../utils/Exec.sol";
 import {TokenPaymasterErrors} from "../common/Errors.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 
-// todo add revert codes in errors. structure Errors.sol
-// todo add try and catch for certain flows (call/static call and if else based on success and fallback)
+// todo add more revert codes in errors. structure Errors.sol
 // todo formal verification
 // todo add and review natspecs
 
@@ -62,10 +61,6 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
 
     uint256 private constant SIGNATURE_OFFSET = 181;
     
-    // review
-    // notice: Since it's always verified by the signing service, below gated mapping state could be avoided.
-    mapping(address => bool) private supportedTokens;
-
     // Owned contract that manages chainlink price feeds (token / eth formaat) and helper to give exchange rate (inverse price)
     IOracleAggregator public oracleAggregator;
 
@@ -105,16 +100,6 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
         address indexed _newfeeReceiver,
         address indexed _actor
     );
-
-    /**
-     * Designed to enable the community to track change in supported ERC20 tokens. Note that a token supported earlier
-     * can be denied*/
-    event TokenSupportedOrRevoked(
-        address indexed _token,
-        bool indexed _allowed,
-        address indexed _actor
-    );
-
     
     /**
      * Designed to enable tracking how much fees were charged from the sender and in which ERC20 token
@@ -193,20 +178,6 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
     }
 
     /**
-     * @dev Allow a new token or revoke previously enabled ERC20 token.
-     * Can only be called by the owner of the contract.
-     * @param _token ERC20 address
-     * @param _allowed if new token is being allowed it will be true, for revoking already supported token it will be false
-     * @notice If _token is set to zero address, it will revert with an error.
-     * After allow/deny of the token, it will emit an event TokenSupportedOrRevoked.
-     */
-    function setTokenAllowed(address _token, bool _allowed) external payable onlyOwner {
-        require(_token != address(0), "Token address cannot be zero");
-        supportedTokens[_token] = _allowed;
-        emit TokenSupportedOrRevoked(_token, _allowed, msg.sender);
-    }
-
-    /**
      * @dev Set a new overhead for unaccounted cost
      * Can only be called by the owner of the contract.
      * @param _newOverheadCost The new value to be set as the gas cost overhead.
@@ -239,16 +210,6 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
     ) public override nonReentrant {
         if (withdrawAddress == address(0)) revert CanNotWithdrawToZeroAddress();
         entryPoint.withdrawTo(withdrawAddress, amount);
-    }
-
-    /**
-     * @dev Returns true if this contract supports the given fee token address.
-     * @param _token ERC20 token address 
-     */
-    function isSupportedToken(
-        address _token
-    ) public view virtual returns (bool) {
-        return supportedTokens[_token];
     }
 
     /**
@@ -370,8 +331,6 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
 
         address account = userOp.getSender();
 
-        require(isSupportedToken(feeToken), "TokenPaymaster: token is not supported as fee token") ;
-
         uint256 costOfPost = userOp.maxFeePerGas * UNACCOUNTED_COST; // unaccountedEPGasOverhead
 
         // This model assumes irrespective of priceSource exchangeRate is always sent from outside
@@ -432,12 +391,14 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
             // Return data is optional
             require(abi.decode(returndata, (bool)), "SafeERC20: ERC20 operation did not succeed");
             // instead of require could emit an event TokenPaymentDue()
+            // sender could be banned indefinitely or for certain period
            }
             emit TokenPaymasterOperation(account, address(feeToken), actualTokenCost + fee, fee, userOpHash, effectiveExchangeRate, priceSource);
         } 
         // there could be else bit acting as deposit paymaster
         else {
             //in case above transferFrom failed, pay with deposit / notify at least
+            //sender could be banned indefinitely or for certain period
         }
     }
 
