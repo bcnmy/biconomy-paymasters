@@ -50,6 +50,7 @@
     "@mean-finance/uniswap-v3-oracle": "^1.0.3",
     "@openzeppelin/contracts": "4.8.1",
     "@openzeppelin/contracts-upgradeable": "4.8.1",
+    "@pimlico/erc20-paymaster": "^0.0.1",
     "@types/mocha": "^9.0.0",
     "@uniswap/sdk-core": "^3.2.2",
     "@uniswap/universal-router": "^1.4.1",

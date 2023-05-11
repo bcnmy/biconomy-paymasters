@@ -155,8 +155,6 @@ describe("Biconomy Token Paymaster", function () {
       ZERO_ADDRESS_ROUTER
     );
 
-    await sampleTokenPaymaster.setTokenAllowed(token.address, true);
-
     smartWalletImp = await new BiconomyAccountImplementation__factory(deployer).deploy(
       entryPoint.address
     );
