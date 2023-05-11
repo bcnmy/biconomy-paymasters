@@ -26,6 +26,7 @@ import { createAccount, simulationResultCatch } from "../../account-abstraction/
 import { EntryPoint, EntryPoint__factory, SimpleAccount, TestToken, TestToken__factory } from "../../account-abstraction/typechain";
 
 export const AddressZero = ethers.constants.AddressZero;
+const ZERO_ADDRESS_ROUTER = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'
 import { arrayify, hexConcat, parseEther } from "ethers/lib/utils";
 import { BigNumber, BigNumberish, Contract, Signer } from "ethers";
 
@@ -150,7 +151,8 @@ describe("Biconomy Token Paymaster", function () {
       walletOwnerAddress,
       entryPoint.address,
       await offchainSigner.getAddress(),
-      oracleAggregator.address
+      oracleAggregator.address,
+      ZERO_ADDRESS_ROUTER
     );
 
     await sampleTokenPaymaster.setTokenAllowed(token.address, true);

@@ -19,6 +19,8 @@ import {
   MockToken,
 } from "../../typechain-types";
 
+const ZERO_ADDRESS_ROUTER = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'
+
 
 import { fillAndSign } from "../../account-abstraction/test/UserOp";
 import { UserOperation } from "../../account-abstraction/test/UserOperation";
@@ -150,7 +152,8 @@ describe("Biconomy Token Paymaster", function () {
       walletOwnerAddress,
       entryPoint.address,
       await offchainSigner.getAddress(),
-      oracleAggregator.address
+      oracleAggregator.address,
+      ZERO_ADDRESS_ROUTER
     );
 
     await sampleTokenPaymaster.setTokenAllowed(token.address, true);

@@ -69,6 +69,9 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
     // Owned contract that manages chainlink price feeds (token / eth formaat) and helper to give exchange rate (inverse price)
     IOracleAggregator public oracleAggregator;
 
+    // todo: possibly add interface later
+    address public swapAdapter1; // named 1 for now
+
     /**
      * Designed to enable the community to track change in storage variable UNACCOUNTED_COST which is used
      * to maintain gas execution cost which can't be calculated within contract*/
@@ -125,9 +128,10 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
         address _owner,
         IEntryPoint _entryPoint,
         address _verifyingSigner,
-        IOracleAggregator _oracleAggregator
-        // potentially take router param as well
-        // optionally get fee receiver if we need to (can always set after deploying!)
+        IOracleAggregator _oracleAggregator, 
+        address _1inchAggregationRouter 
+        // ^ let's pick 1inch here for swapping on eligible chains
+        //  0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE // by default unsupported
     ) payable BasePaymaster(_owner, _entryPoint) {
         if(_owner == address(0)) revert OwnerCannotBeZero();
         if (address(_entryPoint) == address(0)) revert EntryPointCannotBeZero();
@@ -137,7 +141,13 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
             sstore(verifyingSigner.slot, _verifyingSigner)
             sstore(oracleAggregator.slot, _oracleAggregator)
             sstore(feeReceiver.slot, address())  // initialize with self (could also be _owner)
+            sstore(swapAdapter1.slot, _1inchAggregationRouter) // valid only if supported
         }
+    }
+
+    // if needful
+    function set1InchAdapter(address _newVerifyingSigner) external payable onlyOwner {
+    
     }
 
     /**
@@ -258,12 +268,21 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
         address _token
     ) public view virtual returns (uint256 exchangeRate) {
         // get price from oracle aggregator.
+        // todo: from adapter TWAP oracle POV this would need more than token address, like price source
         bytes memory _data = abi.encodeWithSelector(IOracleAggregator.getTokenValueOfOneEth.selector, _token);
         (bool success, bytes memory returndata) = address(oracleAggregator).staticcall(_data);
         exchangeRate = 0;
         if(success) {
             exchangeRate = abi.decode(returndata, (uint256));
         }
+    }
+
+    // returns success and possibly amount and emits event
+    function swapTokenForETHAndDeposit(address _token, bytes memory _calldata) public /*returns*/{
+        // only proceed if adapter is not '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'
+        // make approval to router 
+        // 1InchAdapter.call(calldata)..
+        // entrypoint.depositTo
     }
 
     /**

@@ -13,6 +13,7 @@ async function main() {
   const provider = ethers.provider;
 
   const gasPrices = {maxFeePerGas: 250e9, maxPriorityFeePerGas: 60e9}
+  const ZERO_ADDRESS_ROUTER = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'
 
   const accounts = await ethers.getSigners();
   const earlyOwner = await accounts[0].getAddress();
@@ -41,7 +42,8 @@ async function main() {
     earlyOwner,
     entryPoint,
     verifyingSigner,
-    oracleAggregator.address
+    oracleAggregator.address,
+    ZERO_ADDRESS_ROUTER
   );
 
   await delay(5000)
