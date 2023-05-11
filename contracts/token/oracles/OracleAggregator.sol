@@ -42,6 +42,10 @@ contract OracleAggregator is Ownable{
     }
 
     // exchangeRate basically
+    // todo review
+    // probably includes more info for TWAP oracles and managed them. Add an attribute for which one to use
+    // if let's say UniswapV3 router can return a quote
+    // offchain services would rely on API to provide a quote (1incvh v5.0 / CMC etc)
     function getTokenValueOfOneEth(address token) external view virtual returns (uint256 exchangeRate) {
        // we'd actually want eth / token
        uint256 tokenPriceUnadjusted = _getTokenPrice(token);
