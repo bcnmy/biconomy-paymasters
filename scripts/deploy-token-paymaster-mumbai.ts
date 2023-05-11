@@ -54,7 +54,7 @@ async function main() {
   receipt = await tx.wait();
   console.log("Oracle set for USDC");
 
-  tx = await tokenPaymaster.setTokenAllowed(usdcAddress);
+  tx = await tokenPaymaster.setTokenAllowed(usdcAddress, true);
   receipt = await tx.wait();
   console.log("Token is marked allowed");
 

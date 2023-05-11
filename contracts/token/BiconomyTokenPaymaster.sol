@@ -25,12 +25,15 @@ import "@openzeppelin/contracts/utils/Address.sol";
 
 // Biconomy Token Paymaster
 /**
- * A token-based paymaster that accepts token deposits for supported ERC20 tokens.
- * It is an extension of VerifyingPaymaster which trusts external signer to authorize the transaction, but also with an ability to withdraw tokens. 
+ * A token-based paymaster that allows user to pay gas fee in ERC20 tokens. The paymaster owner chooses which tokens to accept.
+ * The payment manager (usually the owner) first deposits native gas into the EntryPoint. Then, for each transaction, it takes the gas fee from the user's ERC20 token balance. The manager must convert these collected tokens back to native gas and deposit it into the EntryPoint to keep the system running.
+ * It is an extension of VerifyingPaymaster which trusts external signer to authorize the transaction, but also with an ability to withdraw tokens.
+ * 
+ * The validatePaymasterUserOp function does not interact with external contracts but uses an externally provided exchange rate.
+ * Based on the exchangeRate and requiredPrefund amount, the validation method checks if the user's account has enough token balance. This is done by only looking at the referenced storage.
+ * All Withdrawn tokens are sent to a dynamic fee receiver address.
+ * 
  * Optionally a safe guard deposit may be used in future versions.
- * validatePaymasterUserOp doesn't call any external contracts but currently relies on exchangeRate passed externally.
- * based on the exchangeRate and requiredPrefund validation stage ensure the account has enough token allowance and balance, hence only checking referenced state.
- * All withdrawn tokens will be transferred to dynamic fee receiver address.
  */
 contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymasterErrors {
 
@@ -53,6 +56,8 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
     // receiver of withdrawn fee tokens
     address public feeReceiver;
     
+    // paymasterAndData: concat of [paymasterAddress(address), priceSource(enum 1 byte), abi.encode(validUntil, validAfter, feeToken, exchangeRate, fee): makes up 32*5 bytes, signature]
+    // PND offset is used to indicate offsets to decode, used along with Signature offset
     uint256 private constant VALID_PND_OFFSET = 21;
 
     uint256 private constant SIGNATURE_OFFSET = 181;
@@ -61,37 +66,60 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
     // notice: Since it's always verified by the signing service, below gated mapping state could be avoided.
     mapping(address => bool) private supportedTokens;
 
+    // Owned contract that manages chainlink price feeds (token / eth formaat) and helper to give exchange rate (inverse price)
     IOracleAggregator public oracleAggregator;
 
+    /**
+     * Designed to enable the community to track change in storage variable UNACCOUNTED_COST which is used
+     * to maintain gas execution cost which can't be calculated within contract*/
     event EPGasOverheadChanged(
-        uint256 indexed _oldValue,
-        uint256 indexed _newValue
+        uint256 indexed _oldOverheadCost,
+        uint256 indexed _newOverheadCost,
+        address indexed _actor
     );
 
+    /**
+     * Designed to enable the community to track change in storage variable verifyingSigner which is used
+     * to authorize any operation for this paymaster (validation stage) and provides signature*/
     event VerifyingSignerChanged(
         address indexed _oldSigner,
         address indexed _newSigner,
         address indexed _actor
     );
-
+    
+    /**
+     * Designed to enable the community to track change in storage variable oracleAggregator which is a contract
+     * used to maintain price feeds for exchangeRate supported tokens*/
     event OracleAggregatorChanged(
         address indexed _oldoracleAggregator,
         address indexed _neworacleAggregator,
         address indexed _actor
     );
 
+
+    /**
+     * Designed to enable the community to track change in storage variable feeReceiver which is an address (self or other SCW/EOA)
+     * responsible for collecting all the tokens being withdrawn as fees*/
     event FeeReceiverChanged(
         address indexed _oldfeeReceiver,
         address indexed _newfeeReceiver,
         address indexed _actor
     );
 
-    event NewFeeTokenSupported(
+    /**
+     * Designed to enable the community to track change in supported ERC20 tokens. Note that a token supported earlier
+     * can be denied*/
+    event TokenSupportedOrRevoked(
         address indexed _token,
+        bool indexed _allowed,
         address indexed _actor
     );
 
-    event TokenPaymasterOperation(address indexed sender, address indexed token, uint256 charge, uint256 premium);
+    
+    /**
+     * Designed to enable tracking how much fees were charged from the sender and in which ERC20 token
+     * More information can be emitted like exchangeRate used, what was the source of exchangeRate etc*/
+    event TokenPaymasterOperation(address indexed sender, address indexed token, uint256 indexed totalCharge, uint256 premium, bytes32 userOpHash, uint256 exchangeRate, ExchangeRateSource priceSource);
 
     constructor(
         address _owner,
@@ -104,14 +132,12 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
         if(_owner == address(0)) revert OwnerCannotBeZero();
         if (address(_entryPoint) == address(0)) revert EntryPointCannotBeZero();
         if(address(_oracleAggregator) == address(0)) revert OracleAggregatorCannotBeZero();
-        if (_verifyingSigner == address(0))
-            revert VerifyingSignerCannotBeZero();
-         _transferOwnership(_owner);
+        if (_verifyingSigner == address(0)) revert VerifyingSignerCannotBeZero();
         assembly {
             sstore(verifyingSigner.slot, _verifyingSigner)
+            sstore(oracleAggregator.slot, _oracleAggregator)
+            sstore(feeReceiver.slot, address())  // initialize with self (could also be _owner)
         }
-        oracleAggregator = _oracleAggregator;
-        feeReceiver = address(this); // initialize with self (could also be _owner)
     }
 
     /**
@@ -131,8 +157,13 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
         emit VerifyingSignerChanged(oldSigner, _newVerifyingSigner, msg.sender);
     }
 
-    // notice payable in setVerifyingSigner
-    // todo review payable in onlyOwner methods from GO POV
+    /**
+     * @dev Set a new oracle aggregator.
+     * Can only be called by the owner of the contract.
+     * @param _newOracleAggregator The new address to be set as the address of oracle aggregator contract.
+     * @notice If _newOracleAggregator is set to zero address, it will revert with an error.
+     * After setting the new address, it will emit an event OracleAggregatorChanged.
+     */
     function setOracleAggregator(address _newOracleAggregator) external payable onlyOwner {
         if (_newOracleAggregator == address(0))
             revert OracleAggregatorCannotBeZero();
@@ -143,6 +174,13 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
         emit OracleAggregatorChanged(oldOA, _newOracleAggregator, msg.sender);
     }
 
+    /**
+     * @dev Set a new fee receiver.
+     * Can only be called by the owner of the contract.
+     * @param _newFeeReceiver The new address to be set as the address of new fee receiver.
+     * @notice If _newFeeReceiver is set to zero address, it will revert with an error.
+     * After setting the new address, it will emit an event FeeReceiverChanged.
+     */
     function setFeeReceiver(address _newFeeReceiver) external payable onlyOwner {
          if (_newFeeReceiver == address(0))
             revert FeeReceiverCannotBeZero();
@@ -154,20 +192,37 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
 
     }
 
-    function setTokenAllowed(address _token) external payable onlyOwner {
+    /**
+     * @dev Allow a new token or revoke previously enabled ERC20 token.
+     * Can only be called by the owner of the contract.
+     * @param _token ERC20 address
+     * @param _allowed if new token is being allowed it will be true, for revoking already supported token it will be false
+     * @notice If _token is set to zero address, it will revert with an error.
+     * After allow/deny of the token, it will emit an event TokenSupportedOrRevoked.
+     */
+    function setTokenAllowed(address _token, bool _allowed) external payable onlyOwner {
         require(_token != address(0), "Token address cannot be zero");
-        supportedTokens[_token] = true;
-        emit NewFeeTokenSupported(_token, msg.sender);
-    }
-
-    function setUnaccountedEPGasOverhead(uint256 value) external payable onlyOwner {
-        uint256 oldValue = UNACCOUNTED_COST;
-        UNACCOUNTED_COST = value;
-        emit EPGasOverheadChanged(oldValue, value);
+        supportedTokens[_token] = _allowed;
+        emit TokenSupportedOrRevoked(_token, _allowed, msg.sender);
     }
 
     /**
-     * add a deposit for this paymaster, used for paying for transaction fees
+     * @dev Set a new overhead for unaccounted cost
+     * Can only be called by the owner of the contract.
+     * @param _newOverheadCost The new value to be set as the gas cost overhead.
+     * @notice If _newOverheadCost is set to very high value, it will revert with an error.
+     * After setting the new value, it will emit an event EPGasOverheadChanged.
+     */
+    function setUnaccountedEPGasOverhead(uint256 _newOverheadCost) external payable onlyOwner {
+        require(_newOverheadCost < 200000, "_newOverheadCost can not be unrealistic");
+        uint256 oldValue = UNACCOUNTED_COST;
+        UNACCOUNTED_COST = _newOverheadCost;
+        emit EPGasOverheadChanged(oldValue, _newOverheadCost, msg.sender);
+    }
+
+    /**
+     * Add a deposit in native currency for this paymaster, used for paying for transaction fees. 
+     * This is ideally done by the entity who is managing the received ERC20 gas tokens.
      */
     function deposit() public payable virtual override nonReentrant {
         IEntryPoint(entryPoint).depositTo{value: msg.value}(address(this));
@@ -188,14 +243,11 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
 
     /**
      * @dev Returns true if this contract supports the given fee token address.
+     * @param _token ERC20 token address 
      */
     function isSupportedToken(
         address _token
-    ) external view virtual returns (bool) {
-        return _isSupportedToken(_token);
-    }
-
-    function _isSupportedToken(address _token) private view returns (bool) {
+    ) public view virtual returns (bool) {
         return supportedTokens[_token];
     }
 
@@ -220,7 +272,7 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
      * @param target address to send to
      * @param amount amount to withdraw
      */
-    function withdrawTokensTo(IERC20 token, address target, uint256 amount) public nonReentrant {
+    function withdrawERC20To(IERC20 token, address target, uint256 amount) public nonReentrant {
         require(owner() == msg.sender, "only owner can withdraw tokens"); // add revert code
         token.safeTransfer(target, amount);
     }
@@ -269,7 +321,8 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
 
     /**
      * @dev Verify that an external signer signed the paymaster data of a user operation.
-     * The paymaster data is expected to be the paymaster and a signature over the entire request parameters.
+     * The paymaster data is expected to be the paymaster address, request data and a signature over the entire request parameters.
+     * paymasterAndData: hexConcat([paymasterAddress, priceSource, abi.encode(validUntil, validAfter, feeToken, exchangeRate, fee), signature])
      * @param userOp The UserOperation struct that represents the current user operation.
      * userOpHash The hash of the UserOperation struct.
      * @param requiredPreFund The required amount of pre-funding for the paymaster.
@@ -279,7 +332,7 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
     // review try to avoid stack too deep. currently need to use viaIR
     function _validatePaymasterUserOp(
         UserOperation calldata userOp,
-        bytes32 /*userOpHash*/,
+        bytes32 userOpHash,
         uint256 requiredPreFund
     ) internal view override returns (bytes memory context, uint256 validationData) {
 
@@ -317,21 +370,23 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
 
         address account = userOp.getSender();
 
-        require(_isSupportedToken(feeToken), "TokenPaymaster: token is not supported as fee token") ;
+        require(isSupportedToken(feeToken), "TokenPaymaster: token is not supported as fee token") ;
 
         uint256 costOfPost = userOp.maxFeePerGas * UNACCOUNTED_COST; // unaccountedEPGasOverhead
 
         // This model assumes irrespective of priceSource exchangeRate is always sent from outside
         // for below checks you would either need maxCost or some exchangeRate
+
+        // can add some checks here on calculated value, fee cap, exchange rate deviation/cap etc
         uint256 tokenRequiredPreFund = ((requiredPreFund + costOfPost) * exchangeRate) / 10 ** 18;
 
         require(
             IERC20(feeToken).balanceOf(account) >= (tokenRequiredPreFund + fee),
-            "Token Paymaster: not enough balance"
+            "Token Paymaster: account does not have enough token balance"
         );
 
         context = abi.encode(account, feeToken, priceSource, exchangeRate, fee, userOp.maxFeePerGas,
-                userOp.maxPriorityFeePerGas);
+                userOp.maxPriorityFeePerGas, userOpHash);
        
         return (context, Helpers._packValidationData(false, validUntil, validAfter));
     }
@@ -348,8 +403,8 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
         uint256 actualGasCost
     ) internal virtual override {
 
-        (address account, IERC20 feeToken, ExchangeRateSource priceSource, uint256 exchangeRate, uint256 fee, uint256 maxFeePerGas, uint256 maxPriorityFeePerGas) = abi
-            .decode(context, (address, IERC20, ExchangeRateSource, uint256, uint256, uint256, uint256));
+        (address account, IERC20 feeToken, ExchangeRateSource priceSource, uint256 exchangeRate, uint256 fee, uint256 maxFeePerGas, uint256 maxPriorityFeePerGas, bytes32 userOpHash) = abi
+            .decode(context, (address, IERC20, ExchangeRateSource, uint256, uint256, uint256, uint256, bytes32));
 
         uint256 effectiveExchangeRate = exchangeRate;
 
@@ -378,13 +433,12 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
             require(abi.decode(returndata, (bool)), "SafeERC20: ERC20 operation did not succeed");
             // instead of require could emit an event TokenPaymentDue()
            }
-
-            emit TokenPaymasterOperation(account, address(feeToken), actualTokenCost, fee);
+            emit TokenPaymasterOperation(account, address(feeToken), actualTokenCost + fee, fee, userOpHash, effectiveExchangeRate, priceSource);
         } 
         // there could be else bit acting as deposit paymaster
-        /*else {
-
-        }*/
+        else {
+            //in case above transferFrom failed, pay with deposit / notify at least
+        }
     }
 
     function parsePaymasterAndData(
