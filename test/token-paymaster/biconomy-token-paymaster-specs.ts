@@ -359,8 +359,110 @@ describe("Biconomy Token Paymaster", function () {
     });
   });
 
-  describe("Negative scenarios", () => {
-    it("Reverts for invalid and wrong signatures", async () => {});
+  describe("Negative scenarios: invalid and wrong signatures", () => {
+    it("should revert on invalid signature length", async ()  => {
+
+      const userSCW: any = BiconomyAccountImplementation__factory.connect(walletAddress, deployer)
+    
+      const userOp = await fillAndSign(
+        {
+          sender: walletAddress,
+          verificationGasLimit: 200000,
+          // initCode: hexConcat([walletFactory.address, deploymentData]),
+          // nonce: 0,
+          callData: encodeERC20Approval(
+            userSCW,
+            token,
+            paymasterAddress,
+            ethers.constants.MaxUint256
+          ),
+          paymasterAndData: ethers.utils.hexConcat([
+            paymasterAddress,
+            ethers.utils.hexlify(1).slice(0, 4),
+            encodePaymasterData(token.address, MOCK_FX),
+            '0x1234',
+          ]),
+        },
+        walletOwner,
+        entryPoint,
+        "nonce"
+      );
+
+      await expect(entryPoint.callStatic.simulateValidation(userOp))
+      .to.be.revertedWithCustomError(entryPoint, "FailedOp")
+      .withArgs(0, "AA33 reverted (or OOG)"); // TODO review : it should be AA33 reverted: <error from Token PM> but goes into OOG
+    });
+
+    it("should revert on invalid signature", async ()  => {
+
+      const userSCW: any = BiconomyAccountImplementation__factory.connect(walletAddress, deployer)
+    
+      const userOp = await fillAndSign(
+        {
+          sender: walletAddress,
+          verificationGasLimit: 200000,
+          // initCode: hexConcat([walletFactory.address, deploymentData]),
+          // nonce: 0,
+          callData: encodeERC20Approval(
+            userSCW,
+            token,
+            paymasterAddress,
+            ethers.constants.MaxUint256
+          ),
+          paymasterAndData: ethers.utils.hexConcat([
+            paymasterAddress,
+            ethers.utils.hexlify(1).slice(0, 4),
+            encodePaymasterData(token.address, MOCK_FX),
+            "0x" + "00".repeat(65),
+          ]),
+        },
+        walletOwner,
+        entryPoint,
+        "nonce"
+      );
+
+      await expect(entryPoint.callStatic.simulateValidation(userOp))
+      .to.be.revertedWithCustomError(entryPoint, "FailedOp")
+      .withArgs(0, "AA33 reverted: ECDSA: invalid signature"); 
+    });
+
+    it("should revert with wrong signature", async ()  => {
+
+      const userSCW: any = BiconomyAccountImplementation__factory.connect(walletAddress, deployer)
+
+      const sig = await offchainSigner.signMessage(ethers.utils.arrayify("0xdead"));
+    
+      const wrongUserOp = await fillAndSign(
+        {
+          sender: walletAddress,
+          verificationGasLimit: 200000,
+          // initCode: hexConcat([walletFactory.address, deploymentData]),
+          // nonce: 0,
+          callData: encodeERC20Approval(
+            userSCW,
+            token,
+            paymasterAddress,
+            ethers.constants.MaxUint256
+          ),
+          paymasterAndData: ethers.utils.hexConcat([
+            paymasterAddress,
+            ethers.utils.hexlify(1).slice(0, 4),
+            encodePaymasterData(token.address, MOCK_FX),
+            sig,
+          ]),
+        },
+        walletOwner,
+        entryPoint,
+        "nonce"
+      );
+
+      const ret = await entryPoint.callStatic.simulateValidation(wrongUserOp).catch(simulationResultCatch);
+      expect(ret.returnInfo.sigFailed).to.be.true;
+
+      await expect(entryPoint.estimateGas.handleOps([wrongUserOp], await offchainSigner.getAddress()))
+        .to.to.be.revertedWithCustomError(entryPoint, "FailedOp")
+        .withArgs(0, "AA34 signature error");
+    });
   });
 
   describe("Token paymaster Access control", () => {
