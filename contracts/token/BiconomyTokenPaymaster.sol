@@ -41,9 +41,14 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
     using UserOperationLib for UserOperation;
     using SafeERC20 for IERC20;
 
+    /**
+     * price source can be off-chain calculation or oracles
+     * for oracle based it can be based on chainlink feeds or TWAP oracles
+     * for ORACLE_BASED oracle aggregator address has to be passed in paymasterAndData 
+     */
     enum ExchangeRateSource {
         EXTERNAL_EXCHANGE_RATE,
-        CHAINLINK_PRICE_ORACLE_BASED
+        ORACLE_BASED
     }
 
     // Gas used in EntryPoint._handlePostOp() method (including this#postOp() call)
@@ -55,18 +60,12 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
     // receiver of withdrawn fee tokens
     address public feeReceiver;
     
-    // paymasterAndData: concat of [paymasterAddress(address), priceSource(enum 1 byte), abi.encode(validUntil, validAfter, feeToken, exchangeRate, fee): makes up 32*5 bytes, signature]
+    // paymasterAndData: concat of [paymasterAddress(address), priceSource(enum 1 byte), abi.encode(validUntil, validAfter, feeToken, oracleAggregator, exchangeRate, fee): makes up 32*6 bytes, signature]
     // PND offset is used to indicate offsets to decode, used along with Signature offset
     uint256 private constant VALID_PND_OFFSET = 21;
 
-    uint256 private constant SIGNATURE_OFFSET = 181;
+    uint256 private constant SIGNATURE_OFFSET = 213;
     
-    // Owned contract that manages chainlink price feeds (token / eth formaat) and helper to give exchange rate (inverse price)
-    IOracleAggregator public oracleAggregator;
-
-    // todo: possibly add interface later
-    address public swapAdapter1; // named 1 for now
-
     /**
      * Designed to enable the community to track change in storage variable UNACCOUNTED_COST which is used
      * to maintain gas execution cost which can't be calculated within contract*/
@@ -85,16 +84,8 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
         address indexed _actor
     );
     
-    /**
-     * Designed to enable the community to track change in storage variable oracleAggregator which is a contract
-     * used to maintain price feeds for exchangeRate supported tokens*/
-    event OracleAggregatorChanged(
-        address indexed _oldoracleAggregator,
-        address indexed _neworacleAggregator,
-        address indexed _actor
-    );
-
-
+    // review: fee receiver could also come in as part of paymasterAndData 
+    // if A dapp later wants to collect token fees and manage gas upfront / provide credit card 
     /**
      * Designed to enable the community to track change in storage variable feeReceiver which is an address (self or other SCW/EOA)
      * responsible for collecting all the tokens being withdrawn as fees*/
@@ -112,27 +103,15 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
     constructor(
         address _owner,
         IEntryPoint _entryPoint,
-        address _verifyingSigner,
-        IOracleAggregator _oracleAggregator, 
-        address _1inchAggregationRouter 
-        // ^ let's pick 1inch here for swapping on eligible chains
-        //  0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE // by default unsupported
+        address _verifyingSigner
     ) payable BasePaymaster(_owner, _entryPoint) {
         if(_owner == address(0)) revert OwnerCannotBeZero();
         if (address(_entryPoint) == address(0)) revert EntryPointCannotBeZero();
-        if(address(_oracleAggregator) == address(0)) revert OracleAggregatorCannotBeZero();
         if (_verifyingSigner == address(0)) revert VerifyingSignerCannotBeZero();
-        assembly {
+        assembly ("memory-safe") {
             sstore(verifyingSigner.slot, _verifyingSigner)
-            sstore(oracleAggregator.slot, _oracleAggregator)
             sstore(feeReceiver.slot, address())  // initialize with self (could also be _owner)
-            sstore(swapAdapter1.slot, _1inchAggregationRouter) // valid only if supported
         }
-    }
-
-    // if needful
-    function set1InchAdapter(address _newVerifyingSigner) external payable onlyOwner {
-    
     }
 
     /**
@@ -146,27 +125,10 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
         if (_newVerifyingSigner == address(0))
             revert VerifyingSignerCannotBeZero();
         address oldSigner = verifyingSigner;
-        assembly {
+        assembly ("memory-safe") {
             sstore(verifyingSigner.slot, _newVerifyingSigner)
         }
         emit VerifyingSignerChanged(oldSigner, _newVerifyingSigner, msg.sender);
-    }
-
-    /**
-     * @dev Set a new oracle aggregator.
-     * Can only be called by the owner of the contract.
-     * @param _newOracleAggregator The new address to be set as the address of oracle aggregator contract.
-     * @notice If _newOracleAggregator is set to zero address, it will revert with an error.
-     * After setting the new address, it will emit an event OracleAggregatorChanged.
-     */
-    function setOracleAggregator(address _newOracleAggregator) external payable onlyOwner {
-        if (_newOracleAggregator == address(0))
-            revert OracleAggregatorCannotBeZero();
-        address oldOA = address(oracleAggregator);
-        assembly {
-            sstore(oracleAggregator.slot, _newOracleAggregator)
-        }
-        emit OracleAggregatorChanged(oldOA, _newOracleAggregator, msg.sender);
     }
 
     /**
@@ -180,7 +142,7 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
          if (_newFeeReceiver == address(0))
             revert FeeReceiverCannotBeZero();
         address oldFeeReceiver = feeReceiver;
-        assembly {
+        assembly ("memory-safe") {
             sstore(feeReceiver.slot, _newFeeReceiver)
         }
         emit FeeReceiverChanged(oldFeeReceiver, _newFeeReceiver, msg.sender);
@@ -226,25 +188,57 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
      * @dev Returns the exchange price of the token in wei.
      */
     function exchangePrice(
-        address _token
+        address _token,
+        address _oracleAggregator
     ) public view virtual returns (uint256 exchangeRate) {
-        // get price from oracle aggregator.
-        // todo: from adapter TWAP oracle POV this would need more than token address, like price source
+        // get price from chosen oracle aggregator.
         bytes memory _data = abi.encodeWithSelector(IOracleAggregator.getTokenValueOfOneEth.selector, _token);
-        (bool success, bytes memory returndata) = address(oracleAggregator).staticcall(_data);
-        exchangeRate = 0;
+        (bool success, bytes memory returndata) = address(_oracleAggregator).staticcall(_data);
+        exchangeRate = 0; // this is assigned for fallback
         if(success) {
             exchangeRate = abi.decode(returndata, (uint256));
         }
     }
 
-    // returns success and possibly amount and emits event
-    function swapTokenForETHAndDeposit(address _token, bytes memory _calldata) public /*returns*/{
-        // only proceed if adapter is not '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'
+    
+    // todo: review , test, add natspecs, handle errors, QA styling, change return params, emit events
+    function swapTokenForETHAndDeposit(address _dexRouter, bytes memory _swapdata, bool _approveRouter, address _token, uint256 _amount, uint256 _maxDepositToEP) public nonReentrant onlyOwner returns(uint256) {
+        // only proceed if adapter is not 0 address
+        require(_dexRouter != address(0), "Router can not be zero address");
         // make approval to router 
-        // 1InchAdapter.call(calldata)..
+        if(_approveRouter) {
+        IERC20(_token).safeApprove(_dexRouter, _amount);
+        }
+
+        // make the swap
+         (bool success, bytes memory returndata) = address(_dexRouter).call(_swapdata);
+
+        uint256 depositAmount = address(this).balance; 
+
+        if(depositAmount > _maxDepositToEP) {
+            depositAmount = _maxDepositToEP;
+        }
+
         // entrypoint.depositTo
+        IEntryPoint(entryPoint).depositTo{value: depositAmount}(address(this));
+
+        return depositAmount;
     }
+
+    // method to pull any excess eth in the paymaster contract 
+    function withdrawAllETHTo(address dest) public nonReentrant {
+        require(owner() == msg.sender, "only owner can withdraw"); // add revert code
+        uint256 _balance = address(this).balance;
+        // perform some checks
+        require(_balance > 0, "Contract has no balance to withdraw");
+        require(dest != address(0), "transfer to zero address");
+        bool success;
+        assembly ("memory-safe") {
+            success := call(gas(), dest, _balance, 0, 0, 0, 0)
+        }
+        require(success, "ETH withdraw failed");
+    }
+
 
     /**
      * @dev pull tokens out of paymaster in case they were sent to the paymaster at any point.
@@ -254,8 +248,22 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
      */
     function withdrawERC20To(IERC20 token, address target, uint256 amount) public nonReentrant {
         require(owner() == msg.sender, "only owner can withdraw tokens"); // add revert code
+        _withdrawERC20(token, target, amount);
+    }
+
+    function _withdrawERC20(IERC20 token, address target, uint256 amount) private {
         token.safeTransfer(target, amount);
     }
+
+    // withdraw token from this contract
+    function withdrawMultipleERC20(IERC20[] calldata token, address to, uint256[] calldata amount) public nonReentrant {
+        require(owner() == msg.sender, "only owner can withdraw tokens"); // add revert code
+        require(token.length == amount.length, "length mismatch");
+        for (uint256 i = 0; i < token.length; i++) {
+            _withdrawERC20(token[i], to, amount[i]);
+        }
+    }
+
 
 
      /**
@@ -271,6 +279,7 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
         uint48 validUntil,
         uint48 validAfter,
         address feeToken,
+        address oracleAggregator,
         uint256 exchangeRate,
         uint256 fee
     ) public view returns (bytes32) {
@@ -293,6 +302,7 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
                     validUntil,
                     validAfter,
                     feeToken,
+                    oracleAggregator,
                     exchangeRate,
                     fee
                 )
@@ -302,7 +312,7 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
     /**
      * @dev Verify that an external signer signed the paymaster data of a user operation.
      * The paymaster data is expected to be the paymaster address, request data and a signature over the entire request parameters.
-     * paymasterAndData: hexConcat([paymasterAddress, priceSource, abi.encode(validUntil, validAfter, feeToken, exchangeRate, fee), signature])
+     * paymasterAndData: hexConcat([paymasterAddress, priceSource, abi.encode(validUntil, validAfter, feeToken, oracleAggregator, exchangeRate, fee), signature])
      * @param userOp The UserOperation struct that represents the current user operation.
      * userOpHash The hash of the UserOperation struct.
      * @param requiredPreFund The required amount of pre-funding for the paymaster.
@@ -326,6 +336,7 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
             uint48 validUntil,
             uint48 validAfter,
             address feeToken,
+            address oracleAggregator,
             uint256 exchangeRate,
             uint256 fee,
             bytes calldata signature
@@ -335,7 +346,7 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
         // we only "require" it here so that the revert reason on invalid signature will be of "VerifyingPaymaster", and not "ECDSA"
         if (signature.length != 65) revert InvalidPaymasterSignatureLength(signature.length);
 
-        bytes32 _hash = getHash(userOp, priceSource, validUntil, validAfter, feeToken, exchangeRate, fee).toEthSignedMessageHash();
+        bytes32 _hash = getHash(userOp, priceSource, validUntil, validAfter, feeToken, oracleAggregator, exchangeRate, fee).toEthSignedMessageHash();
 
         context = "";
         
@@ -363,7 +374,7 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
             "Token Paymaster: account does not have enough token balance"
         );
 
-        context = abi.encode(account, feeToken, priceSource, exchangeRate, fee, userOp.maxFeePerGas,
+        context = abi.encode(account, feeToken, oracleAggregator, priceSource, exchangeRate, fee, userOp.maxFeePerGas,
                 userOp.maxPriorityFeePerGas, userOpHash);
        
         return (context, Helpers._packValidationData(false, validUntil, validAfter));
@@ -381,13 +392,13 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
         uint256 actualGasCost
     ) internal virtual override {
 
-        (address account, IERC20 feeToken, ExchangeRateSource priceSource, uint256 exchangeRate, uint256 fee, uint256 maxFeePerGas, uint256 maxPriorityFeePerGas, bytes32 userOpHash) = abi
-            .decode(context, (address, IERC20, ExchangeRateSource, uint256, uint256, uint256, uint256, bytes32));
+        (address account, IERC20 feeToken, address oracleAggregator, ExchangeRateSource priceSource, uint256 exchangeRate, uint256 fee, uint256 maxFeePerGas, uint256 maxPriorityFeePerGas, bytes32 userOpHash) = abi
+            .decode(context, (address, IERC20, address, ExchangeRateSource, uint256, uint256, uint256, uint256, bytes32));
 
         uint256 effectiveExchangeRate = exchangeRate;
 
-        if (priceSource == ExchangeRateSource.CHAINLINK_PRICE_ORACLE_BASED) {
-            uint256 result = exchangePrice(address(feeToken));
+        if (priceSource == ExchangeRateSource.ORACLE_BASED && oracleAggregator != address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)) {
+            uint256 result = exchangePrice(address(feeToken), oracleAggregator);
             if(result > 0) effectiveExchangeRate = result;
         } 
 
@@ -431,15 +442,16 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
             uint48 validUntil,
             uint48 validAfter,
             address feeToken,
+            address oracleAggregator,
             uint256 exchangeRate,
             uint256 fee,
             bytes calldata signature
         )
     {
         priceSource = ExchangeRateSource(uint8(bytes1(paymasterAndData[VALID_PND_OFFSET - 1 : VALID_PND_OFFSET])));
-        (validUntil, validAfter, feeToken, exchangeRate, fee) = abi.decode(
+        (validUntil, validAfter, feeToken, oracleAggregator, exchangeRate, fee) = abi.decode(
             paymasterAndData[VALID_PND_OFFSET:SIGNATURE_OFFSET],
-            (uint48, uint48, address, uint256, uint256)
+            (uint48, uint48, address, address, uint256, uint256)
         );
         signature = paymasterAndData[SIGNATURE_OFFSET:];
     }

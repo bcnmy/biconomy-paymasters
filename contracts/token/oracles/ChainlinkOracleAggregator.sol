@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./IOracleAggregator.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
-contract OracleAggregator is Ownable, IOracleAggregator{
+contract ChainlinkOracleAggregator is Ownable, IOracleAggregator{
 
     struct TokenInfo {
      /* Number of decimals represents the precision of the price returned by the feed. For example, 

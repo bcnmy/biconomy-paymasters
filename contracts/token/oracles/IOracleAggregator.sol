@@ -5,6 +5,7 @@ interface IOracleAggregator {
 
     function getTokenValueOfOneEth(address _token) external view returns (uint256 exchangeRate);
 
+    // review if needed
     function getTokenPrice(address _token) external view returns (uint256 tokenPrice);
 
 }
