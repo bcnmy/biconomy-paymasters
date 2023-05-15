@@ -18,10 +18,6 @@ import "../utils/Exec.sol";
 import {TokenPaymasterErrors} from "../common/Errors.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 
-// todo add more revert codes in errors. structure Errors.sol
-// todo formal verification
-// todo add and review natspecs
-
 // Biconomy Token Paymaster
 /**
  * A token-based paymaster that allows user to pay gas fee in ERC20 tokens. The paymaster owner chooses which tokens to accept.
@@ -39,6 +35,7 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
     using ECDSA for bytes32;
     using Address for address;
     using UserOperationLib for UserOperation;
+    // review
     using SafeERC20 for IERC20;
 
     enum ExchangeRateSource {
@@ -62,6 +59,7 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
     uint256 private constant SIGNATURE_OFFSET = 181;
     
     // Owned contract that manages chainlink price feeds (token / eth formaat) and helper to give exchange rate (inverse price)
+    // marked for removal
     IOracleAggregator public oracleAggregator;
 
     /**
@@ -82,6 +80,7 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
         address indexed _actor
     );
     
+    // marked for removal
     /**
      * Designed to enable the community to track change in storage variable oracleAggregator which is a contract
      * used to maintain price feeds for exchangeRate supported tokens*/
@@ -125,6 +124,7 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
         }
     }
 
+    // review: could be reanmed to VerifyingSigner
     /**
      * @dev Set a new verifying signer address.
      * Can only be called by the owner of the contract.
@@ -142,6 +142,7 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
         emit VerifyingSignerChanged(oldSigner, _newVerifyingSigner, msg.sender);
     }
 
+    // marked for removal
     /**
      * @dev Set a new oracle aggregator.
      * Can only be called by the owner of the contract.
@@ -207,7 +208,7 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
     function withdrawTo(
         address payable withdrawAddress,
         uint256 amount
-    ) public override nonReentrant {
+    ) public override onlyOwner nonReentrant {
         if (withdrawAddress == address(0)) revert CanNotWithdrawToZeroAddress();
         entryPoint.withdrawTo(withdrawAddress, amount);
     }
@@ -233,8 +234,7 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
      * @param target address to send to
      * @param amount amount to withdraw
      */
-    function withdrawERC20To(IERC20 token, address target, uint256 amount) public nonReentrant {
-        require(owner() == msg.sender, "only owner can withdraw tokens"); // add revert code
+    function withdrawERC20To(IERC20 token, address target, uint256 amount) public onlyOwner nonReentrant {
         token.safeTransfer(target, amount);
     }
 
@@ -278,6 +278,33 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
                     fee
                 )
             );
+    }
+
+    function unaccountedCost() public view returns(uint256) {
+        return UNACCOUNTED_COST;
+    }
+
+    function parsePaymasterAndData(
+        bytes calldata paymasterAndData
+    )
+        public
+        pure
+        returns (
+            ExchangeRateSource priceSource,
+            uint48 validUntil,
+            uint48 validAfter,
+            address feeToken,
+            uint256 exchangeRate,
+            uint256 fee,
+            bytes calldata signature
+        )
+    {
+        priceSource = ExchangeRateSource(uint8(bytes1(paymasterAndData[VALID_PND_OFFSET - 1 : VALID_PND_OFFSET])));
+        (validUntil, validAfter, feeToken, exchangeRate, fee) = abi.decode(
+            paymasterAndData[VALID_PND_OFFSET:SIGNATURE_OFFSET],
+            (uint48, uint48, address, uint256, uint256)
+        );
+        signature = paymasterAndData[SIGNATURE_OFFSET:];
     }
 
     /**
@@ -402,26 +429,6 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
         }
     }
 
-    function parsePaymasterAndData(
-        bytes calldata paymasterAndData
-    )
-        public
-        pure
-        returns (
-            ExchangeRateSource priceSource,
-            uint48 validUntil,
-            uint48 validAfter,
-            address feeToken,
-            uint256 exchangeRate,
-            uint256 fee,
-            bytes calldata signature
-        )
-    {
-        priceSource = ExchangeRateSource(uint8(bytes1(paymasterAndData[VALID_PND_OFFSET - 1 : VALID_PND_OFFSET])));
-        (validUntil, validAfter, feeToken, exchangeRate, fee) = abi.decode(
-            paymasterAndData[VALID_PND_OFFSET:SIGNATURE_OFFSET],
-            (uint48, uint48, address, uint256, uint256)
-        );
-        signature = paymasterAndData[SIGNATURE_OFFSET:];
-    }
+    //todo
+    // Move any private methods here
 }
