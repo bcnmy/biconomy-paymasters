@@ -391,7 +391,7 @@ describe("Biconomy Token Paymaster", function () {
 
       await expect(entryPoint.callStatic.simulateValidation(userOp))
       .to.be.revertedWithCustomError(entryPoint, "FailedOp")
-      .withArgs(0, "AA33 reverted: TokenPaymaster: invalid signature length in paymasterAndData");
+      .withArgs(0, "AA33 reverted: BTPM: invalid signature length in paymasterAndData");
     });
 
     it("should revert on invalid signature", async ()  => {

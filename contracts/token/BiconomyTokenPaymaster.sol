@@ -342,7 +342,7 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
 
         // verificationGasLimit is dual-purposed, as gas limit for postOp. make sure it is high enough
         // make sure that verificationGasLimit is high enough to handle postOp
-        require(userOp.verificationGasLimit > UNACCOUNTED_COST, "TokenPaymaster: gas too low for postOp");
+        require(userOp.verificationGasLimit > UNACCOUNTED_COST, "BTPM: gas too low for postOp");
 
         // todo: in this method try to resolve stack too deep (though via-ir is good enough)
         (
@@ -356,7 +356,7 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
         ) = parsePaymasterAndData(userOp.paymasterAndData);
 
         // we only "require" it here so that the revert reason on invalid signature will be of "VerifyingPaymaster", and not "ECDSA"
-        require(signature.length == 65, "TokenPaymaster: invalid signature length in paymasterAndData");
+        require(signature.length == 65, "BTPM: invalid signature length in paymasterAndData");
 
         bytes32 _hash = getHash(userOp, priceSource, validUntil, validAfter, feeToken, exchangeRate, fee).toEthSignedMessageHash();
 
@@ -378,16 +378,15 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
         // This model assumes irrespective of priceSource exchangeRate is always sent from outside
         // for below checks you would either need maxCost or some exchangeRate
 
-        // can add some checks here on calculated value, fee cap, exchange rate deviation/cap etc
+        // review: can add some checks here on calculated value, fee cap, exchange rate deviation/cap etc
         uint256 tokenRequiredPreFund = ((requiredPreFund + costOfPost) * exchangeRate) / 10 ** 18;
 
         require(
             IERC20(feeToken).balanceOf(account) >= (tokenRequiredPreFund + fee),
-            "Token Paymaster: account does not have enough token balance"
+            "BTPM: account does not have enough token balance"
         );
 
-        context = abi.encode(account, feeToken, priceSource, exchangeRate, fee, userOp.maxFeePerGas,
-                userOp.maxPriorityFeePerGas, userOpHash);
+        context = abi.encode(account, feeToken, priceSource, exchangeRate, fee, userOpHash);
        
         return (context, Helpers._packValidationData(false, validUntil, validAfter));
     }
@@ -404,8 +403,8 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
         uint256 actualGasCost
     ) internal virtual override {
 
-        (address account, IERC20 feeToken, ExchangeRateSource priceSource, uint256 exchangeRate, uint256 fee, uint256 maxFeePerGas, uint256 maxPriorityFeePerGas, bytes32 userOpHash) = abi
-            .decode(context, (address, IERC20, ExchangeRateSource, uint256, uint256, uint256, uint256, bytes32));
+        (address account, IERC20 feeToken, ExchangeRateSource priceSource, uint256 exchangeRate, uint256 fee, bytes32 userOpHash) = abi
+            .decode(context, (address, IERC20, ExchangeRateSource, uint256, uint256, bytes32));
 
         uint256 effectiveExchangeRate = exchangeRate;
 
@@ -414,16 +413,8 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
             if(result > 0) effectiveExchangeRate = result;
         } 
 
-        uint256 gasPriceUserOp = maxFeePerGas;
-
-        // review Could do below if we're okay to touch BASEFEE in postOp call
-        unchecked {
-            if (maxFeePerGas != maxPriorityFeePerGas) {
-                gasPriceUserOp = Math.min(maxFeePerGas, maxPriorityFeePerGas + block.basefee);
-            }
-        }
-
-        uint256 actualTokenCost = ((actualGasCost + (UNACCOUNTED_COST * gasPriceUserOp)) * effectiveExchangeRate) / 1e18;
+        // We could either touch the state for BASEFEE and calculate based on maxPriorityFee passed (to be added in context along with maxFeePerGas) or just use tx.gasprice
+        uint256 actualTokenCost = ((actualGasCost + (UNACCOUNTED_COST * tx.gasprice)) * effectiveExchangeRate) / 1e18;
         if (mode != PostOpMode.postOpReverted) {
             SafeTransferLib.safeTransferFrom(address(feeToken), account, feeReceiver, actualTokenCost + fee);
             emit TokenPaymasterOperation(account, address(feeToken), actualTokenCost + fee, fee, userOpHash, effectiveExchangeRate, priceSource);
