@@ -12,8 +12,8 @@ import {
   BiconomyAccountFactory__factory,
   BiconomyTokenPaymaster,
   BiconomyTokenPaymaster__factory,
-  OracleAggregator,
-  OracleAggregator__factory,
+  ChainlinkOracleAggregator,
+  ChainlinkOracleAggregator__factory,
   MockPriceFeed,
   MockPriceFeed__factory,
   MockToken,
@@ -92,7 +92,7 @@ describe("Biconomy Token Paymaster", function () {
 
   let sampleTokenPaymaster: BiconomyTokenPaymaster;
   let mockPriceFeed: MockPriceFeed;
-  let oracleAggregator: OracleAggregator;
+  let oracleAggregator: ChainlinkOracleAggregator;
 
   let smartWalletImp: BiconomyAccountImplementation;
   let walletFactory: BiconomyAccountFactory;
@@ -111,7 +111,7 @@ describe("Biconomy Token Paymaster", function () {
     // const offchainSignerAddress = await deployer.getAddress();
     const walletOwnerAddress = await walletOwner.getAddress();
 
-    oracleAggregator = await new OracleAggregator__factory(deployer).deploy(walletOwnerAddress);
+    oracleAggregator = await new ChainlinkOracleAggregator__factory(deployer).deploy(walletOwnerAddress);
 
     const MockToken = await ethers.getContractFactory("MockToken");
     token = await MockToken.deploy();
@@ -149,8 +149,7 @@ describe("Biconomy Token Paymaster", function () {
     ).deploy(
       walletOwnerAddress,
       entryPoint.address,
-      await offchainSigner.getAddress(),
-      oracleAggregator.address
+      await offchainSigner.getAddress()
     );
 
     smartWalletImp = await new BiconomyAccountImplementation__factory(deployer).deploy(

@@ -380,7 +380,7 @@ describe("Biconomy Token Paymaster", function () {
           paymasterAndData: ethers.utils.hexConcat([
             paymasterAddress,
             ethers.utils.hexlify(1).slice(0, 4),
-            encodePaymasterData(token.address, MOCK_FX),
+            encodePaymasterData(token.address, oracleAggregator.address, MOCK_FX),
             '0x1234',
           ]),
         },
@@ -413,7 +413,7 @@ describe("Biconomy Token Paymaster", function () {
           paymasterAndData: ethers.utils.hexConcat([
             paymasterAddress,
             ethers.utils.hexlify(1).slice(0, 4),
-            encodePaymasterData(token.address, MOCK_FX),
+            encodePaymasterData(token.address, oracleAggregator.address, MOCK_FX),
             "0x" + "00".repeat(65),
           ]),
         },
@@ -448,7 +448,7 @@ describe("Biconomy Token Paymaster", function () {
           paymasterAndData: ethers.utils.hexConcat([
             paymasterAddress,
             ethers.utils.hexlify(1).slice(0, 4),
-            encodePaymasterData(token.address, MOCK_FX),
+            encodePaymasterData(token.address, oracleAggregator.address, MOCK_FX),
             sig,
           ]),
         },
@@ -503,6 +503,7 @@ describe("Biconomy Token Paymaster", function () {
         MOCK_VALID_UNTIL,
         MOCK_VALID_AFTER,
         token.address,
+        oracleAggregator.address,
         MOCK_FX,
         MOCK_FEE
       );
@@ -513,7 +514,7 @@ describe("Biconomy Token Paymaster", function () {
           paymasterAndData: ethers.utils.hexConcat([
             paymasterAddress,
             ethers.utils.hexlify(1).slice(0, 4),
-            encodePaymasterData(token.address, MOCK_FX),
+            encodePaymasterData(token.address, oracleAggregator.address, MOCK_FX),
             sig,
           ]),
         },

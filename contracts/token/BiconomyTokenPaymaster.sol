@@ -209,7 +209,7 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
         require(_dexRouter != address(0), "Router can not be zero address");
         // make approval to router 
         if(_approveRouter) {
-        IERC20(_token).safeApprove(_dexRouter, _amount);
+        SafeTransferLib.safeApprove(_token, _dexRouter, _amount);
         }
 
         // make the swap
@@ -416,7 +416,7 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
             "BTPM: account does not have enough token balance"
         );
 
-        context = abi.encode(account, feeToken, priceSource, exchangeRate, fee, userOpHash);
+        context = abi.encode(account, feeToken, oracleAggregator, priceSource, exchangeRate, fee, userOpHash);
        
         return (context, Helpers._packValidationData(false, validUntil, validAfter));
     }
@@ -433,12 +433,12 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
         uint256 actualGasCost
     ) internal virtual override {
 
-        (address account, IERC20 feeToken, ExchangeRateSource priceSource, uint256 exchangeRate, uint256 fee, bytes32 userOpHash) = abi
-            .decode(context, (address, IERC20, ExchangeRateSource, uint256, uint256, bytes32));
+        (address account, IERC20 feeToken, address oracleAggregator, ExchangeRateSource priceSource, uint256 exchangeRate, uint256 fee, bytes32 userOpHash) = abi
+            .decode(context, (address, IERC20, address, ExchangeRateSource, uint256, uint256, bytes32));
 
         uint256 effectiveExchangeRate = exchangeRate;
 
-        if (priceSource == ExchangeRateSource.ORACLE_BASED && oracleAggregator != address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)) {
+        if (priceSource == ExchangeRateSource.ORACLE_BASED && oracleAggregator != address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE) && oracleAggregator != address(0)) {
             uint256 result = exchangePrice(address(feeToken), oracleAggregator);
             if(result > 0) effectiveExchangeRate = result;
         } 
@@ -457,6 +457,6 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
     }
 
     function _withdrawERC20(IERC20 token, address target, uint256 amount) private {
-        token.safeTransfer(target, amount);
+        SafeTransferLib.safeTransfer(address(token), target, amount);
     }
 }
