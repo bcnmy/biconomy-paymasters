@@ -391,7 +391,7 @@ describe("Biconomy Token Paymaster", function () {
 
       await expect(entryPoint.callStatic.simulateValidation(userOp))
       .to.be.revertedWithCustomError(entryPoint, "FailedOp")
-      .withArgs(0, "AA33 reverted (or OOG)"); // TODO review : it should be AA33 reverted: <error from Token PM> but goes into OOG
+      .withArgs(0, "AA33 reverted: TokenPaymaster: invalid signature length in paymasterAndData");
     });
 
     it("should revert on invalid signature", async ()  => {
@@ -522,20 +522,13 @@ describe("Biconomy Token Paymaster", function () {
         "nonce"
       );
 
-      const initBalance = await token.balanceOf(paymasterAddress);
+    const initBalance = await token.balanceOf(paymasterAddress);
 
-      const tx = await entryPoint.handleOps(
+      await expect(entryPoint.handleOps(
         [userOp],
         await offchainSigner.getAddress()
-      );
-      const receipt = await tx.wait();
-      console.log(
-        "fees paid in native ",
-        receipt.effectiveGasPrice.mul(receipt.gasUsed).toString()
-      );
+      )).to.emit(sampleTokenPaymaster, "TokenPaymentDue")
 
-      console.log("gas used ");
-      console.log(receipt.gasUsed.toNumber());
 
     const postBalance = await token.balanceOf(paymasterAddress);
 
@@ -626,10 +619,10 @@ describe("Biconomy Token Paymaster", function () {
       const collectedTokens = await token.balanceOf(paymasterAddress);
       console.log("collected tokens ", collectedTokens)
 
-      await expect(sampleTokenPaymaster.connect(ethersSigner[9]).withdrawERC20To(token.address, withdrawAddress, collectedTokens))
+      await expect(sampleTokenPaymaster.connect(ethersSigner[9]).withdrawERC20(token.address, withdrawAddress, collectedTokens))
       .to.be.revertedWith("Ownable: caller is not the owner");
 
-      await sampleTokenPaymaster.connect(ethersSigner[6]).withdrawERC20To(token.address, withdrawAddress, collectedTokens);
+      await sampleTokenPaymaster.connect(ethersSigner[6]).withdrawERC20(token.address, withdrawAddress, collectedTokens);
 
       const tokenBalanceAfter = await token.balanceOf(withdrawAddress);
       console.log("token balance after ", tokenBalanceAfter.toString());

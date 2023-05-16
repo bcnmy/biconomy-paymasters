@@ -14,7 +14,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@account-abstraction/contracts/core/Helpers.sol" as Helpers;
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
-import "../utils/Exec.sol";
+import "../utils/SafeTransferLib.sol";
 import {TokenPaymasterErrors} from "../common/Errors.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 
@@ -35,8 +35,6 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
     using ECDSA for bytes32;
     using Address for address;
     using UserOperationLib for UserOperation;
-    // review
-    using SafeERC20 for IERC20;
 
     enum ExchangeRateSource {
         EXTERNAL_EXCHANGE_RATE,
@@ -61,7 +59,7 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
     // Owned contract that manages chainlink price feeds (token / eth formaat) and helper to give exchange rate (inverse price)
     // marked for removal
     IOracleAggregator public oracleAggregator;
-
+    
     /**
      * Designed to enable the community to track change in storage variable UNACCOUNTED_COST which is used
      * to maintain gas execution cost which can't be calculated within contract*/
@@ -104,6 +102,11 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
      * Designed to enable tracking how much fees were charged from the sender and in which ERC20 token
      * More information can be emitted like exchangeRate used, what was the source of exchangeRate etc*/
     event TokenPaymasterOperation(address indexed sender, address indexed token, uint256 indexed totalCharge, uint256 premium, bytes32 userOpHash, uint256 exchangeRate, ExchangeRateSource priceSource);
+
+    /**
+     * Notify in case paymaster failed to withdraw tokens from sender
+     */
+    event TokenPaymentDue(address indexed token, address indexed account, uint256 indexed charge);
 
     constructor(
         address _owner,
@@ -234,8 +237,21 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
      * @param target address to send to
      * @param amount amount to withdraw
      */
-    function withdrawERC20To(IERC20 token, address target, uint256 amount) public onlyOwner nonReentrant {
-        token.safeTransfer(target, amount);
+    function withdrawERC20(IERC20 token, address target, uint256 amount) public onlyOwner nonReentrant {
+        _withdrawERC20(token, target, amount);
+    }
+
+    /**
+     * @dev pull multiple tokens out of paymaster in case they were sent to the paymaster at any point.
+     * @param token the tokens deposit to withdraw
+     * @param target address to send to
+     * @param amount amounts to withdraw
+     */
+    function withdrawMultipleERC20(IERC20[] calldata token, address target, uint256[] calldata amount) public onlyOwner nonReentrant {
+        require(token.length == amount.length, "length mismatch");
+        for (uint256 i = 0; i < token.length; i++) {
+            _withdrawERC20(token[i], target, amount[i]);
+        }
     }
 
 
@@ -339,9 +355,8 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
             bytes calldata signature
         ) = parsePaymasterAndData(userOp.paymasterAndData);
 
-        // review
         // we only "require" it here so that the revert reason on invalid signature will be of "VerifyingPaymaster", and not "ECDSA"
-        if (signature.length != 65) revert InvalidPaymasterSignatureLength(signature.length);
+        require(signature.length == 65, "TokenPaymaster: invalid signature length in paymasterAndData");
 
         bytes32 _hash = getHash(userOp, priceSource, validUntil, validAfter, feeToken, exchangeRate, fee).toEthSignedMessageHash();
 
@@ -410,25 +425,17 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
 
         uint256 actualTokenCost = ((actualGasCost + (UNACCOUNTED_COST * gasPriceUserOp)) * effectiveExchangeRate) / 1e18;
         if (mode != PostOpMode.postOpReverted) {
-            // review if below fails should notify in event / revert at the risk of reputation
-
-           bytes memory _data = abi.encodeWithSelector(feeToken.transferFrom.selector, account, feeReceiver, actualTokenCost + fee);
-           bytes memory returndata = address(feeToken).functionCall(_data, "SafeERC20: low-level call failed");
-           if (returndata.length > 0) {
-            // Return data is optional
-            require(abi.decode(returndata, (bool)), "SafeERC20: ERC20 operation did not succeed");
-            // instead of require could emit an event TokenPaymentDue()
-            // sender could be banned indefinitely or for certain period
-           }
+            SafeTransferLib.safeTransferFrom(address(feeToken), account, feeReceiver, actualTokenCost + fee);
             emit TokenPaymasterOperation(account, address(feeToken), actualTokenCost + fee, fee, userOpHash, effectiveExchangeRate, priceSource);
         } 
-        // there could be else bit acting as deposit paymaster
         else {
             //in case above transferFrom failed, pay with deposit / notify at least
             //sender could be banned indefinitely or for certain period
+            emit TokenPaymentDue(address(feeToken), account, actualTokenCost + fee);
         }
     }
 
-    //todo
-    // Move any private methods here
+    function _withdrawERC20(IERC20 token, address target, uint256 amount) private {
+         SafeTransferLib.safeTransfer(address(token), target, amount);
+    }
 }
