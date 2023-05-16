@@ -14,13 +14,9 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@account-abstraction/contracts/core/Helpers.sol" as Helpers;
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
-import "../utils/Exec.sol";
+import "../utils/SafeTransferLib.sol";
 import {TokenPaymasterErrors} from "../common/Errors.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
-
-// todo add more revert codes in errors. structure Errors.sol
-// todo formal verification
-// todo add and review natspecs
 
 // Biconomy Token Paymaster
 /**
@@ -39,7 +35,6 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
     using ECDSA for bytes32;
     using Address for address;
     using UserOperationLib for UserOperation;
-    using SafeERC20 for IERC20;
 
     /**
      * price source can be off-chain calculation or oracles
@@ -100,6 +95,11 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
      * More information can be emitted like exchangeRate used, what was the source of exchangeRate etc*/
     event TokenPaymasterOperation(address indexed sender, address indexed token, uint256 indexed totalCharge, uint256 premium, bytes32 userOpHash, uint256 exchangeRate, ExchangeRateSource priceSource);
 
+    /**
+     * Notify in case paymaster failed to withdraw tokens from sender
+     */
+    event TokenPaymentDue(address indexed token, address indexed account, uint256 indexed charge);
+
     constructor(
         address _owner,
         IEntryPoint _entryPoint,
@@ -114,6 +114,7 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
         }
     }
 
+    // review: could be reanmed to VerifyingSigner
     /**
      * @dev Set a new verifying signer address.
      * Can only be called by the owner of the contract.
@@ -131,6 +132,7 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
         emit VerifyingSignerChanged(oldSigner, _newVerifyingSigner, msg.sender);
     }
 
+    // marked for removal
     /**
      * @dev Set a new fee receiver.
      * Can only be called by the owner of the contract.
@@ -179,7 +181,7 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
     function withdrawTo(
         address payable withdrawAddress,
         uint256 amount
-    ) public override nonReentrant {
+    ) public override onlyOwner nonReentrant {
         if (withdrawAddress == address(0)) revert CanNotWithdrawToZeroAddress();
         entryPoint.withdrawTo(withdrawAddress, amount);
     }
@@ -246,24 +248,37 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
      * @param target address to send to
      * @param amount amount to withdraw
      */
-    function withdrawERC20To(IERC20 token, address target, uint256 amount) public nonReentrant {
-        require(owner() == msg.sender, "only owner can withdraw tokens"); // add revert code
+    function withdrawERC20(IERC20 token, address target, uint256 amount) public onlyOwner nonReentrant {
         _withdrawERC20(token, target, amount);
     }
 
-    function _withdrawERC20(IERC20 token, address target, uint256 amount) private {
-        token.safeTransfer(target, amount);
-    }
-
-    // withdraw token from this contract
-    function withdrawMultipleERC20(IERC20[] calldata token, address to, uint256[] calldata amount) public nonReentrant {
-        require(owner() == msg.sender, "only owner can withdraw tokens"); // add revert code
+    /**
+     * @dev pull multiple tokens out of paymaster in case they were sent to the paymaster at any point.
+     * @param token the tokens deposit to withdraw
+     * @param target address to send to
+     * @param amount amounts to withdraw
+     */
+    function withdrawMultipleERC20(IERC20[] calldata token, address target, uint256[] calldata amount) public onlyOwner nonReentrant {
         require(token.length == amount.length, "length mismatch");
         for (uint256 i = 0; i < token.length; i++) {
-            _withdrawERC20(token[i], to, amount[i]);
+            _withdrawERC20(token[i], target, amount[i]);
         }
     }
 
+    /**
+     * @dev pull native tokens out of paymaster in case they were sent to the paymaster at any point or excess funds left after swapping tokens and not deposited fully to entry point.
+     * @param dest address to send to
+     */
+    function withdrawAllETH(address dest) public onlyOwner nonReentrant {
+    uint256 _balance = address(this).balance;
+    require(_balance > 0, "BTPM: Contract has no balance to withdraw");
+    require(dest != address(0), "BTPM: Transfer to zero address");
+    bool success;
+    assembly ("memory-safe") {
+        success := call(gas(), dest, _balance, 0, 0, 0, 0)
+    }
+    require(success, "BTPM: ETH withdraw failed");
+    }
 
 
      /**
@@ -309,127 +324,8 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
             );
     }
 
-    /**
-     * @dev Verify that an external signer signed the paymaster data of a user operation.
-     * The paymaster data is expected to be the paymaster address, request data and a signature over the entire request parameters.
-     * paymasterAndData: hexConcat([paymasterAddress, priceSource, abi.encode(validUntil, validAfter, feeToken, oracleAggregator, exchangeRate, fee), signature])
-     * @param userOp The UserOperation struct that represents the current user operation.
-     * userOpHash The hash of the UserOperation struct.
-     * @param requiredPreFund The required amount of pre-funding for the paymaster.
-     * @return context A context string returned by the entry point after successful validation.
-     * @return validationData An integer returned by the entry point after successful validation.
-     */
-    // review try to avoid stack too deep. currently need to use viaIR
-    function _validatePaymasterUserOp(
-        UserOperation calldata userOp,
-        bytes32 userOpHash,
-        uint256 requiredPreFund
-    ) internal view override returns (bytes memory context, uint256 validationData) {
-
-        // verificationGasLimit is dual-purposed, as gas limit for postOp. make sure it is high enough
-        // make sure that verificationGasLimit is high enough to handle postOp
-        require(userOp.verificationGasLimit > UNACCOUNTED_COST, "TokenPaymaster: gas too low for postOp");
-
-        // todo: in this method try to resolve stack too deep (though via-ir is good enough)
-        (
-            ExchangeRateSource priceSource,
-            uint48 validUntil,
-            uint48 validAfter,
-            address feeToken,
-            address oracleAggregator,
-            uint256 exchangeRate,
-            uint256 fee,
-            bytes calldata signature
-        ) = parsePaymasterAndData(userOp.paymasterAndData);
-
-        // review
-        // we only "require" it here so that the revert reason on invalid signature will be of "VerifyingPaymaster", and not "ECDSA"
-        if (signature.length != 65) revert InvalidPaymasterSignatureLength(signature.length);
-
-        bytes32 _hash = getHash(userOp, priceSource, validUntil, validAfter, feeToken, oracleAggregator, exchangeRate, fee).toEthSignedMessageHash();
-
-        context = "";
-        
-        //don't revert on signature failure: return SIG_VALIDATION_FAILED
-        if (
-            verifyingSigner !=
-            _hash.recover(signature)
-        ) {
-            // empty context and sigFailed true
-            return (context, Helpers._packValidationData(true, validUntil, validAfter));
-        }
-
-        address account = userOp.getSender();
-
-        uint256 costOfPost = userOp.maxFeePerGas * UNACCOUNTED_COST; // unaccountedEPGasOverhead
-
-        // This model assumes irrespective of priceSource exchangeRate is always sent from outside
-        // for below checks you would either need maxCost or some exchangeRate
-
-        // can add some checks here on calculated value, fee cap, exchange rate deviation/cap etc
-        uint256 tokenRequiredPreFund = ((requiredPreFund + costOfPost) * exchangeRate) / 10 ** 18;
-
-        require(
-            IERC20(feeToken).balanceOf(account) >= (tokenRequiredPreFund + fee),
-            "Token Paymaster: account does not have enough token balance"
-        );
-
-        context = abi.encode(account, feeToken, oracleAggregator, priceSource, exchangeRate, fee, userOp.maxFeePerGas,
-                userOp.maxPriorityFeePerGas, userOpHash);
-       
-        return (context, Helpers._packValidationData(false, validUntil, validAfter));
-    }
-
-    /**
-     * @dev Executes the paymaster's payment conditions
-     * @param mode tells whether the op succeeded, reverted, or if the op succeeded but cause the postOp to revert
-     * @param context payment conditions signed by the paymaster in `validatePaymasterUserOp`
-     * @param actualGasCost amount to be paid to the entry point in wei
-     */
-    function _postOp(
-        PostOpMode mode,
-        bytes calldata context,
-        uint256 actualGasCost
-    ) internal virtual override {
-
-        (address account, IERC20 feeToken, address oracleAggregator, ExchangeRateSource priceSource, uint256 exchangeRate, uint256 fee, uint256 maxFeePerGas, uint256 maxPriorityFeePerGas, bytes32 userOpHash) = abi
-            .decode(context, (address, IERC20, address, ExchangeRateSource, uint256, uint256, uint256, uint256, bytes32));
-
-        uint256 effectiveExchangeRate = exchangeRate;
-
-        if (priceSource == ExchangeRateSource.ORACLE_BASED && oracleAggregator != address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)) {
-            uint256 result = exchangePrice(address(feeToken), oracleAggregator);
-            if(result > 0) effectiveExchangeRate = result;
-        } 
-
-        uint256 gasPriceUserOp = maxFeePerGas;
-
-        // review Could do below if we're okay to touch BASEFEE in postOp call
-        unchecked {
-            if (maxFeePerGas != maxPriorityFeePerGas) {
-                gasPriceUserOp = Math.min(maxFeePerGas, maxPriorityFeePerGas + block.basefee);
-            }
-        }
-
-        uint256 actualTokenCost = ((actualGasCost + (UNACCOUNTED_COST * gasPriceUserOp)) * effectiveExchangeRate) / 1e18;
-        if (mode != PostOpMode.postOpReverted) {
-            // review if below fails should notify in event / revert at the risk of reputation
-
-           bytes memory _data = abi.encodeWithSelector(feeToken.transferFrom.selector, account, feeReceiver, actualTokenCost + fee);
-           bytes memory returndata = address(feeToken).functionCall(_data, "SafeERC20: low-level call failed");
-           if (returndata.length > 0) {
-            // Return data is optional
-            require(abi.decode(returndata, (bool)), "SafeERC20: ERC20 operation did not succeed");
-            // instead of require could emit an event TokenPaymentDue()
-            // sender could be banned indefinitely or for certain period
-           }
-            emit TokenPaymasterOperation(account, address(feeToken), actualTokenCost + fee, fee, userOpHash, effectiveExchangeRate, priceSource);
-        } 
-        // there could be else bit acting as deposit paymaster
-        else {
-            //in case above transferFrom failed, pay with deposit / notify at least
-            //sender could be banned indefinitely or for certain period
-        }
+    function unaccountedCost() public view returns(uint256) {
+        return UNACCOUNTED_COST;
     }
 
     function parsePaymasterAndData(
@@ -454,5 +350,113 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
             (uint48, uint48, address, address, uint256, uint256)
         );
         signature = paymasterAndData[SIGNATURE_OFFSET:];
+    }
+
+    /**
+     * @dev Verify that an external signer signed the paymaster data of a user operation.
+     * The paymaster data is expected to be the paymaster address, request data and a signature over the entire request parameters.
+     * paymasterAndData: hexConcat([paymasterAddress, priceSource, abi.encode(validUntil, validAfter, feeToken, oracleAggregator, exchangeRate, fee), signature])
+     * @param userOp The UserOperation struct that represents the current user operation.
+     * userOpHash The hash of the UserOperation struct.
+     * @param requiredPreFund The required amount of pre-funding for the paymaster.
+     * @return context A context string returned by the entry point after successful validation.
+     * @return validationData An integer returned by the entry point after successful validation.
+     */
+    // review try to avoid stack too deep. currently need to use viaIR
+    function _validatePaymasterUserOp(
+        UserOperation calldata userOp,
+        bytes32 userOpHash,
+        uint256 requiredPreFund
+    ) internal view override returns (bytes memory context, uint256 validationData) {
+
+        // verificationGasLimit is dual-purposed, as gas limit for postOp. make sure it is high enough
+        // make sure that verificationGasLimit is high enough to handle postOp
+        require(userOp.verificationGasLimit > UNACCOUNTED_COST, "BTPM: gas too low for postOp");
+
+        // todo: in this method try to resolve stack too deep (though via-ir is good enough)
+        (
+            ExchangeRateSource priceSource,
+            uint48 validUntil,
+            uint48 validAfter,
+            address feeToken,
+            address oracleAggregator,
+            uint256 exchangeRate,
+            uint256 fee,
+            bytes calldata signature
+        ) = parsePaymasterAndData(userOp.paymasterAndData);
+
+        // we only "require" it here so that the revert reason on invalid signature will be of "VerifyingPaymaster", and not "ECDSA"
+        require(signature.length == 65, "BTPM: invalid signature length in paymasterAndData");
+
+        bytes32 _hash = getHash(userOp, priceSource, validUntil, validAfter, feeToken, oracleAggregator, exchangeRate, fee).toEthSignedMessageHash();
+
+        context = "";
+        
+        //don't revert on signature failure: return SIG_VALIDATION_FAILED
+        if (
+            verifyingSigner !=
+            _hash.recover(signature)
+        ) {
+            // empty context and sigFailed true
+            return (context, Helpers._packValidationData(true, validUntil, validAfter));
+        }
+
+        address account = userOp.getSender();
+
+        uint256 costOfPost = userOp.maxFeePerGas * UNACCOUNTED_COST; // unaccountedEPGasOverhead
+
+        // This model assumes irrespective of priceSource exchangeRate is always sent from outside
+        // for below checks you would either need maxCost or some exchangeRate
+
+        // review: can add some checks here on calculated value, fee cap, exchange rate deviation/cap etc
+        uint256 tokenRequiredPreFund = ((requiredPreFund + costOfPost) * exchangeRate) / 10 ** 18;
+
+        require(
+            IERC20(feeToken).balanceOf(account) >= (tokenRequiredPreFund + fee),
+            "BTPM: account does not have enough token balance"
+        );
+
+        context = abi.encode(account, feeToken, priceSource, exchangeRate, fee, userOpHash);
+       
+        return (context, Helpers._packValidationData(false, validUntil, validAfter));
+    }
+
+    /**
+     * @dev Executes the paymaster's payment conditions
+     * @param mode tells whether the op succeeded, reverted, or if the op succeeded but cause the postOp to revert
+     * @param context payment conditions signed by the paymaster in `validatePaymasterUserOp`
+     * @param actualGasCost amount to be paid to the entry point in wei
+     */
+    function _postOp(
+        PostOpMode mode,
+        bytes calldata context,
+        uint256 actualGasCost
+    ) internal virtual override {
+
+        (address account, IERC20 feeToken, ExchangeRateSource priceSource, uint256 exchangeRate, uint256 fee, bytes32 userOpHash) = abi
+            .decode(context, (address, IERC20, ExchangeRateSource, uint256, uint256, bytes32));
+
+        uint256 effectiveExchangeRate = exchangeRate;
+
+        if (priceSource == ExchangeRateSource.ORACLE_BASED && oracleAggregator != address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)) {
+            uint256 result = exchangePrice(address(feeToken), oracleAggregator);
+            if(result > 0) effectiveExchangeRate = result;
+        } 
+
+        // We could either touch the state for BASEFEE and calculate based on maxPriorityFee passed (to be added in context along with maxFeePerGas) or just use tx.gasprice
+        uint256 actualTokenCost = ((actualGasCost + (UNACCOUNTED_COST * tx.gasprice)) * effectiveExchangeRate) / 1e18;
+        if (mode != PostOpMode.postOpReverted) {
+            SafeTransferLib.safeTransferFrom(address(feeToken), account, feeReceiver, actualTokenCost + fee);
+            emit TokenPaymasterOperation(account, address(feeToken), actualTokenCost + fee, fee, userOpHash, effectiveExchangeRate, priceSource);
+        } 
+        else {
+            //in case above transferFrom failed, pay with deposit / notify at least
+            //sender could be banned indefinitely or for certain period
+            emit TokenPaymentDue(address(feeToken), account, actualTokenCost + fee);
+        }
+    }
+
+    function _withdrawERC20(IERC20 token, address target, uint256 amount) private {
+        token.safeTransfer(target, amount);
     }
 }
