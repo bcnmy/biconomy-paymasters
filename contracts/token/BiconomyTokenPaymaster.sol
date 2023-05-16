@@ -254,6 +254,21 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
         }
     }
 
+    /**
+     * @dev pull native tokens out of paymaster in case they were sent to the paymaster at any point or excess funds left after swapping tokens and not deposited fully to entry point.
+     * @param dest address to send to
+     */
+    function withdrawAllETH(address dest) public onlyOwner nonReentrant {
+       uint256 _balance = address(this).balance;
+       require(_balance > 0, "BTPM: Contract has no balance to withdraw");
+       require(dest != address(0), "BTPM: Transfer to zero address");
+       bool success;
+       assembly ("memory-safe") {
+            success := call(gas(), dest, _balance, 0, 0, 0, 0)
+        }
+       require(success, "BTPM: ETH withdraw failed");
+    }
+
 
      /**
      * @dev This method is called by the off-chain service, to sign the request.
