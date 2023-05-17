@@ -5,15 +5,15 @@ import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
 //@review againsnt chainlink reference PriceConverter https://docs.chain.link/docs/get-the-latest-price/ 
 //@review decimals for individual feeds
-contract USDCPriceFeedPolygon {
+contract USDCPriceFeedBNBMainnet {
 
     AggregatorV3Interface internal priceFeed1;
     AggregatorV3Interface internal priceFeed2;
 
 
     constructor() {
-        priceFeed1 = AggregatorV3Interface(0xAB594600376Ec9fD91F8e885dADF0CE036862dE0);     // matic usd 
-        priceFeed2 = AggregatorV3Interface(0xfE4A8cc5b5B2366C1B58Bea3858e81843581b2F7);     // usdc usd
+        priceFeed1 = AggregatorV3Interface(0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE);     // BNB usd 
+        priceFeed2 = AggregatorV3Interface(0x51597f405303C4377E36123cBc172b13269EA163);     // usdc usd
     }
 
     function decimals() public view returns (uint8) { 
@@ -21,7 +21,7 @@ contract USDCPriceFeedPolygon {
     }
 
     function description() public view returns(string memory) {
-      return "USDC / MATIC";
+      return "USDC / BNB";
     }
 
     function getThePrice() public view returns (int) {   
@@ -65,8 +65,8 @@ contract USDCPriceFeedPolygon {
      
     
     // Always using decimals 18 for derived price feeds
-    int usdc_Matic = price2*(10**18)/price1;
-    return usdc_Matic;
+    int usdc_BNB = price2*(10**18)/price1;
+    return usdc_BNB;
     }
      
 }

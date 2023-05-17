@@ -12,7 +12,6 @@ contract USDCPriceFeedMumbai {
 
 
     constructor() {
-        // todo // do not hard code // polygon values
         priceFeed1 = AggregatorV3Interface(0xd0D5e3DB44DE05E9F294BB0a3bEEaF030DE24Ada);     // matic usd 
         priceFeed2 = AggregatorV3Interface(0x572dDec9087154dC5dfBB1546Bb62713147e0Ab0);     // usdc usd
     }
@@ -27,36 +26,47 @@ contract USDCPriceFeedMumbai {
 
     function getThePrice() public view returns (int) {   
 
-      // Review: If either of the base or quote price feeds have mismatch in decimal then it could be a problem  
+      // Review: If either of the base or quote price feeds have mismatch in decimals then it could be a problem  
          
       /**
-       * Returns the latest price of MATIC-USD
+       * Returns the latest price of price feed 1
       */
     
       (             
        uint80 roundID1,              
-       int price1,            
-       uint startedAt1,             
-       uint timeStamp1,
+       int256 price1,            
+       ,             
+       uint256 updatedAt1,
        uint80 answeredInRound1        
        ) = priceFeed1.latestRoundData();  
+
+      require(price1 > 0, "Chainlink price <= 0");
+      // 2 days old price is considered stale since the price is updated every 24 hours
+      require(updatedAt1 >= block.timestamp - 60 * 60 * 24 * 2, "Incomplete round");
+      require(answeredInRound1 >= roundID1, "Stale price");
+      // price11 = uint192(int192(price1));
      
      /**
-      * Returns the latest price of USDC-USD
+      * Returns the latest price of price feed 2
      */
     
       (             
        uint80 roundID2,              
-       int price2,            
-       uint startedAt2,             
-       uint timeStamp2,
+       int256 price2,            
+       ,             
+       uint256 updatedAt2,
        uint80 answeredInRound2        
        ) = priceFeed2.latestRoundData();  
+
+      require(price2 > 0, "Chainlink price <= 0");
+      // 2 days old price is considered stale since the price is updated every 24 hours
+      require(updatedAt2 >= block.timestamp - 60 * 60 * 24 * 2, "Incomplete round");
+      require(answeredInRound2 >= roundID2, "Stale price");
      
     
     // Always using decimals 18 for derived price feeds
-    int usdcMatic = price2*(10**18)/price1;
-    return usdcMatic;
+    int usdc_Matic = price2*(10**18)/price1;
+    return usdc_Matic;
     }
      
 }

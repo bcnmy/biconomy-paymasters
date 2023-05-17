@@ -32,6 +32,8 @@ import "@openzeppelin/contracts/utils/Address.sol";
  */
 contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymasterErrors {
 
+    // todo ERC2771Context can be added here
+
     using ECDSA for bytes32;
     using Address for address;
     using UserOperationLib for UserOperation;
@@ -99,6 +101,11 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
      * Notify in case paymaster failed to withdraw tokens from sender
      */
     event TokenPaymentDue(address indexed token, address indexed account, uint256 indexed charge);
+
+    /**
+     * Record the information of swap made on dex router and native tokens deposited
+     */
+    event TokenSwappedAndGasDeposited(address indexed dexRouterAddress, address indexed token, bytes indexed routerCalldata, bool success, uint256 gasAmountDeposited);
 
     constructor(
         address _owner,
@@ -188,11 +195,13 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
 
     /**
      * @dev Returns the exchange price of the token in wei.
+     * @param _token ERC20 token address
+     * @param _oracleAggregator oracle aggregator address 
      */
     function exchangePrice(
         address _token,
         address _oracleAggregator
-    ) public view virtual returns (uint256 exchangeRate) {
+    ) internal view virtual returns (uint256 exchangeRate) {
         // get price from chosen oracle aggregator.
         bytes memory _data = abi.encodeWithSelector(IOracleAggregator.getTokenValueOfOneEth.selector, _token);
         (bool success, bytes memory returndata) = address(_oracleAggregator).staticcall(_data);
@@ -203,8 +212,19 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
     }
 
     
-    // todo: review , test, add natspecs, handle errors, QA styling, change return params, emit events
-    function swapTokenForETHAndDeposit(address _dexRouter, bytes memory _swapdata, bool _approveRouter, address _token, uint256 _amount, uint256 _maxDepositToEP) public nonReentrant onlyOwner returns(uint256) {
+    // review could pack attributes in single / 2 structs. A label field string memory label can be added
+    /**
+     * @dev Helper function to trigger periodic swap to convert tokens received inside this paymaster back to native tokens and immediately deposit on entry point. 
+     * @notice actual swap data is generated offchain basen on i. router ii. token to swap iii. amount of tokens iv. route v. slippage etc
+     * @notice Biconomy may not use feeReceiver to be paymaster contract itself. In this case tokens do not need to be pulled or swapped from the contract
+     * @param _dexRouter dex router/adapter address
+     * @param _swapData calldata for making the swap on chosen router. as function signature also depends on the choice
+     * @param _approveRouter caller sends if the router being used is to be approved or not
+     * @param _token ERC20 token address being swapped. useless is above bool flag is false
+     * @param _amount ERC20 token amount to be approved. useless is above bool flag is false
+     * @param _maxDepositToEP sender can pass maximum amount of gas to be deposited to entry point 
+     */
+    function swapTokenForETHAndDeposit(address _dexRouter, bytes calldata _swapData, bool _approveRouter, address _token, uint256 _amount, uint256 _maxDepositToEP) public nonReentrant onlyOwner returns(bool success, uint256 depositAmount) {
         // only proceed if adapter is not 0 address
         require(_dexRouter != address(0), "Router can not be zero address");
         // make approval to router 
@@ -213,7 +233,8 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
         }
 
         // make the swap
-         (bool success, bytes memory returndata) = address(_dexRouter).call(_swapdata);
+        // review could take snapshot of token balance and eth balance before and after the swap
+         (bool success, bytes memory returndata) = address(_dexRouter).call(_swapData);
 
         uint256 depositAmount = address(this).balance; 
 
@@ -221,10 +242,12 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
             depositAmount = _maxDepositToEP;
         }
 
+        if(depositAmount > 0) {
         // entrypoint.depositTo
         IEntryPoint(entryPoint).depositTo{value: depositAmount}(address(this));
+        }
 
-        return depositAmount;
+        emit TokenSwappedAndGasDeposited(_dexRouter, _token, _swapData, success, depositAmount);
     }
 
     // method to pull any excess eth in the paymaster contract 
