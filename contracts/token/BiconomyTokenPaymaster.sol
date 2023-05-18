@@ -95,7 +95,7 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
     /**
      * Designed to enable tracking how much fees were charged from the sender and in which ERC20 token
      * More information can be emitted like exchangeRate used, what was the source of exchangeRate etc*/
-    event TokenPaymasterOperation(address indexed sender, address indexed token, uint256 indexed totalCharge, uint256 premium, bytes32 userOpHash, uint256 exchangeRate, ExchangeRateSource priceSource);
+    event TokenPaymasterOperation(address indexed sender, address indexed token, uint256 indexed totalCharge, address oracleAggregator, uint256 premium, bytes32 userOpHash, uint256 exchangeRate, ExchangeRateSource priceSource);
 
     /**
      * Notify in case paymaster failed to withdraw tokens from sender
@@ -471,7 +471,7 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
         uint256 actualTokenCost = ((actualGasCost + (UNACCOUNTED_COST * tx.gasprice)) * effectiveExchangeRate) / 1e18;
         if (mode != PostOpMode.postOpReverted) {
             SafeTransferLib.safeTransferFrom(address(feeToken), account, feeReceiver, actualTokenCost + fee);
-            emit TokenPaymasterOperation(account, address(feeToken), actualTokenCost + fee, fee, userOpHash, effectiveExchangeRate, priceSource);
+            emit TokenPaymasterOperation(account, address(feeToken), actualTokenCost + fee, oracleAggregator, fee, userOpHash, effectiveExchangeRate, priceSource);
         } 
         else {
             //in case above transferFrom failed, pay with deposit / notify at least
