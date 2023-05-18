@@ -434,6 +434,7 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
         // review: can add some checks here on calculated value, fee cap, exchange rate deviation/cap etc
         uint256 tokenRequiredPreFund = ((requiredPreFund + costOfPost) * exchangeRate) / 10 ** 18;
 
+        // review: could be lifted if we're considering simulations if payment tokens are being sourced as part of userop.calldata
         require(
             IERC20(feeToken).balanceOf(account) >= (tokenRequiredPreFund + fee),
             "BTPM: account does not have enough token balance"
