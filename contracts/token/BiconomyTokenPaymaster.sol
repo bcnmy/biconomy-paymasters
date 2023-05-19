@@ -228,8 +228,7 @@ contract BiconomyTokenPaymaster is BasePaymaster, ReentrancyGuard, TokenPaymaste
         require(_dexRouter != address(0), "Router can not be zero address");
         // make approval to router 
         if(_approveRouter) {
-
-                                        SafeTransferLib.safeApprove(_token, _dexRouter, _amount);
+          SafeTransferLib.safeApprove(_token, _dexRouter, _amount);
         }
 
         // make the swap
