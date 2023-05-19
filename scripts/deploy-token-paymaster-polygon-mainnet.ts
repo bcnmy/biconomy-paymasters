@@ -25,7 +25,7 @@ async function main() {
   const usdcAddress = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174";
   const usdcPriceFeedAddress = "0xbe4cd782679AD4876456b82934De7Fc1dADd251C";
 
-  const OracleAggregator = await ethers.getContractFactory("OracleAggregator");
+  const OracleAggregator = await ethers.getContractFactory("ChainlinkOracleAggregator");
   const oracleAggregator = await OracleAggregator.deploy(earlyOwner);
 
   await delay(5000)
@@ -40,8 +40,7 @@ async function main() {
   const tokenPaymaster = await BiconomyTokenPaymaster.deploy(
     earlyOwner,
     entryPoint,
-    verifyingSigner,
-    oracleAggregator.address
+    verifyingSigner
   );
 
   await delay(5000)
