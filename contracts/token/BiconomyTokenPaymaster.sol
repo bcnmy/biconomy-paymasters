@@ -241,6 +241,7 @@ contract BiconomyTokenPaymaster is
         }
     }
 
+    // review can be marked for removal
     /**
      * @dev approve ERC20 tokens from this paymaster contract to the dex router. required to generate data for cases like 1Inch
      * @param _token the token address
