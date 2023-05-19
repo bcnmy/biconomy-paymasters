@@ -4,7 +4,7 @@
   "description": "ERC4337 Paymasters contracts repo and playground",
   "main": "index.js",
   "scripts": {
-    "test": "npx hardhat test",
+    "test": "npx hardhat test", 
     "clean": "npx hardhat clean",
     "build": "npm run clean && npx hardhat compile && npx hardhat typechain",
     "build:foundry": "forge build --via-ir",
@@ -12,7 +12,8 @@
     "lint": "prettier --write 'contracts/**/*.sol'",
     "postinstall": "husky install",
     "prepack": "pinst --disable",
-    "postpack": "pinst --enable"
+    "postpack": "pinst --enable",
+    "prepare": "husky install"
   },
   "repository": {
     "type": "git",
