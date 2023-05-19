@@ -19,7 +19,6 @@ import {
   MockToken,
 } from "../../typechain-types";
 
-const ZERO_ADDRESS_ROUTER = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'
 
 
 import { fillAndSign } from "../../account-abstraction/test/UserOp";

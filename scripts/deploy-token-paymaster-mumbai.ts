@@ -5,7 +5,6 @@ async function main() {
   const provider = ethers.provider;
 
   const accounts = await ethers.getSigners();
-  const ZERO_ADDRESS_ROUTER = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'
 
   const earlyOwner = await accounts[0].getAddress();
   const owner = "0x7306aC7A32eb690232De81a9FFB44Bb346026faB";

@@ -64,6 +64,9 @@ contract BiconomyTokenPaymaster is
 
     uint256 private constant SIGNATURE_OFFSET = 213;
 
+    address private constant NATIVE_ADDRESS =
+        0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+
     /**
      * Designed to enable the community to track change in storage variable UNACCOUNTED_COST which is used
      * to maintain gas execution cost which can't be calculated within contract*/
@@ -299,19 +302,6 @@ contract BiconomyTokenPaymaster is
             success,
             depositAmount
         );
-    }
-
-    // method to pull any excess eth in the paymaster contract
-    function withdrawAllETHTo(address dest) public nonReentrant onlyOwner {
-        uint256 _balance = address(this).balance;
-        // perform some checks
-        require(_balance > 0, "Contract has no balance to withdraw");
-        require(dest != address(0), "transfer to zero address");
-        bool success;
-        assembly ("memory-safe") {
-            success := call(gas(), dest, _balance, 0, 0, 0, 0)
-        }
-        require(success, "ETH withdraw failed");
     }
 
     /**
@@ -579,8 +569,7 @@ contract BiconomyTokenPaymaster is
 
         if (
             priceSource == ExchangeRateSource.ORACLE_BASED &&
-            oracleAggregator !=
-            address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE) &&
+            oracleAggregator != address(NATIVE_ADDRESS) &&
             oracleAggregator != address(0)
         ) {
             uint256 result = exchangePrice(address(feeToken), oracleAggregator);
