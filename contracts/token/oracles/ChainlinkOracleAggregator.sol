@@ -5,6 +5,9 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./IOracleAggregator.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
+/**
+ * @title Primary Oracle Aggregator contract used to maintain price feeds for chainlink supported tokens.
+ */
 contract ChainlinkOracleAggregator is Ownable, IOracleAggregator {
     struct TokenInfo {
         /* Number of decimals represents the precision of the price returned by the feed. For example, 

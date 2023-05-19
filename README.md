@@ -21,6 +21,20 @@ Custom versions of above Verifying (allow Dapp deposit sponsorship in different 
 
 #### You're going to need to place a private key in a .env file in the root. ####
 
+#### In order to add/udpate git submodule account-abstraction: ####
+.gitmodules file is already added
+git submodule update --init (This command will initialize and fetch the submodules listed in the .gitmodules file.)
+git submodule update --remote (This will update the submodules to the latest commit in their respective repositories.)
+If you encounter any issues during the submodule update process, you can try deleting the submodules directory and then running the git submodule update --init command again.
+
+#### If you face below error, make sure typechain artifacts are generated in account-abstraction folder. ####
+Error: Cannot find module '../typechain'
+
+cd account-abstraction
+yarn
+npx hardhat compile
+
+
 This project demonstrates an advanced Hardhat use case, integrating other tools commonly used alongside Hardhat in the ecosystem. Foundry support is also added.
 
 Try running some of the following tasks:
