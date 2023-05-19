@@ -241,6 +241,20 @@ contract BiconomyTokenPaymaster is
         }
     }
 
+    /**
+     * @dev approve ERC20 tokens from this paymaster contract to the dex router. required to generate data for cases like 1Inch
+     * @param _token the token address
+     * @param _dexRouter dex router address to approve
+     * @param _amount amount to approve
+     */
+    function approveRouterPrior(
+        address _token,
+        address _dexRouter,
+        uint256 _amount
+    ) public payable onlyOwner {
+        SafeTransferLib.safeApprove(_token, _dexRouter, _amount);
+    }
+
     // review could pack attributes in single / 2 structs. A label field string memory label can be added
     // review if an adapter has to be called instead of router directly then this would add steps to transfer tokens to adapter and make approval of adapter to router
     /**
@@ -264,8 +278,8 @@ contract BiconomyTokenPaymaster is
     )
         public
         payable
-        nonReentrant
         onlyOwner
+        nonReentrant
         returns (bool success, uint256 depositAmount)
     {
         // only proceed if adapter is not 0 address
