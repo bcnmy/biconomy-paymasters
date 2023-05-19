@@ -4,7 +4,15 @@
   "description": "ERC4337 Paymasters contracts repo and playground",
   "main": "index.js",
   "scripts": {
-    "test": "npx hardhat test"
+    "test": "npx hardhat test",
+    "clean": "npx hardhat clean",
+    "build": "npm run clean && npx hardhat compile && npx hardhat typechain",
+    "build:foundry": "forge build --via-ir",
+    "test:foundry": "forge test --via-ir",
+    "lint": "prettier --write 'contracts/**/*.sol'",
+    "postinstall": "husky install",
+    "prepack": "pinst --disable",
+    "postpack": "pinst --enable"
   },
   "repository": {
     "type": "git",
@@ -36,6 +44,8 @@
     "chai": "^4.3.7",
     "hardhat": "^2.14.0",
     "hardhat-gas-reporter": "^1.0.9",
+    "husky": "^8.0.3",
+    "prettier-plugin-solidity": "^1.1.2",
     "solidity-coverage": "^0.8.2",
     "ts-node": "^10.9.1",
     "typechain": "^8.1.1",
@@ -47,10 +57,14 @@
     "@chainlink/contracts": "^0.6.0",
     "@ethersproject/abstract-signer": "^5.6.2",
     "@ethersproject/constants": "^5.6.1",
+    "@mean-finance/uniswap-v3-oracle": "^1.0.3",
     "@openzeppelin/contracts": "4.8.1",
     "@openzeppelin/contracts-upgradeable": "4.8.1",
     "@pimlico/erc20-paymaster": "^0.0.1",
     "@types/mocha": "^9.0.0",
+    "@uniswap/sdk-core": "^3.2.2",
+    "@uniswap/universal-router": "^1.4.1",
+    "@uniswap/v3-periphery": "^1.4.3",
     "chai-as-promised": "^7.1.1",
     "chai-string": "^1.5.0",
     "dotenv": "^16.0.3",
@@ -68,5 +82,10 @@
     "solidity-bytes-utils": "^0.8.0",
     "source-map-support": "^0.5.19",
     "typescript": "^4.3.5"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": ""
+    }
   }
 }

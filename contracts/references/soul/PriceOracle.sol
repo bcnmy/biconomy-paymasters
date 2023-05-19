@@ -10,7 +10,7 @@ contract PriceOracle is IPriceOracle {
      */
     AggregatorV3Interface public immutable priceFeed;
 
-    mapping (address => bool) private supportedToken;
+    mapping(address => bool) private supportedToken;
 
     constructor(AggregatorV3Interface _priceFeed) {
         priceFeed = _priceFeed;
@@ -22,11 +22,11 @@ contract PriceOracle is IPriceOracle {
     ) external view override returns (uint256 price, uint8 decimals) {
         (token);
         (
-            /* uint80 roundID */,
-            int256 _price,
-            /*uint startedAt*/,
-            /*uint timeStamp*/,
-            /*uint80 answeredInRound*/
+            ,
+            /* uint80 roundID */ int256 _price /*uint startedAt*/ /*uint timeStamp*/ /*uint80 answeredInRound*/,
+            ,
+            ,
+
         ) = priceFeed.latestRoundData();
         //  price -> uint256
         require(_price >= 0, "price is negative");

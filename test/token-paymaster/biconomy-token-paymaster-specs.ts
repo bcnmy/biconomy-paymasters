@@ -12,12 +12,13 @@ import {
   BiconomyAccountFactory__factory,
   BiconomyTokenPaymaster,
   BiconomyTokenPaymaster__factory,
-  OracleAggregator,
-  OracleAggregator__factory,
+  ChainlinkOracleAggregator,
+  ChainlinkOracleAggregator__factory,
   MockPriceFeed,
   MockPriceFeed__factory,
   MockToken,
 } from "../../typechain-types";
+
 
 
 import { fillAndSign } from "../../account-abstraction/test/UserOp";
@@ -28,6 +29,7 @@ import { EntryPoint, EntryPoint__factory, SimpleAccount, TestToken, TestToken__f
 export const AddressZero = ethers.constants.AddressZero;
 import { arrayify, hexConcat, parseEther } from "ethers/lib/utils";
 import { BigNumber, BigNumberish, Contract, Signer } from "ethers";
+import { SignerWithAddress } from "hardhat-deploy-ethers/signers";
 
 const MOCK_VALID_UNTIL = "0x00000000deadbeef";
 const MOCK_VALID_AFTER = "0x0000000000001234";
@@ -48,12 +50,13 @@ export async function deployEntryPoint(
 
 export const encodePaymasterData = (
   feeToken = ethers.constants.AddressZero,
+  oracleAggregator = ethers.constants.AddressZero,
   exchangeRate: BigNumberish = ethers.constants.Zero,
   fee: BigNumberish = ethers.constants.Zero
 ) => {
   return ethers.utils.defaultAbiCoder.encode(
-    ["uint48", "uint48", "address", "uint256", "uint256"],
-    [MOCK_VALID_UNTIL, MOCK_VALID_AFTER, feeToken, exchangeRate, fee]
+    ["uint48", "uint48", "address", "address", "uint256", "uint256"],
+    [MOCK_VALID_UNTIL, MOCK_VALID_AFTER, feeToken, oracleAggregator, exchangeRate, fee]
   );
 };
 
@@ -86,13 +89,13 @@ describe("Biconomy Token Paymaster", function () {
   let token: MockToken;
   let proxyPaymaster: Contract;
   let walletAddress: string, paymasterAddress: string;
-  let ethersSigner;
+  let ethersSigner: any;
 
   let offchainSigner: Signer, deployer: Signer;
 
   let sampleTokenPaymaster: BiconomyTokenPaymaster;
   let mockPriceFeed: MockPriceFeed;
-  let oracleAggregator: OracleAggregator;
+  let oracleAggregator: ChainlinkOracleAggregator;
 
   let smartWalletImp: BiconomyAccountImplementation;
   let walletFactory: BiconomyAccountFactory;
@@ -111,7 +114,7 @@ describe("Biconomy Token Paymaster", function () {
     // const offchainSignerAddress = await deployer.getAddress();
     const walletOwnerAddress = await walletOwner.getAddress();
 
-    oracleAggregator = await new OracleAggregator__factory(deployer).deploy(walletOwnerAddress);
+    oracleAggregator = await new ChainlinkOracleAggregator__factory(deployer).deploy(walletOwnerAddress);
 
     const MockToken = await ethers.getContractFactory("MockToken");
     token = await MockToken.deploy();
@@ -138,7 +141,7 @@ describe("Biconomy Token Paymaster", function () {
       true
     );
 
-    const priceResult = await oracleAggregator.getTokenValueOfOneEth(
+    const priceResult = await oracleAggregator.getTokenValueOfOneNativeToken(
       token.address
     );
     console.log("priceResult");
@@ -149,8 +152,7 @@ describe("Biconomy Token Paymaster", function () {
     ).deploy(
       walletOwnerAddress,
       entryPoint.address,
-      await offchainSigner.getAddress(),
-      oracleAggregator.address
+      await offchainSigner.getAddress()
     );
 
     smartWalletImp = await new BiconomyAccountImplementation__factory(deployer).deploy(
@@ -177,10 +179,10 @@ describe("Biconomy Token Paymaster", function () {
     paymasterAddress = sampleTokenPaymaster.address;
     console.log("Paymaster address is ", paymasterAddress);
 
-    /* await sampleTokenPaymaster
+    await sampleTokenPaymaster
       .connect(deployer)
-      .addStake(0, { value: parseEther("2") });
-    console.log("paymaster staked"); */
+      .addStake(1, { value: parseEther("2") });
+    console.log("paymaster staked");
 
     await entryPoint.depositTo(paymasterAddress, { value: parseEther("2") });
 
@@ -193,7 +195,7 @@ describe("Biconomy Token Paymaster", function () {
       const paymasterAndData = ethers.utils.hexConcat([
         paymasterAddress,
         ethers.utils.hexlify(1).slice(0, 4),
-        encodePaymasterData(token.address, MOCK_FX),
+        encodePaymasterData(token.address, oracleAggregator.address, MOCK_FX),
         "0x" + "00".repeat(65),
       ]);
 
@@ -206,6 +208,7 @@ describe("Biconomy Token Paymaster", function () {
       expect(res.validUntil).to.equal(ethers.BigNumber.from(MOCK_VALID_UNTIL));
       expect(res.validAfter).to.equal(ethers.BigNumber.from(MOCK_VALID_AFTER));
       expect(res.feeToken).to.equal(token.address);
+      expect(res.oracleAggregator).to.equal(oracleAggregator.address);
       expect(res.exchangeRate).to.equal(MOCK_FX);
       expect(res.signature).to.equal("0x" + "00".repeat(65));
     });
@@ -217,20 +220,16 @@ describe("Biconomy Token Paymaster", function () {
 
       const feeReceiver = await sampleTokenPaymaster.feeReceiver();
 
-      const oa = await sampleTokenPaymaster.oracleAggregator();
-
       console.log(
         "current values from contracts",
         owner,
         verifyingSigner,
-        feeReceiver,
-        oa
+        feeReceiver
       );
 
       expect(owner).to.be.equal(await walletOwner.getAddress());
       expect(verifyingSigner).to.be.equal(await offchainSigner.getAddress());
       expect(feeReceiver).to.be.equal(paymasterAddress);
-      expect(oa).to.be.equal(oracleAggregator.address);
     });
   });
 
@@ -278,6 +277,7 @@ describe("Biconomy Token Paymaster", function () {
         MOCK_VALID_UNTIL,
         MOCK_VALID_AFTER,
         token.address,
+        oracleAggregator.address,
         MOCK_FX,
         MOCK_FEE
       );
@@ -288,7 +288,7 @@ describe("Biconomy Token Paymaster", function () {
           paymasterAndData: ethers.utils.hexConcat([
             paymasterAddress,
             ethers.utils.hexlify(1).slice(0, 4),
-            encodePaymasterData(token.address, MOCK_FX),
+            encodePaymasterData(token.address, oracleAggregator.address, MOCK_FX),
             sig,
           ]),
         },
@@ -359,11 +359,282 @@ describe("Biconomy Token Paymaster", function () {
     });
   });
 
-  describe("Negative scenarios", () => {
-    it("Reverts for invalid and wrong signatures", async () => {});
+  describe("Negative scenarios: invalid and wrong signatures", () => {
+    it("should revert on invalid signature length", async ()  => {
+
+      const userSCW: any = BiconomyAccountImplementation__factory.connect(walletAddress, deployer)
+    
+      const userOp = await fillAndSign(
+        {
+          sender: walletAddress,
+          verificationGasLimit: 200000,
+          // initCode: hexConcat([walletFactory.address, deploymentData]),
+          // nonce: 0,
+          callData: encodeERC20Approval(
+            userSCW,
+            token,
+            paymasterAddress,
+            ethers.constants.MaxUint256
+          ),
+          paymasterAndData: ethers.utils.hexConcat([
+            paymasterAddress,
+            ethers.utils.hexlify(1).slice(0, 4),
+            encodePaymasterData(token.address, oracleAggregator.address, MOCK_FX),
+            '0x1234',
+          ]),
+        },
+        walletOwner,
+        entryPoint,
+        "nonce"
+      );
+
+      await expect(entryPoint.callStatic.simulateValidation(userOp))
+      .to.be.revertedWithCustomError(entryPoint, "FailedOp")
+      .withArgs(0, "AA33 reverted: BTPM: invalid signature length in paymasterAndData");
+    });
+
+    it("should revert on invalid signature", async ()  => {
+
+      const userSCW: any = BiconomyAccountImplementation__factory.connect(walletAddress, deployer)
+    
+      const userOp = await fillAndSign(
+        {
+          sender: walletAddress,
+          verificationGasLimit: 200000,
+          // initCode: hexConcat([walletFactory.address, deploymentData]),
+          // nonce: 0,
+          callData: encodeERC20Approval(
+            userSCW,
+            token,
+            paymasterAddress,
+            ethers.constants.MaxUint256
+          ),
+          paymasterAndData: ethers.utils.hexConcat([
+            paymasterAddress,
+            ethers.utils.hexlify(1).slice(0, 4),
+            encodePaymasterData(token.address, oracleAggregator.address, MOCK_FX),
+            "0x" + "00".repeat(65),
+          ]),
+        },
+        walletOwner,
+        entryPoint,
+        "nonce"
+      );
+
+      await expect(entryPoint.callStatic.simulateValidation(userOp))
+      .to.be.revertedWithCustomError(entryPoint, "FailedOp")
+      .withArgs(0, "AA33 reverted: ECDSA: invalid signature"); 
+    });
+
+    it("should revert with wrong signature", async ()  => {
+
+      const userSCW: any = BiconomyAccountImplementation__factory.connect(walletAddress, deployer)
+
+      const sig = await offchainSigner.signMessage(ethers.utils.arrayify("0xdead"));
+    
+      const wrongUserOp = await fillAndSign(
+        {
+          sender: walletAddress,
+          verificationGasLimit: 200000,
+          // initCode: hexConcat([walletFactory.address, deploymentData]),
+          // nonce: 0,
+          callData: encodeERC20Approval(
+            userSCW,
+            token,
+            paymasterAddress,
+            ethers.constants.MaxUint256
+          ),
+          paymasterAndData: ethers.utils.hexConcat([
+            paymasterAddress,
+            ethers.utils.hexlify(1).slice(0, 4),
+            encodePaymasterData(token.address, oracleAggregator.address, MOCK_FX),
+            sig,
+          ]),
+        },
+        walletOwner,
+        entryPoint,
+        "nonce"
+      );
+
+      const ret = await entryPoint.callStatic.simulateValidation(wrongUserOp).catch(simulationResultCatch);
+      expect(ret.returnInfo.sigFailed).to.be.true;
+
+      await expect(entryPoint.estimateGas.handleOps([wrongUserOp], await offchainSigner.getAddress()))
+        .to.to.be.revertedWithCustomError(entryPoint, "FailedOp")
+        .withArgs(0, "AA34 signature error");
+    });
   });
 
+  describe("Negative scenarios: approvals and transfers gone wrong", () => {
+    it("should revert if ERC20 token withdrawal fails", async ()  => {
+
+      const userSCW: any = BiconomyAccountImplementation__factory.connect(walletAddress, deployer)
+
+      await token
+        .connect(deployer)
+        .transfer(walletAddress, ethers.utils.parseEther("100"));
+
+      // We make transferFrom impossible by setting allowance to zero
+      const userOp1 = await fillAndSign(
+        {
+          sender: walletAddress,
+          verificationGasLimit: 200000,
+          // initCode: hexConcat([walletFactory.address, deploymentData]),
+          // nonce: 0,
+          callData: encodeERC20Approval(
+            userSCW,
+            token,
+            paymasterAddress,
+            ethers.constants.Zero 
+          ),
+        },
+        walletOwner,
+        entryPoint,
+        "nonce"
+      );
+
+      console.log("userOp");
+      console.log(userOp1);
+
+      const hash = await sampleTokenPaymaster.getHash(
+        userOp1,
+        ethers.utils.hexlify(1).slice(2, 4),
+        MOCK_VALID_UNTIL,
+        MOCK_VALID_AFTER,
+        token.address,
+        oracleAggregator.address,
+        MOCK_FX,
+        MOCK_FEE
+      );
+      const sig = await offchainSigner.signMessage(arrayify(hash));
+      const userOp = await fillAndSign(
+        {
+          ...userOp1,
+          paymasterAndData: ethers.utils.hexConcat([
+            paymasterAddress,
+            ethers.utils.hexlify(1).slice(0, 4),
+            encodePaymasterData(token.address, oracleAggregator.address, MOCK_FX),
+            sig,
+          ]),
+        },
+        walletOwner,
+        entryPoint,
+        "nonce"
+      );
+
+    const initBalance = await token.balanceOf(paymasterAddress);
+
+      await expect(entryPoint.handleOps(
+        [userOp],
+        await offchainSigner.getAddress()
+      )).to.emit(sampleTokenPaymaster, "TokenPaymentDue")
+
+
+    const postBalance = await token.balanceOf(paymasterAddress);
+
+    const ev = await getUserOpEvent(entryPoint);
+    // Review this because despite explicit revert bundler still pays gas
+    expect(ev.args.success).to.be.false;
+    expect(postBalance.sub(initBalance)).to.equal(ethers.constants.Zero);
+
+      await expect(
+        entryPoint.handleOps([userOp], await offchainSigner.getAddress())
+      ).to.be.reverted;
+    });
+
+    
+    });
+
   describe("Token paymaster Access control", () => {
-    it("Should not allow anyone else to add new tokens support", async () => {});
+    it("Owner can modify the states", async () => {
+      const newSigner = await ethersSigner[5].getAddress();
+      const newOwner = await ethersSigner[6].getAddress();
+      const newFeeReceiver = await ethersSigner[7].getAddress();
+      const newOverhead = 30000;
+
+      let verifyingSigner = await sampleTokenPaymaster.verifyingSigner();
+
+      let feeReceiver = await sampleTokenPaymaster.feeReceiver();
+
+      let unaccountedCost = await sampleTokenPaymaster.unaccountedCost();
+
+      let owner = await sampleTokenPaymaster.owner();
+
+      console.log(
+        "current values from contracts",
+        verifyingSigner,
+        feeReceiver,
+        unaccountedCost,
+        owner,
+      );
+
+      await sampleTokenPaymaster.connect(ethersSigner[0]).setFeeReceiver(newFeeReceiver);
+      await sampleTokenPaymaster.connect(ethersSigner[0]).setVerifyingSigner(newSigner);
+      await sampleTokenPaymaster.connect(ethersSigner[0]).setUnaccountedEPGasOverhead(newOverhead);
+      await sampleTokenPaymaster.connect(ethersSigner[0]).transferOwnership(newOwner);
+
+      verifyingSigner = await sampleTokenPaymaster.verifyingSigner();
+
+      feeReceiver = await sampleTokenPaymaster.feeReceiver();
+
+      unaccountedCost = await sampleTokenPaymaster.unaccountedCost();
+
+      owner = await sampleTokenPaymaster.owner(); 
+
+      expect(unaccountedCost).to.be.equal(newOverhead);
+      expect(feeReceiver).to.be.equal(newFeeReceiver);
+      expect(verifyingSigner).to.be.equal(newSigner);
+      expect(owner).to.be.equal(newOwner);
+
+      await expect(sampleTokenPaymaster.connect(ethersSigner[0]).setFeeReceiver(newFeeReceiver))
+      .to.be.revertedWith("Ownable: caller is not the owner");
+    });
+
+    it("only owner should be able to pull tokens, withdraw gas", async () => {
+
+      const withdrawAddress = await ethersSigner[7].getAddress();
+
+      const etherBalanceBefore = await ethers.provider.getBalance(withdrawAddress);
+      console.log("balance before ", etherBalanceBefore.toString());
+
+      const tokenBalanceBefore = await token.balanceOf(withdrawAddress);
+      console.log("token balance before ", tokenBalanceBefore.toString());
+
+      const currentGasDeposited = await sampleTokenPaymaster.deposit()
+      console.log("current gas in Entry Point ", currentGasDeposited.toString());
+      
+      await sampleTokenPaymaster.connect(ethersSigner[6]).withdrawTo(withdrawAddress, ethers.utils.parseEther("0.2"));
+
+      const gasasDepositedAfter = await sampleTokenPaymaster.deposit()
+      console.log("current gas in Entry Point ", gasasDepositedAfter.toString());
+
+      await expect(sampleTokenPaymaster.connect(ethersSigner[9]).withdrawTo(withdrawAddress, ethers.utils.parseEther("0.2")))
+      .to.be.revertedWith("Ownable: caller is not the owner");
+
+      const etherBalanceAfter = await ethers.provider.getBalance(withdrawAddress);
+      console.log("balance after ", etherBalanceBefore.toString());
+
+      expect(etherBalanceBefore.add(ethers.utils.parseEther("0.2"))).to.be.equal(etherBalanceAfter);
+
+      const collectedTokens = await token.balanceOf(paymasterAddress);
+      console.log("collected tokens ", collectedTokens)
+
+      await expect(sampleTokenPaymaster.connect(ethersSigner[9]).withdrawERC20(token.address, withdrawAddress, collectedTokens))
+      .to.be.revertedWith("Ownable: caller is not the owner");
+
+      await sampleTokenPaymaster.connect(ethersSigner[6]).withdrawERC20(token.address, withdrawAddress, collectedTokens);
+
+      const tokenBalanceAfter = await token.balanceOf(withdrawAddress);
+      console.log("token balance after ", tokenBalanceAfter.toString());
+
+      expect(tokenBalanceBefore.add(collectedTokens)).to.be.equal(tokenBalanceAfter); 
+
+      await sampleTokenPaymaster.connect(ethersSigner[6]).unlockStake();
+      await sampleTokenPaymaster.connect(ethersSigner[6]).withdrawStake(withdrawAddress);
+
+      // todo
+      // Add test cases for pulling ether out of paymaster contract
+      // Add test cases for batch withdraw tokens
+    });
   });
 });

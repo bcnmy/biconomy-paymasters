@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.17;
 
-import { IEntryPoint } from "@account-abstraction/contracts/interfaces/IEntryPoint.sol";
-import { UserOperation } from "@account-abstraction/contracts/interfaces/UserOperation.sol";
-import { UserOperationLib } from "@account-abstraction/contracts/interfaces/UserOperation.sol";
-import { BasePaymaster } from "@account-abstraction/contracts/core/BasePaymaster.sol";
-import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
+import {IEntryPoint} from "@account-abstraction/contracts/interfaces/IEntryPoint.sol";
+import {UserOperation} from "@account-abstraction/contracts/interfaces/UserOperation.sol";
+import {UserOperationLib} from "@account-abstraction/contracts/interfaces/UserOperation.sol";
+import {BasePaymaster} from "@account-abstraction/contracts/core/BasePaymaster.sol";
+import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import "@account-abstraction/contracts/core/Helpers.sol" as Helpers;
 
 // Stackup paymaster
@@ -33,11 +33,16 @@ contract StackupVerifyingPaymaster is BasePaymaster {
 
     uint256 public constant POST_OP_GAS = 35000;
 
-    constructor(IEntryPoint _entryPoint, address _owner) BasePaymaster(_entryPoint) {
+    constructor(
+        IEntryPoint _entryPoint,
+        address _owner
+    ) BasePaymaster(_entryPoint) {
         _transferOwnership(_owner);
     }
 
-    function pack(UserOperation calldata userOp) internal pure returns (bytes memory ret) {
+    function pack(
+        UserOperation calldata userOp
+    ) internal pure returns (bytes memory ret) {
         bytes calldata pnd = userOp.paymasterAndData;
         // solhint-disable-next-line no-inline-assembly
         assembly {
@@ -91,7 +96,9 @@ contract StackupVerifyingPaymaster is BasePaymaster {
             signature.length == 64 || signature.length == 65,
             "VerifyingPaymaster: invalid signature length in paymasterAndData"
         );
-        bytes32 hash = ECDSA.toEthSignedMessageHash(getHash(userOp, validUntil, validAfter, erc20Token, exchangeRate));
+        bytes32 hash = ECDSA.toEthSignedMessageHash(
+            getHash(userOp, validUntil, validAfter, erc20Token, exchangeRate)
+        );
         senderNonce[userOp.getSender()]++;
         context = "";
         if (erc20Token != address(0)) {
@@ -105,26 +112,45 @@ contract StackupVerifyingPaymaster is BasePaymaster {
         }
 
         if (owner() != ECDSA.recover(hash, signature)) {
-            return (context, Helpers._packValidationData(true, validUntil, validAfter));
+            return (
+                context,
+                Helpers._packValidationData(true, validUntil, validAfter)
+            );
         }
 
-        return (context, Helpers._packValidationData(false, validUntil, validAfter));
+        return (
+            context,
+            Helpers._packValidationData(false, validUntil, validAfter)
+        );
     }
 
-    function _postOp(PostOpMode mode, bytes calldata context, uint256 actualGasCost) internal override {
-        (address sender, IERC20 token, uint256 exchangeRate, uint256 maxFeePerGas, uint256 maxPriorityFeePerGas) = abi
-            .decode(context, (address, IERC20, uint256, uint256, uint256));
+    function _postOp(
+        PostOpMode mode,
+        bytes calldata context,
+        uint256 actualGasCost
+    ) internal override {
+        (
+            address sender,
+            IERC20 token,
+            uint256 exchangeRate,
+            uint256 maxFeePerGas,
+            uint256 maxPriorityFeePerGas
+        ) = abi.decode(context, (address, IERC20, uint256, uint256, uint256));
 
         uint256 opGasPrice;
         unchecked {
             if (maxFeePerGas == maxPriorityFeePerGas) {
                 opGasPrice = maxFeePerGas;
             } else {
-                opGasPrice = Math.min(maxFeePerGas, maxPriorityFeePerGas + block.basefee);
+                opGasPrice = Math.min(
+                    maxFeePerGas,
+                    maxPriorityFeePerGas + block.basefee
+                );
             }
         }
 
-        uint256 actualTokenCost = ((actualGasCost + (POST_OP_GAS * opGasPrice)) * exchangeRate) / 1e18;
+        uint256 actualTokenCost = ((actualGasCost +
+            (POST_OP_GAS * opGasPrice)) * exchangeRate) / 1e18;
         if (mode != PostOpMode.postOpReverted) {
             token.safeTransferFrom(sender, owner(), actualTokenCost);
         }

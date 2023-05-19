@@ -3,7 +3,7 @@ pragma solidity ^0.8.17;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./ITokenPaymaster.sol";
-import { IEntryPoint } from "@account-abstraction/contracts/interfaces/IEntryPoint.sol";
+import {IEntryPoint} from "@account-abstraction/contracts/interfaces/IEntryPoint.sol";
 import "./IPriceOracle.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -24,15 +24,21 @@ contract TokenPaymaster is ITokenPaymaster, Ownable {
     // Trusted token approve gas cost
     uint256 private constant SAFE_APPROVE_GAS_COST = 50000;
 
-
-    constructor(IEntryPoint _entryPoint, address _owner, address _walletFactory) {
+    constructor(
+        IEntryPoint _entryPoint,
+        address _owner,
+        address _walletFactory
+    ) {
         require(address(_entryPoint) != address(0), "invalid etnrypoint addr");
         _IEntryPoint = _entryPoint;
 
         if (_owner != address(0)) {
             _transferOwnership(_owner);
         }
-        require(address(_walletFactory) != address(0), "invalid etnrypoint addr");
+        require(
+            address(_walletFactory) != address(0),
+            "invalid etnrypoint addr"
+        );
         walletFactory = _walletFactory;
     }
 
@@ -62,7 +68,6 @@ contract TokenPaymaster is ITokenPaymaster, Ownable {
     function exchangePrice(
         address _token
     ) external view override returns (uint256 price, uint8 decimals) {
-
         /*
             Note the current alpha version of paymaster is using storage other than 
             `account storage`, bundler needs to whitelist the current paymaster.
@@ -142,7 +147,10 @@ contract TokenPaymaster is ITokenPaymaster, Ownable {
         address factory = address(bytes20(userOp.initCode));
         require(factory == walletFactory, "unknown wallet factory");
         require(
-            bytes4(userOp.callData) == bytes4(0x2763604f /* 0x2763604f execFromEntryPoint(address[],uint256[],bytes[]) */ ),
+            bytes4(userOp.callData) ==
+                bytes4(
+                    0x2763604f /* 0x2763604f execFromEntryPoint(address[],uint256[],bytes[]) */
+                ),
             "invalid callData"
         );
         (
@@ -150,7 +158,10 @@ contract TokenPaymaster is ITokenPaymaster, Ownable {
             uint256[] memory value,
             bytes[] memory func
         ) = abi.decode(userOp.callData[4:], (address[], uint256[], bytes[]));
-        require(dest.length == value.length && dest.length == func.length, "invalid callData");
+        require(
+            dest.length == value.length && dest.length == func.length,
+            "invalid callData"
+        );
 
         address _destAddress = address(0);
         for (uint256 i = 0; i < dest.length; i++) {
@@ -250,7 +261,11 @@ contract TokenPaymaster is ITokenPaymaster, Ownable {
         ) = abi.decode(context, (address, address, uint256, uint256));
         uint256 tokenRequiredFund = ((actualGasCost + costOfPost) *
             exchangeRate) / 10 ** 18;
-        IERC20(token).safeTransferFrom(sender, address(this), tokenRequiredFund);
+        IERC20(token).safeTransferFrom(
+            sender,
+            address(this),
+            tokenRequiredFund
+        );
     }
 
     /**
@@ -315,12 +330,20 @@ contract TokenPaymaster is ITokenPaymaster, Ownable {
     }
 
     // withdraw token from this contract
-    function withdrawToken(address token, address to, uint256 amount) external onlyOwner {
+    function withdrawToken(
+        address token,
+        address to,
+        uint256 amount
+    ) external onlyOwner {
         _withdrawToken(token, to, amount);
     }
 
     // withdraw token from this contract
-    function withdrawToken(address[] calldata token, address to, uint256[] calldata amount) external onlyOwner {
+    function withdrawToken(
+        address[] calldata token,
+        address to,
+        uint256[] calldata amount
+    ) external onlyOwner {
         require(token.length == amount.length, "length mismatch");
         for (uint256 i = 0; i < token.length; i++) {
             _withdrawToken(token[i], to, amount[i]);

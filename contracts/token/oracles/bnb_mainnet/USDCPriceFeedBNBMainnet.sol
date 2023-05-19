@@ -5,16 +5,16 @@ import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
 //@review againsnt chainlink reference PriceConverter https://docs.chain.link/docs/get-the-latest-price/
 //@review decimals for individual feeds
-contract USDCPriceFeedMumbai {
+contract USDCPriceFeedBNBMainnet {
     AggregatorV3Interface internal priceFeed1;
     AggregatorV3Interface internal priceFeed2;
 
     constructor() {
         priceFeed1 = AggregatorV3Interface(
-            0xd0D5e3DB44DE05E9F294BB0a3bEEaF030DE24Ada
-        ); // matic usd
+            0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE
+        ); // BNB usd
         priceFeed2 = AggregatorV3Interface(
-            0x572dDec9087154dC5dfBB1546Bb62713147e0Ab0
+            0x51597f405303C4377E36123cBc172b13269EA163
         ); // usdc usd
     }
 
@@ -23,11 +23,11 @@ contract USDCPriceFeedMumbai {
     }
 
     function description() public view returns (string memory) {
-        return "USDC / MATIC";
+        return "USDC / BNB";
     }
 
     function getThePrice() public view returns (int) {
-        // Review: If either of the base or quote price feeds have mismatch in decimals then it could be a problem
+        // Review: If either of the base or quote price feeds have mismatch in decimal then it could be a problem
 
         /**
          * Returns the latest price of price feed 1
@@ -71,7 +71,7 @@ contract USDCPriceFeedMumbai {
         require(answeredInRound2 >= roundID2, "Stale price");
 
         // Always using decimals 18 for derived price feeds
-        int usdc_Matic = (price2 * (10 ** 18)) / price1;
-        return usdc_Matic;
+        int usdc_BNB = (price2 * (10 ** 18)) / price1;
+        return usdc_BNB;
     }
 }

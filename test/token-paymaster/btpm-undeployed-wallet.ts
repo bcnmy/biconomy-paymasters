@@ -12,8 +12,8 @@ import {
   BiconomyAccountFactory__factory,
   BiconomyTokenPaymaster,
   BiconomyTokenPaymaster__factory,
-  OracleAggregator,
-  OracleAggregator__factory,
+  ChainlinkOracleAggregator,
+  ChainlinkOracleAggregator__factory,
   MockPriceFeed,
   MockPriceFeed__factory,
   MockToken,
@@ -26,6 +26,7 @@ import { createAccount, simulationResultCatch } from "../../account-abstraction/
 import { EntryPoint, EntryPoint__factory, SimpleAccount, TestToken, TestToken__factory } from "../../account-abstraction/typechain";
 
 export const AddressZero = ethers.constants.AddressZero;
+const NATIVE_ADDRESS = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'
 import { arrayify, hexConcat, parseEther } from "ethers/lib/utils";
 import { BigNumber, BigNumberish, Contract, Signer } from "ethers";
 
@@ -48,12 +49,13 @@ export async function deployEntryPoint(
 
 export const encodePaymasterData = (
   feeToken = ethers.constants.AddressZero,
+  oracleAggregator = ethers.constants.AddressZero,
   exchangeRate: BigNumberish = ethers.constants.Zero,
   fee: BigNumberish = ethers.constants.Zero
 ) => {
   return ethers.utils.defaultAbiCoder.encode(
-    ["uint48", "uint48", "address", "uint256", "uint256"],
-    [MOCK_VALID_UNTIL, MOCK_VALID_AFTER, feeToken, exchangeRate, fee]
+    ["uint48", "uint48", "address", "address", "uint256", "uint256"],
+    [MOCK_VALID_UNTIL, MOCK_VALID_AFTER, feeToken, oracleAggregator, exchangeRate, fee]
   );
 };
 
@@ -92,7 +94,7 @@ describe("Biconomy Token Paymaster", function () {
 
   let sampleTokenPaymaster: BiconomyTokenPaymaster;
   let mockPriceFeed: MockPriceFeed;
-  let oracleAggregator: OracleAggregator;
+  let oracleAggregator: ChainlinkOracleAggregator;
 
   let smartWalletImp: BiconomyAccountImplementation;
   let walletFactory: BiconomyAccountFactory;
@@ -111,7 +113,7 @@ describe("Biconomy Token Paymaster", function () {
     // const offchainSignerAddress = await deployer.getAddress();
     const walletOwnerAddress = await walletOwner.getAddress();
 
-    oracleAggregator = await new OracleAggregator__factory(deployer).deploy(walletOwnerAddress);
+    oracleAggregator = await new ChainlinkOracleAggregator__factory(deployer).deploy(walletOwnerAddress);
 
     const MockToken = await ethers.getContractFactory("MockToken");
     token = await MockToken.deploy();
@@ -138,7 +140,7 @@ describe("Biconomy Token Paymaster", function () {
       true
     );
 
-    const priceResult = await oracleAggregator.getTokenValueOfOneEth(
+    const priceResult = await oracleAggregator.getTokenValueOfOneNativeToken(
       token.address
     );
     console.log("priceResult");
@@ -149,8 +151,7 @@ describe("Biconomy Token Paymaster", function () {
     ).deploy(
       walletOwnerAddress,
       entryPoint.address,
-      await offchainSigner.getAddress(),
-      oracleAggregator.address
+      await offchainSigner.getAddress()
     );
 
     smartWalletImp = await new BiconomyAccountImplementation__factory(deployer).deploy(
@@ -193,7 +194,7 @@ describe("Biconomy Token Paymaster", function () {
       const paymasterAndData = ethers.utils.hexConcat([
         paymasterAddress,
         ethers.utils.hexlify(1).slice(0, 4),
-        encodePaymasterData(token.address, MOCK_FX),
+        encodePaymasterData(token.address, oracleAggregator.address, MOCK_FX),
         "0x" + "00".repeat(65),
       ]);
 
@@ -206,6 +207,7 @@ describe("Biconomy Token Paymaster", function () {
       expect(res.validUntil).to.equal(ethers.BigNumber.from(MOCK_VALID_UNTIL));
       expect(res.validAfter).to.equal(ethers.BigNumber.from(MOCK_VALID_AFTER));
       expect(res.feeToken).to.equal(token.address);
+      expect(res.oracleAggregator).to.equal(oracleAggregator.address);
       expect(res.exchangeRate).to.equal(MOCK_FX);
       expect(res.signature).to.equal("0x" + "00".repeat(65));
     });
@@ -217,20 +219,16 @@ describe("Biconomy Token Paymaster", function () {
 
       const feeReceiver = await sampleTokenPaymaster.feeReceiver();
 
-      const oa = await sampleTokenPaymaster.oracleAggregator();
-
       console.log(
         "current values from contracts",
         owner,
         verifyingSigner,
-        feeReceiver,
-        oa
+        feeReceiver
       );
 
       expect(owner).to.be.equal(await walletOwner.getAddress());
       expect(verifyingSigner).to.be.equal(await offchainSigner.getAddress());
       expect(feeReceiver).to.be.equal(paymasterAddress);
-      expect(oa).to.be.equal(oracleAggregator.address);
     });
   });
 
@@ -279,6 +277,7 @@ describe("Biconomy Token Paymaster", function () {
         MOCK_VALID_UNTIL,
         MOCK_VALID_AFTER,
         token.address,
+        oracleAggregator.address,
         MOCK_FX,
         MOCK_FEE
       );
@@ -289,7 +288,7 @@ describe("Biconomy Token Paymaster", function () {
           paymasterAndData: ethers.utils.hexConcat([
             paymasterAddress,
             ethers.utils.hexlify(1).slice(0, 4),
-            encodePaymasterData(token.address, MOCK_FX),
+            encodePaymasterData(token.address, oracleAggregator.address, MOCK_FX),
             sig,
           ]),
         },
