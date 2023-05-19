@@ -11,7 +11,6 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import { BasePaymaster } from "../BasePaymaster.sol";
 import { IOracleAggregator } from "./oracles/IOracleAggregator.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@account-abstraction/contracts/core/Helpers.sol" as Helpers;
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import "../utils/SafeTransferLib.sol";
