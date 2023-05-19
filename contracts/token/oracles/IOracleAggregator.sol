@@ -2,7 +2,7 @@
 pragma solidity ^0.8.17;
 
 interface IOracleAggregator {
-    function getTokenValueOfOneEth(
+    function getTokenValueOfOneNativeToken(
         address _token
     ) external view returns (uint256 exchangeRate);
 }

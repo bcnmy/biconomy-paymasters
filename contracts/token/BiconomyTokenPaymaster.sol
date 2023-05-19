@@ -233,7 +233,7 @@ contract BiconomyTokenPaymaster is
     ) internal view virtual returns (uint256 exchangeRate) {
         // get price from chosen oracle aggregator.
         bytes memory _data = abi.encodeWithSelector(
-            IOracleAggregator.getTokenValueOfOneEth.selector,
+            IOracleAggregator.getTokenValueOfOneNativeToken.selector,
             _token
         );
         (bool success, bytes memory returndata) = address(_oracleAggregator)
@@ -256,7 +256,7 @@ contract BiconomyTokenPaymaster is
      * @param _amount ERC20 token amount to be approved. useless is above bool flag is false
      * @param _maxDepositToEP sender can pass maximum amount of gas to be deposited to entry point
      */
-    function swapTokenForETHAndDeposit(
+    function swapTokenForNativeAndDeposit(
         address _dexRouter,
         bytes calldata _swapData,
         bool _approveRouter,
@@ -277,7 +277,7 @@ contract BiconomyTokenPaymaster is
         }
 
         // make the swap
-        // review could take snapshot of token balance and eth balance before and after the swap
+        // review could take snapshot of token balance and native token balance before and after the swap
         (bool success, bytes memory returndata) = address(_dexRouter).call(
             _swapData
         );
@@ -339,7 +339,7 @@ contract BiconomyTokenPaymaster is
      * @dev pull native tokens out of paymaster in case they were sent to the paymaster at any point or excess funds left after swapping tokens and not deposited fully to entry point.
      * @param dest address to send to
      */
-    function withdrawAllETH(address dest) public onlyOwner nonReentrant {
+    function withdrawAllNative(address dest) public onlyOwner nonReentrant {
         uint256 _balance = address(this).balance;
         require(_balance > 0, "BTPM: Contract has no balance to withdraw");
         require(dest != address(0), "BTPM: Transfer to zero address");
@@ -347,7 +347,7 @@ contract BiconomyTokenPaymaster is
         assembly ("memory-safe") {
             success := call(gas(), dest, _balance, 0, 0, 0, 0)
         }
-        require(success, "BTPM: ETH withdraw failed");
+        require(success, "BTPM: Native token withdraw failed");
     }
 
     /**

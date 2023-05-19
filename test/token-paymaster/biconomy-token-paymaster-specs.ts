@@ -141,7 +141,7 @@ describe("Biconomy Token Paymaster", function () {
       true
     );
 
-    const priceResult = await oracleAggregator.getTokenValueOfOneEth(
+    const priceResult = await oracleAggregator.getTokenValueOfOneNativeToken(
       token.address
     );
     console.log("priceResult");
