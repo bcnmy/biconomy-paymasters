@@ -569,7 +569,7 @@ describe("Biconomy Token Paymaster", function () {
       );
 
       await sampleTokenPaymaster.connect(ethersSigner[0]).setFeeReceiver(newFeeReceiver);
-      await sampleTokenPaymaster.connect(ethersSigner[0]).setSigner(newSigner);
+      await sampleTokenPaymaster.connect(ethersSigner[0]).setVerifyingSigner(newSigner);
       await sampleTokenPaymaster.connect(ethersSigner[0]).setUnaccountedEPGasOverhead(newOverhead);
       await sampleTokenPaymaster.connect(ethersSigner[0]).transferOwnership(newOwner);
 

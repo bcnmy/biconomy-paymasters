@@ -33,8 +33,6 @@ contract BiconomyTokenPaymaster is
     ReentrancyGuard,
     TokenPaymasterErrors
 {
-    // todo ERC2771Context can be added here
-
     using ECDSA for bytes32;
     using Address for address;
     using UserOperationLib for UserOperation;
@@ -85,8 +83,6 @@ contract BiconomyTokenPaymaster is
         address indexed _actor
     );
 
-    // review: fee receiver could also come in as part of paymasterAndData
-    // if A dapp later wants to collect token fees and manage gas upfront / provide credit card
     /**
      * Designed to enable the community to track change in storage variable feeReceiver which is an address (self or other SCW/EOA)
      * responsible for collecting all the tokens being withdrawn as fees*/
@@ -145,7 +141,6 @@ contract BiconomyTokenPaymaster is
         }
     }
 
-    // review: could be reanmed to VerifyingSigner
     /**
      * @dev Set a new verifying signer address.
      * Can only be called by the owner of the contract.
@@ -153,7 +148,9 @@ contract BiconomyTokenPaymaster is
      * @notice If _newVerifyingSigner is set to zero address, it will revert with an error.
      * After setting the new signer address, it will emit an event VerifyingSignerChanged.
      */
-    function setSigner(address _newVerifyingSigner) external payable onlyOwner {
+    function setVerifyingSigner(
+        address _newVerifyingSigner
+    ) external payable onlyOwner {
         if (_newVerifyingSigner == address(0))
             revert VerifyingSignerCannotBeZero();
         address oldSigner = verifyingSigner;
@@ -245,6 +242,7 @@ contract BiconomyTokenPaymaster is
     }
 
     // review could pack attributes in single / 2 structs. A label field string memory label can be added
+    // review if an adapter has to be called instead of router directly then this would add steps to transfer tokens to adapter and make approval of adapter to router
     /**
      * @dev Helper function to trigger periodic swap to convert tokens received inside this paymaster back to native tokens and immediately deposit on entry point.
      * @notice actual swap data is generated offchain basen on i. router ii. token to swap iii. amount of tokens iv. route v. slippage etc
@@ -265,6 +263,7 @@ contract BiconomyTokenPaymaster is
         uint256 _maxDepositToEP
     )
         public
+        payable
         nonReentrant
         onlyOwner
         returns (bool success, uint256 depositAmount)
@@ -282,13 +281,15 @@ contract BiconomyTokenPaymaster is
             _swapData
         );
 
+        // review here we are assuming that after this call Native tokens would have been received in the contract
+
         uint256 depositAmount = address(this).balance;
 
         if (depositAmount > _maxDepositToEP) {
             depositAmount = _maxDepositToEP;
         }
 
-        if (depositAmount > 0) {
+        if (depositAmount != 0) {
             // entrypoint.depositTo
             IEntryPoint(entryPoint).depositTo{value: depositAmount}(
                 address(this)
@@ -314,7 +315,20 @@ contract BiconomyTokenPaymaster is
         IERC20 token,
         address target,
         uint256 amount
-    ) public onlyOwner nonReentrant {
+    ) public payable onlyOwner nonReentrant {
+        _withdrawERC20(token, target, amount);
+    }
+
+    /**
+     * @dev pull tokens out of paymaster in case they were sent to the paymaster at any point.
+     * @param token the token deposit to withdraw
+     * @param target address to send to
+     */
+    function withdrawERC20Full(
+        IERC20 token,
+        address target
+    ) public payable onlyOwner nonReentrant {
+        uint256 amount = token.balanceOf(address(this));
         _withdrawERC20(token, target, amount);
     }
 
@@ -328,10 +342,31 @@ contract BiconomyTokenPaymaster is
         IERC20[] calldata token,
         address target,
         uint256[] calldata amount
-    ) public onlyOwner nonReentrant {
+    ) public payable onlyOwner nonReentrant {
         require(token.length == amount.length, "length mismatch");
-        for (uint256 i = 0; i < token.length; i++) {
-            _withdrawERC20(token[i], target, amount[i]);
+        unchecked {
+            for (uint256 i; i < token.length; ) {
+                _withdrawERC20(token[i], target, amount[i]);
+                ++i;
+            }
+        }
+    }
+
+    /**
+     * @dev pull multiple tokens out of paymaster in case they were sent to the paymaster at any point.
+     * @param token the tokens deposit to withdraw
+     * @param target address to send to
+     */
+    function withdrawMultipleERC20Full(
+        IERC20[] calldata token,
+        address target
+    ) public payable onlyOwner nonReentrant {
+        unchecked {
+            for (uint256 i; i < token.length; ) {
+                uint256 amount = token[i].balanceOf(address(this));
+                _withdrawERC20(token[i], target, amount);
+                ++i;
+            }
         }
     }
 
@@ -339,9 +374,11 @@ contract BiconomyTokenPaymaster is
      * @dev pull native tokens out of paymaster in case they were sent to the paymaster at any point or excess funds left after swapping tokens and not deposited fully to entry point.
      * @param dest address to send to
      */
-    function withdrawAllNative(address dest) public onlyOwner nonReentrant {
+    function withdrawAllNative(
+        address dest
+    ) public payable onlyOwner nonReentrant {
         uint256 _balance = address(this).balance;
-        require(_balance > 0, "BTPM: Contract has no balance to withdraw");
+        require(_balance != 0, "BTPM: Contract has no balance to withdraw");
         require(dest != address(0), "BTPM: Transfer to zero address");
         bool success;
         assembly ("memory-safe") {
@@ -393,6 +430,9 @@ contract BiconomyTokenPaymaster is
             );
     }
 
+    /**
+     * @dev returns unaccount cost of EP + postOp cost
+     */
     function unaccountedCost() public view returns (uint256) {
         return UNACCOUNTED_COST;
     }
@@ -442,7 +482,6 @@ contract BiconomyTokenPaymaster is
      * @return context A context string returned by the entry point after successful validation.
      * @return validationData An integer returned by the entry point after successful validation.
      */
-    // review try to avoid stack too deep. currently need to use viaIR
     function _validatePaymasterUserOp(
         UserOperation calldata userOp,
         bytes32 userOpHash,
@@ -460,7 +499,7 @@ contract BiconomyTokenPaymaster is
             "BTPM: gas too low for postOp"
         );
 
-        // todo: in this method try to resolve stack too deep (though via-ir is good enough)
+        // review: in this method try to resolve stack too deep (though via-ir is good enough)
         (
             ExchangeRateSource priceSource,
             uint48 validUntil,
@@ -507,9 +546,17 @@ contract BiconomyTokenPaymaster is
         // This model assumes irrespective of priceSource exchangeRate is always sent from outside
         // for below checks you would either need maxCost or some exchangeRate
 
-        // review: can add some checks here on calculated value, fee cap, exchange rate deviation/cap etc
+        // review: can add some checks here on calculated value, fee cap, exchange rate
         uint256 tokenRequiredPreFund = ((requiredPreFund + costOfPost) *
             exchangeRate) / 10 ** 18;
+        require(
+            tokenRequiredPreFund != 0,
+            "BTPM: calculated token charge invalid"
+        );
+        require(
+            fee <= (tokenRequiredPreFund * 20) / 100,
+            "BTPM: fee markup too high"
+        );
 
         // review: could be lifted if we're considering simulations if payment tokens are being sourced as part of userop.calldata
         require(
@@ -573,7 +620,7 @@ contract BiconomyTokenPaymaster is
             oracleAggregator != address(0)
         ) {
             uint256 result = exchangePrice(address(feeToken), oracleAggregator);
-            if (result > 0) effectiveExchangeRate = result;
+            if (result != 0) effectiveExchangeRate = result;
         }
 
         // We could either touch the state for BASEFEE and calculate based on maxPriorityFee passed (to be added in context along with maxFeePerGas) or just use tx.gasprice
