@@ -2,15 +2,18 @@
 pragma solidity 0.8.17;
 
 contract BasePaymasterErrors {
+
     /**
      * @notice Throws at onlyEntryPoint when msg.sender is not an EntryPoint set for this paymaster
      * @param caller address that tried to call protected method
      */
     error CallerIsNotAnEntryPoint(address caller);
+
 }
 
 contract VerifyingPaymasterErrors {
-    /**
+
+        /**
      * @notice Throws when the Entrypoint address provided is address(0)
      */
     error EntryPointCannotBeZero();
@@ -50,6 +53,7 @@ contract VerifyingPaymasterErrors {
 }
 
 contract TokenPaymasterErrors {
+
     /**
      * @notice Throws when the Entrypoint address provided is address(0)
      */
@@ -64,6 +68,7 @@ contract TokenPaymasterErrors {
      * @notice Throws when the verifiying signer address provided is address(0)
      */
     error VerifyingSignerCannotBeZero();
+
 
     /**
      * @notice Throws when the 0 has been provided as deposit
@@ -80,10 +85,7 @@ contract TokenPaymasterErrors {
      * @param amountRequired required balance
      * @param currentBalance available balance
      */
-    error InsufficientTokenBalance(
-        uint256 amountRequired,
-        uint256 currentBalance
-    );
+    error InsufficientTokenBalance(uint256 amountRequired, uint256 currentBalance);
 
     /**
      * @notice Throws when signature provided has invalid length

@@ -5,7 +5,9 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 // optional aid contract
 contract FeeManager is Ownable {
+
     constructor(address _owner) {
         _transferOwnership(_owner);
     }
+
 }
