@@ -23,12 +23,11 @@ contract PriceOracle is IPriceOracle {
         (token);
         (
             ,
-            /* uint80 roundID */ int256 _price,
+            /* uint80 roundID */ int256 _price /*uint startedAt*/ /*uint timeStamp*/ /*uint80 answeredInRound*/,
             ,
             ,
 
-        ) = /*uint startedAt*/ /*uint timeStamp*/ /*uint80 answeredInRound*/
-            priceFeed.latestRoundData();
+        ) = priceFeed.latestRoundData();
         //  price -> uint256
         require(_price >= 0, "price is negative");
         price = uint256(_price);
