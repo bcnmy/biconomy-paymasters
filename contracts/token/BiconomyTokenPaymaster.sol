@@ -614,4 +614,7 @@ contract BiconomyTokenPaymaster is
     ) private {
         SafeTransferLib.safeTransfer(address(token), target, amount);
     }
+
+    // if ETH sent accidently or excess eth is refunded during a trade
+    receive() external payable {}
 }

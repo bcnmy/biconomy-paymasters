@@ -6,6 +6,7 @@ import "./IOracleAggregator.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 // Uniswap based
+// quoter reference : https://soliditydeveloper.com/uniswap3
 
 contract TWAPOracleAggregator1 is Ownable, IOracleAggregator {
     // WIP
