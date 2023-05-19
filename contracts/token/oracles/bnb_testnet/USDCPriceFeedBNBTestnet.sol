@@ -4,7 +4,9 @@ pragma solidity 0.8.17;
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
 //@review againsnt chainlink reference PriceConverter https://docs.chain.link/docs/get-the-latest-price/
-//@review decimals for individual feeds
+
+error MismatchInBaseAndQuoteDecimals();
+
 contract USDCPriceFeedBNBTestnet {
     AggregatorV3Interface internal priceFeed1;
     AggregatorV3Interface internal priceFeed2;
@@ -27,7 +29,11 @@ contract USDCPriceFeedBNBTestnet {
     }
 
     function getThePrice() public view returns (int) {
-        // Review: If either of the base or quote price feeds have mismatch in decimal then it could be a problem
+        // If either of the base or quote price feeds have mismatch in decimal then it could be a problem, so throw!
+        uint8 decimals1 = priceFeed1.decimals();
+        uint8 decimals2 = priceFeed2.decimals();
+
+        if (decimals1 != decimals2) revert MismatchInBaseAndQuoteDecimals();
 
         /**
          * Returns the latest price of price feed 1

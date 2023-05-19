@@ -100,4 +100,9 @@ contract TokenPaymasterErrors {
      * @notice Throws when the fee receiver address provided is address(0)
      */
     error FeeReceiverCannotBeZero();
+
+    /**
+     * @notice Throws when the wrapped native asset address provided is address(0)
+     */
+    error WETH9CannotBeZero();
 }

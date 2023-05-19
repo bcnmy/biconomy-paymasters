@@ -12,6 +12,7 @@ import {IOracleAggregator} from "./oracles/IOracleAggregator.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@account-abstraction/contracts/core/Helpers.sol" as Helpers;
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {IWETH9} from "../interfaces/IWETH9.sol";
 import "../utils/SafeTransferLib.sol";
 import {TokenPaymasterErrors} from "../common/Errors.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
@@ -64,6 +65,9 @@ contract BiconomyTokenPaymaster is
 
     address private constant NATIVE_ADDRESS =
         0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+
+    // address of wrapped native token
+    address private immutable WETH9;
 
     /**
      * Designed to enable the community to track change in storage variable UNACCOUNTED_COST which is used
@@ -129,12 +133,15 @@ contract BiconomyTokenPaymaster is
     constructor(
         address _owner,
         IEntryPoint _entryPoint,
-        address _verifyingSigner
+        address _verifyingSigner,
+        address _weth9
     ) payable BasePaymaster(_owner, _entryPoint) {
         if (_owner == address(0)) revert OwnerCannotBeZero();
         if (address(_entryPoint) == address(0)) revert EntryPointCannotBeZero();
         if (_verifyingSigner == address(0))
             revert VerifyingSignerCannotBeZero();
+        if (_weth9 == address(0)) revert WETH9CannotBeZero();
+        WETH9 = _weth9;
         assembly ("memory-safe") {
             sstore(verifyingSigner.slot, _verifyingSigner)
             sstore(feeReceiver.slot, address()) // initialize with self (could also be _owner)
@@ -296,8 +303,23 @@ contract BiconomyTokenPaymaster is
             _swapData
         );
 
-        // review here we are assuming that after this call Native tokens would have been received in the contract
+        {
+            // if we made a swap to wrapped native asset
+            uint256 weth9Balance = IERC20(WETH9).balanceOf(address(this));
+            if (weth9Balance != 0) {
+                // unwrap
+                bytes memory _data = abi.encodeWithSelector(
+                    IWETH9.withdraw.selector,
+                    weth9Balance
+                );
 
+                (bool success, bytes memory returndata) = address(WETH9).call(
+                    _data
+                );
+            }
+        }
+
+        // here we are assuming that after above call to the router, Native tokens would have been received in the contract
         uint256 depositAmount = address(this).balance;
 
         if (depositAmount > _maxDepositToEP) {

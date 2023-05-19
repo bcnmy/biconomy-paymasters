@@ -14,6 +14,7 @@ async function main() {
     "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
   const usdcAddress = "0xdA5289fCAAF71d52a80A254da614a192b693e977";
   const usdcPriceFeedAddress = "0x0B99544394582DFb7b3334e8e8032491C36FDCa9";
+  const WETH9 = "0x9c3C9283D3e44854697Cd22D3Faa240Cfb032889";
 
   const OracleAggregator = await ethers.getContractFactory("ChainlinkOracleAggregator");
   const oracleAggregator = await OracleAggregator.deploy(earlyOwner);
@@ -30,7 +31,8 @@ async function main() {
   const tokenPaymaster = await BiconomyTokenPaymaster.deploy(
     earlyOwner,
     entryPoint,
-    verifyingSigner
+    verifyingSigner,
+    WETH9
   );
 
   console.log(`TokenPaymaster deployed at ${tokenPaymaster.address}`);

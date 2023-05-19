@@ -35,7 +35,7 @@ contract ContractTest is DSTest {
         vm.label(bob, "Bob");
 
         _ep = new EntryPoint();
-        _btpm = new BiconomyTokenPaymaster(alice, _ep, bob);
+        _btpm = new BiconomyTokenPaymaster(alice, _ep, bob, alice);
 
         assertEq(_btpm.owner(),alice);
         assertEq(_btpm.verifyingSigner(),bob);
