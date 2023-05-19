@@ -27,7 +27,7 @@ async function main() {
   const WETH9 = "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270";
 
   const OracleAggregator = await ethers.getContractFactory("ChainlinkOracleAggregator");
-  const oracleAggregator = await OracleAggregator.deploy(earlyOwner);
+  const oracleAggregator = await OracleAggregator.deploy(earlyOwner, gasPrices);
 
   await delay(5000)
 
@@ -42,7 +42,8 @@ async function main() {
     earlyOwner,
     entryPoint,
     verifyingSigner,
-    WETH9
+    WETH9,
+    gasPrices
   );
 
   await delay(5000)
@@ -62,7 +63,8 @@ async function main() {
     usdcPriceFeedAddress,
     18,
     priceFeedTxUsdc.data,
-    true
+    true,
+    gasPrices
   );
 
   await delay(5000)
@@ -72,13 +74,13 @@ async function main() {
 
   await delay(5000)
 
-  tx = await tokenPaymaster.transferOwnership(owner);
+  tx = await tokenPaymaster.transferOwnership(owner, gasPrices);
   receipt = await tx.wait();
   console.log("ownership transferred: Token paymaster");
 
   await delay(5000)
 
-  tx = await oracleAggregator.transferOwnership(owner);
+  tx = await oracleAggregator.transferOwnership(owner, gasPrices);
   receipt = await tx.wait();
   console.log("ownership transferred: OA");
 
