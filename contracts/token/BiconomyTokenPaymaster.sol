@@ -49,7 +49,7 @@ contract BiconomyTokenPaymaster is
     }
 
     // Gas used in EntryPoint._handlePostOp() method (including this#postOp() call)
-    uint256 private UNACCOUNTED_COST = 45000; // TBD
+    uint256 public UNACCOUNTED_COST = 45000; // TBD
 
     // Always rely on verifyingSigner..
     address public verifyingSigner;
@@ -201,7 +201,9 @@ contract BiconomyTokenPaymaster is
             "_newOverheadCost can not be unrealistic"
         );
         uint256 oldValue = UNACCOUNTED_COST;
-        UNACCOUNTED_COST = _newOverheadCost;
+        assembly ("memory-safe") {
+            sstore(UNACCOUNTED_COST.slot, _newOverheadCost)
+        }
         emit EPGasOverheadChanged(oldValue, _newOverheadCost, msg.sender);
     }
 
@@ -465,13 +467,6 @@ contract BiconomyTokenPaymaster is
                     fee
                 )
             );
-    }
-
-    /**
-     * @dev returns unaccount cost of EP + postOp cost
-     */
-    function unaccountedCost() public view returns (uint256) {
-        return UNACCOUNTED_COST;
     }
 
     function parsePaymasterAndData(
