@@ -32,21 +32,16 @@ contract TokenPaymasterErrors {
      * @param amountRequired required balance
      * @param currentBalance available balance
      */
-    error InsufficientTokenBalance(
+    /*error InsufficientTokenBalance(
         uint256 amountRequired,
         uint256 currentBalance
-    );
+    );*/
 
     /**
      * @notice Throws when signature provided has invalid length
      * @param sigLength length oif the signature provided
      */
-    error InvalidPaymasterSignatureLength(uint256 sigLength);
-
-    /**
-     * @notice Throws when the oracle aggregator address provided is address(0)
-     */
-    error OracleAggregatorCannotBeZero();
+    // error InvalidPaymasterSignatureLength(uint256 sigLength);
 
     /**
      * @notice Throws when the fee receiver address provided is address(0)
