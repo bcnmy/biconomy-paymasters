@@ -14,7 +14,7 @@ import "@account-abstraction/contracts/core/Helpers.sol" as Helpers;
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IWETH9} from "../interfaces/IWETH9.sol";
 import "../utils/SafeTransferLib.sol";
-import {TokenPaymasterErrors} from "../common/Errors.sol";
+import {TokenPaymasterErrors} from "./TokenPaymasterErrors.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 
 // Biconomy Token Paymaster

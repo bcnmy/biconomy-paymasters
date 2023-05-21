@@ -1,29 +1,21 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity 0.8.17;
 
-contract BasePaymasterErrors {
-    /**
-     * @notice Throws at onlyEntryPoint when msg.sender is not an EntryPoint set for this paymaster
-     * @param caller address that tried to call protected method
-     */
-    error CallerIsNotAnEntryPoint(address caller);
-}
-
-contract VerifyingPaymasterErrors {
+contract TokenPaymasterErrors {
     /**
      * @notice Throws when the Entrypoint address provided is address(0)
      */
     error EntryPointCannotBeZero();
 
     /**
+     * @notice Throws when the owner address provided is address(0)
+     */
+    error OwnerCannotBeZero();
+
+    /**
      * @notice Throws when the verifiying signer address provided is address(0)
      */
     error VerifyingSignerCannotBeZero();
-
-    /**
-     * @notice Throws when the paymaster address provided is address(0)
-     */
-    error PaymasterIdCannotBeZero();
 
     /**
      * @notice Throws when the 0 has been provided as deposit
@@ -40,11 +32,29 @@ contract VerifyingPaymasterErrors {
      * @param amountRequired required balance
      * @param currentBalance available balance
      */
-    error InsufficientBalance(uint256 amountRequired, uint256 currentBalance);
+    error InsufficientTokenBalance(
+        uint256 amountRequired,
+        uint256 currentBalance
+    );
 
     /**
      * @notice Throws when signature provided has invalid length
      * @param sigLength length oif the signature provided
      */
     error InvalidPaymasterSignatureLength(uint256 sigLength);
+
+    /**
+     * @notice Throws when the oracle aggregator address provided is address(0)
+     */
+    error OracleAggregatorCannotBeZero();
+
+    /**
+     * @notice Throws when the fee receiver address provided is address(0)
+     */
+    error FeeReceiverCannotBeZero();
+
+    /**
+     * @notice Throws when the wrapped native asset address provided is address(0)
+     */
+    error WETH9CannotBeZero();
 }
