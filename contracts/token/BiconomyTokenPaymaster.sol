@@ -20,7 +20,8 @@ import "@openzeppelin/contracts/utils/Address.sol";
 // Biconomy Token Paymaster
 /**
  * A token-based paymaster that allows user to pay gas fee in ERC20 tokens. The paymaster owner chooses which tokens to accept.
- * The payment manager (usually the owner) first deposits native gas into the EntryPoint. Then, for each transaction, it takes the gas fee from the user's ERC20 token balance. The manager must convert these collected tokens back to native gas and deposit it into the EntryPoint to keep the system running.
+ * The payment manager (usually the owner) first deposits native gas into the EntryPoint. Then, for each transaction, it takes the gas fee from the user's ERC20 token balance.
+ * The manager must convert these collected tokens back to native gas and deposit it into the EntryPoint to keep the system running.
  * It is an extension of VerifyingPaymaster which trusts external signer to authorize the transaction, but also with an ability to withdraw tokens.
  *
  * The validatePaymasterUserOp function does not interact with external contracts but uses an externally provided exchange rate.
