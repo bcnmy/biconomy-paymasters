@@ -14,13 +14,14 @@ import "@account-abstraction/contracts/core/Helpers.sol" as Helpers;
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IWETH9} from "../interfaces/IWETH9.sol";
 import "../utils/SafeTransferLib.sol";
-import {TokenPaymasterErrors} from "../common/Errors.sol";
+import {TokenPaymasterErrors} from "./TokenPaymasterErrors.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 
 // Biconomy Token Paymaster
 /**
  * A token-based paymaster that allows user to pay gas fee in ERC20 tokens. The paymaster owner chooses which tokens to accept.
- * The payment manager (usually the owner) first deposits native gas into the EntryPoint. Then, for each transaction, it takes the gas fee from the user's ERC20 token balance. The manager must convert these collected tokens back to native gas and deposit it into the EntryPoint to keep the system running.
+ * The payment manager (usually the owner) first deposits native gas into the EntryPoint. Then, for each transaction, it takes the gas fee from the user's ERC20 token balance.
+ * The manager must convert these collected tokens back to native gas and deposit it into the EntryPoint to keep the system running.
  * It is an extension of VerifyingPaymaster which trusts external signer to authorize the transaction, but also with an ability to withdraw tokens.
  *
  * The validatePaymasterUserOp function does not interact with external contracts but uses an externally provided exchange rate.
@@ -49,7 +50,7 @@ contract BiconomyTokenPaymaster is
     }
 
     // Gas used in EntryPoint._handlePostOp() method (including this#postOp() call)
-    uint256 private UNACCOUNTED_COST = 45000; // TBD
+    uint256 public UNACCOUNTED_COST = 45000; // TBD
 
     // Always rely on verifyingSigner..
     address public verifyingSigner;
@@ -196,12 +197,12 @@ contract BiconomyTokenPaymaster is
     function setUnaccountedEPGasOverhead(
         uint256 _newOverheadCost
     ) external payable onlyOwner {
-        require(
-            _newOverheadCost < 200000,
-            "_newOverheadCost can not be unrealistic"
-        );
+        // review if this could be high value in case of arbitrum
+        if (_newOverheadCost > 200000) revert CannotBeUnrealisticValue();
         uint256 oldValue = UNACCOUNTED_COST;
-        UNACCOUNTED_COST = _newOverheadCost;
+        assembly ("memory-safe") {
+            sstore(UNACCOUNTED_COST.slot, _newOverheadCost)
+        }
         emit EPGasOverheadChanged(oldValue, _newOverheadCost, msg.sender);
     }
 
@@ -290,8 +291,8 @@ contract BiconomyTokenPaymaster is
         nonReentrant
         returns (bool success, uint256 depositAmount)
     {
-        // only proceed if adapter is not 0 address
-        require(_dexRouter != address(0), "Router can not be zero address");
+        // only proceed if router is not 0 address
+        if (_dexRouter == address(0)) revert DEXRouterCannotBeZero();
         // make approval to router
         if (_approveRouter) {
             SafeTransferLib.safeApprove(_token, _dexRouter, _amount);
@@ -380,7 +381,8 @@ contract BiconomyTokenPaymaster is
         address target,
         uint256[] calldata amount
     ) public payable onlyOwner nonReentrant {
-        require(token.length == amount.length, "length mismatch");
+        if (token.length != amount.length)
+            revert TokensAndAmountsLengthMismatch();
         unchecked {
             for (uint256 i; i < token.length; ) {
                 _withdrawERC20(token[i], target, amount[i]);
@@ -415,13 +417,13 @@ contract BiconomyTokenPaymaster is
         address dest
     ) public payable onlyOwner nonReentrant {
         uint256 _balance = address(this).balance;
-        require(_balance != 0, "BTPM: Contract has no balance to withdraw");
-        require(dest != address(0), "BTPM: Transfer to zero address");
+        if (_balance == 0) revert NativeTokenBalanceZero();
+        if (dest == address(0)) revert CanNotWithdrawToZeroAddress();
         bool success;
         assembly ("memory-safe") {
             success := call(gas(), dest, _balance, 0, 0, 0, 0)
         }
-        require(success, "BTPM: Native token withdraw failed");
+        if (!success) revert NativeTokensWithdrawalFailed();
     }
 
     /**
@@ -465,13 +467,6 @@ contract BiconomyTokenPaymaster is
                     fee
                 )
             );
-    }
-
-    /**
-     * @dev returns unaccount cost of EP + postOp cost
-     */
-    function unaccountedCost() public view returns (uint256) {
-        return UNACCOUNTED_COST;
     }
 
     function parsePaymasterAndData(
@@ -688,6 +683,8 @@ contract BiconomyTokenPaymaster is
                 account,
                 actualTokenCost + fee
             );
+            // review
+            // return; // Do nothing here to not revert the whole bundle and harm reputation
         }
     }
 

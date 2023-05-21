@@ -7,8 +7,9 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IPaymaster} from "@account-abstraction/contracts/interfaces/IPaymaster.sol";
 import {IEntryPoint} from "@account-abstraction/contracts/interfaces/IEntryPoint.sol";
 import {UserOperation, UserOperationLib} from "@account-abstraction/contracts/interfaces/UserOperation.sol";
-import {BasePaymasterErrors} from "./common/Errors.sol";
 import "@account-abstraction/contracts/core/Helpers.sol";
+
+// can import specific revert errors as per need
 
 /**
  * Helper class for creating a paymaster.
@@ -16,7 +17,7 @@ import "@account-abstraction/contracts/core/Helpers.sol";
  * validates that the postOp is called only by the entryPoint
  */
 // @notice Could have Ownable2Step
-abstract contract BasePaymaster is IPaymaster, Ownable, BasePaymasterErrors {
+abstract contract BasePaymaster is IPaymaster, Ownable {
     IEntryPoint public immutable entryPoint;
 
     constructor(address _owner, IEntryPoint _entryPoint) {
@@ -122,8 +123,6 @@ abstract contract BasePaymaster is IPaymaster, Ownable, BasePaymasterErrors {
 
     /// validate the call is made from a valid entrypoint
     function _requireFromEntryPoint() internal virtual {
-        // require(msg.sender == address(entryPoint), "Sender not EntryPoint"); // won't need BaseSmartAccountErrors import
-        if (msg.sender != address(entryPoint))
-            revert CallerIsNotAnEntryPoint(msg.sender);
+        require(msg.sender == address(entryPoint), "Sender not EntryPoint");
     }
 }

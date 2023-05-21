@@ -3,9 +3,13 @@ pragma solidity 0.8.17;
 
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
-//@review againsnt chainlink reference PriceConverter https://docs.chain.link/docs/get-the-latest-price/
+//@notice chainlink reference PriceConverter https://docs.chain.link/docs/get-the-latest-price/
+// good practices: https://twitter.com/saxenism/status/1656632735291588609?s=20
 
 error MismatchInBaseAndQuoteDecimals();
+error InvalidPriceFromRound();
+error LatestRoundIncomplete();
+error PriceFeedStale();
 
 contract USDCPriceFeedBNBMainnet {
     AggregatorV3Interface internal priceFeed1;
@@ -18,6 +22,14 @@ contract USDCPriceFeedBNBMainnet {
         priceFeed2 = AggregatorV3Interface(
             0x51597f405303C4377E36123cBc172b13269EA163
         ); // usdc usd
+
+        // If either of the base or quote price feeds have mismatch in decimal then it could be a problem, so throw!
+        uint8 decimals1 = priceFeed1.decimals();
+        uint8 decimals2 = priceFeed2.decimals();
+
+        if (decimals1 != decimals2) revert MismatchInBaseAndQuoteDecimals();
+
+        // @review could add Sequencer uptime feed for L2s
     }
 
     function decimals() public view returns (uint8) {
@@ -28,13 +40,22 @@ contract USDCPriceFeedBNBMainnet {
         return "USDC / BNB";
     }
 
+    function validateRound(
+        uint80 roundId,
+        int256 price,
+        uint256 updatedAt,
+        uint80 answeredInRound,
+        uint256 staleFeedThreshold
+    ) internal view {
+        if (price <= 0) revert InvalidPriceFromRound();
+        // 2 days old price is considered stale since the price is updated every 24 hours
+        if (updatedAt < block.timestamp - staleFeedThreshold)
+            revert PriceFeedStale();
+        if (updatedAt == 0) revert LatestRoundIncomplete();
+        if (answeredInRound < roundId) revert PriceFeedStale();
+    }
+
     function getThePrice() public view returns (int) {
-        // If either of the base or quote price feeds have mismatch in decimal then it could be a problem, so throw!
-        uint8 decimals1 = priceFeed1.decimals();
-        uint8 decimals2 = priceFeed2.decimals();
-
-        if (decimals1 != decimals2) revert MismatchInBaseAndQuoteDecimals();
-
         /**
          * Returns the latest price of price feed 1
          */
@@ -47,14 +68,15 @@ contract USDCPriceFeedBNBMainnet {
             uint80 answeredInRound1
         ) = priceFeed1.latestRoundData();
 
-        require(price1 > 0, "Chainlink price <= 0");
-        // 2 days old price is considered stale since the price is updated every 24 hours
-        require(
-            updatedAt1 >= block.timestamp - 60 * 60 * 24 * 2,
-            "Incomplete round"
+        // By default 2 days old price is considered stale BUT it may vary per price feed
+        // comapred to stable coin feeds this may have different heartbeat
+        validateRound(
+            roundID1,
+            price1,
+            updatedAt1,
+            answeredInRound1,
+            60 * 60 * 24 * 2
         );
-        require(answeredInRound1 >= roundID1, "Stale price");
-        // price11 = uint192(int192(price1));
 
         /**
          * Returns the latest price of price feed 2
@@ -68,13 +90,14 @@ contract USDCPriceFeedBNBMainnet {
             uint80 answeredInRound2
         ) = priceFeed2.latestRoundData();
 
-        require(price2 > 0, "Chainlink price <= 0");
-        // 2 days old price is considered stale since the price is updated every 24 hours
-        require(
-            updatedAt2 >= block.timestamp - 60 * 60 * 24 * 2,
-            "Incomplete round"
+        // By default 2 days old price is considered stale BUT it may vary per price feed
+        validateRound(
+            roundID2,
+            price2,
+            updatedAt2,
+            answeredInRound2,
+            60 * 60 * 24 * 2
         );
-        require(answeredInRound2 >= roundID2, "Stale price");
 
         // Always using decimals 18 for derived price feeds
         int usdc_BNB = (price2 * (10 ** 18)) / price1;
