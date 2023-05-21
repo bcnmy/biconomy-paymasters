@@ -52,4 +52,14 @@ contract TokenPaymasterErrors {
      * @notice Throws when the wrapped native asset address provided is address(0)
      */
     error WETH9CannotBeZero();
+
+    error TokensAndAmountsLengthMismatch();
+
+    error NativeTokenBalanceZero();
+
+    error NativeTokensWithdrawalFailed();
+
+    error CannotBeUnrealisticValue();
+
+    error DEXRouterCannotBeZero();
 }

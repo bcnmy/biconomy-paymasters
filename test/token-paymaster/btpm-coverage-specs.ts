@@ -87,7 +87,7 @@ describe("Biconomy Token Paymaster", function () {
   let token: MockToken;
   let proxyPaymaster: Contract;
   let walletAddress: string, paymasterAddress: string;
-  let ethersSigner;
+  let ethersSigner: any;
 
   let offchainSigner: Signer, deployer: Signer;
 
@@ -180,7 +180,7 @@ describe("Biconomy Token Paymaster", function () {
 
     await sampleTokenPaymaster
       .connect(deployer)
-      .addStake(1000, { value: parseEther("2") });
+      .addStake(1, { value: parseEther("2") });
     console.log("paymaster staked");
 
     await entryPoint.depositTo(paymasterAddress, { value: parseEther("2") });
@@ -189,17 +189,100 @@ describe("Biconomy Token Paymaster", function () {
     console.log("deposited state ", resultSet);
   });
 
-  describe("Token Paymaster:: ", () => {
-
-  });
-
   describe("Token Payamster Staking + Gas deposits / withdraw", () => {
-    it("", async ()  => {
+    it("Owner should be able to add and withdraw stake", async ()  => {
+      await sampleTokenPaymaster
+      .connect(deployer)
+      .addStake(1, { value: parseEther("2") });
+      
+      
+      console.log("paymaster staked");
     });
   });
 
   describe("Pull: ether / tokens recovery", () => {
-    it("", async ()  => {
+    it("only owner should be able to pull tokens, withdraw gas", async () => {
+
+      // paymaster can receive eth
+      await deployer.sendTransaction({
+        to: paymasterAddress,
+        value: parseEther("1"),
+      });
+
+      await token.mint(paymasterAddress, ethers.utils.parseEther("1000000"));
+
+      const withdrawAddress = await ethersSigner[7].getAddress();
+
+      const etherBalanceBefore = await ethers.provider.getBalance(withdrawAddress);
+      console.log("balance before ", etherBalanceBefore.toString());
+
+      const tokenBalanceBefore = await token.balanceOf(withdrawAddress);
+      console.log("token balance before ", tokenBalanceBefore.toString());
+
+      const currentGasDeposited = await sampleTokenPaymaster.deposit()
+      console.log("current gas in Entry Point ", currentGasDeposited.toString());
+
+      await sampleTokenPaymaster.transferOwnership(await ethersSigner[6].getAddress());
+      
+      await sampleTokenPaymaster.connect(ethersSigner[6]).withdrawTo(withdrawAddress, ethers.utils.parseEther("0.2"));
+
+      const gasasDepositedAfter = await sampleTokenPaymaster.deposit()
+      console.log("current gas in Entry Point ", gasasDepositedAfter.toString());
+
+      await expect(sampleTokenPaymaster.connect(ethersSigner[9]).withdrawTo(withdrawAddress, ethers.utils.parseEther("0.2")))
+      .to.be.revertedWith("Ownable: caller is not the owner");
+
+      const etherBalanceAfter = await ethers.provider.getBalance(withdrawAddress);
+      console.log("balance after ", etherBalanceBefore.toString());
+
+      expect(etherBalanceBefore.add(ethers.utils.parseEther("0.2"))).to.be.equal(etherBalanceAfter);
+
+      const collectedTokens = await token.balanceOf(paymasterAddress);
+      console.log("collected tokens ", collectedTokens)
+
+      await expect(sampleTokenPaymaster.connect(ethersSigner[9]).withdrawERC20(token.address, withdrawAddress, collectedTokens))
+      .to.be.revertedWith("Ownable: caller is not the owner");
+
+      await sampleTokenPaymaster.connect(ethersSigner[6]).withdrawERC20(token.address, withdrawAddress, collectedTokens);
+
+      const tokenBalanceAfter = await token.balanceOf(withdrawAddress);
+      console.log("token balance after ", tokenBalanceAfter.toString());
+
+      expect(tokenBalanceBefore.add(collectedTokens)).to.be.equal(tokenBalanceAfter); 
+
+      await sampleTokenPaymaster.connect(ethersSigner[6]).unlockStake();
+      
+      await sampleTokenPaymaster.connect(ethersSigner[6]).withdrawStake(withdrawAddress);
+
+      await token.mint(paymasterAddress, ethers.utils.parseEther("100"));
+
+      const withdrawAddressNew = await ethersSigner[8].getAddress();
+
+      await sampleTokenPaymaster.connect(ethersSigner[6]).withdrawERC20Full(token.address, withdrawAddressNew);
+
+      expect(await token.balanceOf(withdrawAddressNew)).to.be.equal(ethers.utils.parseEther("100"));
+
+      await token.mint(paymasterAddress, ethers.utils.parseEther("200"));
+
+      await sampleTokenPaymaster.connect(ethersSigner[6]).withdrawMultipleERC20([token.address, token.address], withdrawAddressNew, [ethers.utils.parseEther("100"), ethers.utils.parseEther("100")]);
+
+      expect(await token.balanceOf(withdrawAddressNew)).to.be.equal(ethers.utils.parseEther("300"));
+
+      await token.mint(paymasterAddress, ethers.utils.parseEther("200"));
+
+      await sampleTokenPaymaster.connect(ethersSigner[6]).withdrawMultipleERC20Full([token.address, token.address], withdrawAddressNew);
+
+      expect(await token.balanceOf(withdrawAddressNew)).to.be.equal(ethers.utils.parseEther("500"));
+
+      const ethBalanceOfDestBefore = await ethers.provider.getBalance(withdrawAddressNew);
+
+      await sampleTokenPaymaster.connect(ethersSigner[6]).withdrawAllNative(withdrawAddressNew);
+
+      const ethBalanceOfDestAfter = await ethers.provider.getBalance(withdrawAddressNew);
+
+      expect(ethBalanceOfDestAfter.sub(ethBalanceOfDestBefore)).to.be.equal(parseEther("1"));
+
+      expect(await ethers.provider.getBalance(paymasterAddress)).to.be.equal(parseEther("0"));
     });
   });
 });

@@ -197,10 +197,8 @@ contract BiconomyTokenPaymaster is
     function setUnaccountedEPGasOverhead(
         uint256 _newOverheadCost
     ) external payable onlyOwner {
-        require(
-            _newOverheadCost < 200000,
-            "_newOverheadCost can not be unrealistic"
-        );
+        // review if this could be high value in case of arbitrum
+        if (_newOverheadCost > 200000) revert CannotBeUnrealisticValue();
         uint256 oldValue = UNACCOUNTED_COST;
         assembly ("memory-safe") {
             sstore(UNACCOUNTED_COST.slot, _newOverheadCost)
@@ -293,8 +291,8 @@ contract BiconomyTokenPaymaster is
         nonReentrant
         returns (bool success, uint256 depositAmount)
     {
-        // only proceed if adapter is not 0 address
-        require(_dexRouter != address(0), "Router can not be zero address");
+        // only proceed if router is not 0 address
+        if (_dexRouter == address(0)) revert DEXRouterCannotBeZero();
         // make approval to router
         if (_approveRouter) {
             SafeTransferLib.safeApprove(_token, _dexRouter, _amount);
@@ -383,7 +381,8 @@ contract BiconomyTokenPaymaster is
         address target,
         uint256[] calldata amount
     ) public payable onlyOwner nonReentrant {
-        require(token.length == amount.length, "length mismatch");
+        if (token.length != amount.length)
+            revert TokensAndAmountsLengthMismatch();
         unchecked {
             for (uint256 i; i < token.length; ) {
                 _withdrawERC20(token[i], target, amount[i]);
@@ -418,13 +417,13 @@ contract BiconomyTokenPaymaster is
         address dest
     ) public payable onlyOwner nonReentrant {
         uint256 _balance = address(this).balance;
-        require(_balance != 0, "BTPM: Contract has no balance to withdraw");
-        require(dest != address(0), "BTPM: Transfer to zero address");
+        if (_balance == 0) revert NativeTokenBalanceZero();
+        if (dest == address(0)) revert CanNotWithdrawToZeroAddress();
         bool success;
         assembly ("memory-safe") {
             success := call(gas(), dest, _balance, 0, 0, 0, 0)
         }
-        require(success, "BTPM: Native token withdraw failed");
+        if (!success) revert NativeTokensWithdrawalFailed();
     }
 
     /**
