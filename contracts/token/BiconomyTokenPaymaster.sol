@@ -683,6 +683,8 @@ contract BiconomyTokenPaymaster is
                 account,
                 actualTokenCost + fee
             );
+            // review
+            // return; // Do nothing here to not revert the whole bundle and harm reputation
         }
     }
 
