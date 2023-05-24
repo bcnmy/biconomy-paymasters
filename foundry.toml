@@ -4,4 +4,5 @@ out = 'out'
 libs = ['node_modules', 'lib']
 test = 'test'
 cache_path  = 'forge-cache'
+optimizer-runs = 8_00
 # See more config options https://book.getfoundry.sh/reference/config.html

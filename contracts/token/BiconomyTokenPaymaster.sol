@@ -49,6 +49,17 @@ contract BiconomyTokenPaymaster is
         ORACLE_BASED
     }
 
+    struct PaymasterData {
+        ExchangeRateSource priceSource;
+        uint48 validUntil;
+        uint48 validAfter;
+        address feeToken;
+        address oracleAggregator;
+        uint256 exchangeRate;
+        uint256 fee;
+        bytes signature;
+    }
+
     // Gas used in EntryPoint._handlePostOp() method (including this#postOp() call)
     uint256 public UNACCOUNTED_COST = 45000; // TBD
 
@@ -426,6 +437,25 @@ contract BiconomyTokenPaymaster is
         if (!success) revert NativeTokensWithdrawalFailed();
     }
 
+    function pack(
+        UserOperation calldata userOp
+    ) internal pure returns (bytes32 ret) {
+        return
+            keccak256(
+                abi.encode(
+                    userOp.getSender(),
+                    userOp.nonce,
+                    keccak256(userOp.initCode),
+                    keccak256(userOp.callData),
+                    userOp.callGasLimit,
+                    userOp.verificationGasLimit,
+                    userOp.preVerificationGas,
+                    userOp.maxFeePerGas,
+                    userOp.maxPriorityFeePerGas
+                )
+            );
+    }
+
     /**
      * @dev This method is called by the off-chain service, to sign the request.
      * It is called on-chain from the validatePaymasterUserOp, to validate the signature.
@@ -447,15 +477,7 @@ contract BiconomyTokenPaymaster is
         return
             keccak256(
                 abi.encode(
-                    userOp.getSender(),
-                    userOp.nonce,
-                    keccak256(userOp.initCode),
-                    keccak256(userOp.callData),
-                    userOp.callGasLimit,
-                    userOp.verificationGasLimit,
-                    userOp.preVerificationGas,
-                    userOp.maxFeePerGas,
-                    userOp.maxPriorityFeePerGas,
+                    pack(userOp),
                     block.chainid,
                     address(this),
                     priceSource,
@@ -471,37 +493,36 @@ contract BiconomyTokenPaymaster is
 
     function parsePaymasterAndData(
         bytes calldata paymasterAndData
-    )
-        public
-        pure
-        returns (
-            ExchangeRateSource priceSource,
-            uint48 validUntil,
-            uint48 validAfter,
-            address feeToken,
-            address oracleAggregator,
-            uint256 exchangeRate,
-            uint256 fee,
-            bytes calldata signature
-        )
-    {
-        priceSource = ExchangeRateSource(
+    ) public pure returns (PaymasterData memory) {
+        ExchangeRateSource priceSource = ExchangeRateSource(
             uint8(
                 bytes1(paymasterAndData[VALID_PND_OFFSET - 1:VALID_PND_OFFSET])
             )
         );
         (
-            validUntil,
-            validAfter,
-            feeToken,
-            oracleAggregator,
-            exchangeRate,
-            fee
+            uint48 validUntil,
+            uint48 validAfter,
+            address feeToken,
+            address oracleAggregator,
+            uint256 exchangeRate,
+            uint256 fee
         ) = abi.decode(
-            paymasterAndData[VALID_PND_OFFSET:SIGNATURE_OFFSET],
-            (uint48, uint48, address, address, uint256, uint256)
-        );
-        signature = paymasterAndData[SIGNATURE_OFFSET:];
+                paymasterAndData[VALID_PND_OFFSET:SIGNATURE_OFFSET],
+                (uint48, uint48, address, address, uint256, uint256)
+            );
+        bytes memory signature = paymasterAndData[SIGNATURE_OFFSET:];
+
+        return
+            PaymasterData(
+                priceSource,
+                validUntil,
+                validAfter,
+                feeToken,
+                oracleAggregator,
+                exchangeRate,
+                fee,
+                signature
+            );
     }
 
     /**
@@ -531,46 +552,93 @@ contract BiconomyTokenPaymaster is
             "BTPM: gas too low for postOp"
         );
 
-        // review: in this method try to resolve stack too deep (though via-ir is good enough)
-        (
-            ExchangeRateSource priceSource,
-            uint48 validUntil,
-            uint48 validAfter,
-            address feeToken,
-            address oracleAggregator,
-            uint256 exchangeRate,
-            uint256 fee,
-            bytes calldata signature
-        ) = parsePaymasterAndData(userOp.paymasterAndData);
+        PaymasterData memory paymasterData = parsePaymasterAndData(
+            userOp.paymasterAndData
+        );
+
+        address account = userOp.getSender();
+
+        {
+            if (!_checkPaymasterSignature(userOp)) {
+                return (
+                    "",
+                    Helpers._packValidationData(
+                        true,
+                        paymasterData.validUntil,
+                        paymasterData.validAfter
+                    )
+                );
+            }
+
+            // todo: can be further optimised
+            _checkRequiredTokenPrefund(
+                userOp,
+                requiredPreFund,
+                paymasterData.exchangeRate,
+                paymasterData.fee,
+                paymasterData.feeToken
+            );
+        }
+
+        context = abi.encode(
+            account,
+            paymasterData.feeToken,
+            paymasterData.oracleAggregator,
+            paymasterData.priceSource,
+            paymasterData.exchangeRate,
+            paymasterData.fee,
+            userOpHash
+        );
+
+        return (
+            context,
+            Helpers._packValidationData(
+                false,
+                paymasterData.validUntil,
+                paymasterData.validAfter
+            )
+        );
+    }
+
+    function _checkPaymasterSignature(
+        UserOperation calldata userOp
+    ) internal view returns (bool isValid) {
+        PaymasterData memory paymasterData = parsePaymasterAndData(
+            userOp.paymasterAndData
+        );
 
         // we only "require" it here so that the revert reason on invalid signature will be of "VerifyingPaymaster", and not "ECDSA"
         require(
-            signature.length == 65,
+            paymasterData.signature.length == 65,
             "BTPM: invalid signature length in paymasterAndData"
         );
 
         bytes32 _hash = getHash(
             userOp,
-            priceSource,
-            validUntil,
-            validAfter,
-            feeToken,
-            oracleAggregator,
-            exchangeRate,
-            fee
+            paymasterData.priceSource,
+            paymasterData.validUntil,
+            paymasterData.validAfter,
+            paymasterData.feeToken,
+            paymasterData.oracleAggregator,
+            paymasterData.exchangeRate,
+            paymasterData.fee
         ).toEthSignedMessageHash();
 
-        context = "";
-
         //don't revert on signature failure: return SIG_VALIDATION_FAILED
-        if (verifyingSigner != _hash.recover(signature)) {
-            // empty context and sigFailed true
-            return (
-                context,
-                Helpers._packValidationData(true, validUntil, validAfter)
-            );
+        if (verifyingSigner != _hash.recover(paymasterData.signature)) {
+            return false;
         }
+        return true;
+    }
 
+    // todo: can be further optimised in terms of implementation and arguments passed (values and order)
+    function _checkRequiredTokenPrefund(
+        UserOperation calldata userOp,
+        uint256 requiredPreFund,
+        uint256 exchangeRate,
+        uint256 fee,
+        address feeToken
+    ) internal view {
         address account = userOp.getSender();
 
         uint256 costOfPost = userOp.maxFeePerGas * UNACCOUNTED_COST; // unaccountedEPGasOverhead
@@ -594,21 +662,6 @@ contract BiconomyTokenPaymaster is
         require(
             IERC20(feeToken).balanceOf(account) >= (tokenRequiredPreFund + fee),
             "BTPM: account does not have enough token balance"
-        );
-
-        context = abi.encode(
-            account,
-            feeToken,
-            oracleAggregator,
-            priceSource,
-            exchangeRate,
-            fee,
-            userOpHash
-        );
-
-        return (
-            context,
-            Helpers._packValidationData(false, validUntil, validAfter)
         );
     }
 
