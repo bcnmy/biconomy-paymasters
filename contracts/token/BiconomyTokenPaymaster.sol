@@ -49,6 +49,15 @@ contract BiconomyTokenPaymaster is
         ORACLE_BASED
     }
 
+    // in case flat fee needs to be enabled
+    /*enum FeePremiumMode {
+        PERCENTAGE,
+        FLAT
+    }*/
+
+    /// @notice All 'price' variables are multiplied by this value to avoid rounding up
+    uint256 private constant PRICE_DENOMINATOR = 1e6;
+
     // Gas used in EntryPoint._handlePostOp() method (including this#postOp() call)
     uint256 public UNACCOUNTED_COST = 45000; // TBD
 
@@ -579,12 +588,17 @@ contract BiconomyTokenPaymaster is
         // for below checks you would either need maxCost or some exchangeRate
 
         // review: can add some checks here on calculated value, fee cap, exchange rate
+
+        // todo: WIP x * priceMarkup / PRICE_DENOMINATOR here or later
+
         uint256 tokenRequiredPreFund = ((requiredPreFund + costOfPost) *
             exchangeRate) / 10 ** 18;
         require(
             tokenRequiredPreFund != 0,
             "BTPM: calculated token charge invalid"
         );
+
+        // check for caps after applying markup against without markup
         require(
             fee <= (tokenRequiredPreFund * 20) / 100,
             "BTPM: fee markup too high"
