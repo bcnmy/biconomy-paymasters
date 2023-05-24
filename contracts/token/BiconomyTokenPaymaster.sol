@@ -140,6 +140,8 @@ contract BiconomyTokenPaymaster is
         uint256 gasAmountDeposited
     );
 
+    event Received(address indexed sender, uint256 value);
+
     constructor(
         address _owner,
         IEntryPoint _entryPoint,
@@ -711,5 +713,7 @@ contract BiconomyTokenPaymaster is
     }
 
     // in order to receive eth from a trade
-    receive() external payable {}
+    receive() external payable {
+        emit Received(msg.sender, msg.value);
+    }
 }
