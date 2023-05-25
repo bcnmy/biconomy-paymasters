@@ -70,7 +70,7 @@ contract BiconomyTokenPaymaster is
     // receiver of withdrawn fee tokens
     address public feeReceiver;
 
-    // paymasterAndData: concat of [paymasterAddress(address), priceSource(enum 1 byte), abi.encode(validUntil, validAfter, feeToken, oracleAggregator, exchangeRate, fee): makes up 32*6 bytes, signature]
+    // paymasterAndData: concat of [paymasterAddress(address), priceSource(enum 1 byte), abi.encode(validUntil, validAfter, feeToken, oracleAggregator, exchangeRate, priceMarkup): makes up 32*6 bytes, signature]
     // PND offset is used to indicate offsets to decode, used along with Signature offset
     uint256 private constant VALID_PND_OFFSET = 21;
 
@@ -455,7 +455,7 @@ contract BiconomyTokenPaymaster is
         address feeToken,
         address oracleAggregator,
         uint256 exchangeRate,
-        uint256 fee
+        uint32 priceMarkup
     ) public view returns (bytes32) {
         //can't use userOp.hash(), since it contains also the paymasterAndData itself.
         return
@@ -478,7 +478,7 @@ contract BiconomyTokenPaymaster is
                     feeToken,
                     oracleAggregator,
                     exchangeRate,
-                    fee
+                    priceMarkup
                 )
             );
     }
@@ -521,7 +521,7 @@ contract BiconomyTokenPaymaster is
     /**
      * @dev Verify that an external signer signed the paymaster data of a user operation.
      * The paymaster data is expected to be the paymaster address, request data and a signature over the entire request parameters.
-     * paymasterAndData: hexConcat([paymasterAddress, priceSource, abi.encode(validUntil, validAfter, feeToken, oracleAggregator, exchangeRate, fee), signature])
+     * paymasterAndData: hexConcat([paymasterAddress, priceSource, abi.encode(validUntil, validAfter, feeToken, oracleAggregator, exchangeRate, priceMarkup), signature])
      * @param userOp The UserOperation struct that represents the current user operation.
      * userOpHash The hash of the UserOperation struct.
      * @param requiredPreFund The required amount of pre-funding for the paymaster.
