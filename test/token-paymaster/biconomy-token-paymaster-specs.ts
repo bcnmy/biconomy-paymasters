@@ -206,7 +206,7 @@ describe("Biconomy Token Paymaster", function () {
       );
 
       expect(res.priceSource).to.equal(1);
-      expect(res.priceMarkup).to.equal(1100000);
+      expect(res.priceMarkup).to.equal(DEFAULT_FEE_MARKUP);
       expect(res.validUntil).to.equal(ethers.BigNumber.from(MOCK_VALID_UNTIL));
       expect(res.validAfter).to.equal(ethers.BigNumber.from(MOCK_VALID_AFTER));
       expect(res.feeToken).to.equal(token.address);
@@ -269,9 +269,6 @@ describe("Biconomy Token Paymaster", function () {
         entryPoint,
         "nonce"
       );
-
-      console.log("userOp");
-      console.log(userOp1);
 
       const hash = await sampleTokenPaymaster.getHash(
         userOp1,
@@ -495,9 +492,6 @@ describe("Biconomy Token Paymaster", function () {
         "nonce"
       );
 
-      console.log("userOp");
-      console.log(userOp1);
-
       const hash = await sampleTokenPaymaster.getHash(
         userOp1,
         ethers.utils.hexlify(1).slice(2, 4),
@@ -570,9 +564,6 @@ describe("Biconomy Token Paymaster", function () {
         entryPoint,
         "nonce"
       );
-
-      console.log("userOp");
-      console.log(userOp1);
 
       const hash = await sampleTokenPaymaster.getHash(
         userOp1,

@@ -270,9 +270,6 @@ describe("Biconomy Token Paymaster", function () {
         "nonce"
       );
 
-      console.log("userOp");
-      console.log(userOp1);
-
       const hash = await sampleTokenPaymaster.getHash(
         userOp1,
         ethers.utils.hexlify(1).slice(2, 4),

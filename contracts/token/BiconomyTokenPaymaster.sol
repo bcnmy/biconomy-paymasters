@@ -599,10 +599,9 @@ contract BiconomyTokenPaymaster is
             "BTPM: calculated token charge invalid"
         );
 
-        // check for caps after applying markup against without markup
         require(priceMarkup <= 2e6, "BTPM: price markup percentage too high");
+        require(priceMarkup >= 1e6, "BTPM: price markup percentage too low");
 
-        // review: could be lifted if we're considering simulations if payment tokens are being sourced as part of userop.calldata
         require(
             IERC20(feeToken).balanceOf(account) >=
                 ((tokenRequiredPreFund * priceMarkup) / PRICE_DENOMINATOR),
@@ -670,19 +669,26 @@ contract BiconomyTokenPaymaster is
         }
 
         // We could either touch the state for BASEFEE and calculate based on maxPriorityFee passed (to be added in context along with maxFeePerGas) or just use tx.gasprice
-        uint256 actualTokenCost = ((actualGasCost +
-            (UNACCOUNTED_COST * tx.gasprice)) * effectiveExchangeRate) / 1e18;
+
+        uint256 charge;
+        {
+            uint256 actualTokenCost = ((actualGasCost +
+                (UNACCOUNTED_COST * tx.gasprice)) * effectiveExchangeRate) /
+                1e18;
+            charge = ((actualTokenCost * priceMarkup) / PRICE_DENOMINATOR);
+        }
+
         if (mode != PostOpMode.postOpReverted) {
             SafeTransferLib.safeTransferFrom(
                 address(feeToken),
                 account,
                 feeReceiver,
-                ((actualTokenCost * priceMarkup) / PRICE_DENOMINATOR)
+                charge
             );
             emit TokenPaymasterOperation(
                 account,
                 address(feeToken),
-                ((actualTokenCost * priceMarkup) / PRICE_DENOMINATOR),
+                charge,
                 oracleAggregator,
                 priceMarkup,
                 userOpHash,
@@ -692,11 +698,7 @@ contract BiconomyTokenPaymaster is
         } else {
             //in case above transferFrom failed, pay with deposit / notify at least
             //sender could be banned indefinitely or for certain period
-            emit TokenPaymentDue(
-                address(feeToken),
-                account,
-                ((actualTokenCost * priceMarkup) / PRICE_DENOMINATOR)
-            );
+            emit TokenPaymentDue(address(feeToken), account, charge);
             // review
             // return; // Do nothing here to not revert the whole bundle and harm reputation
         }
