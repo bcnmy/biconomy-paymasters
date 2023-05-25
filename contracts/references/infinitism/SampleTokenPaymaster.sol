@@ -11,6 +11,8 @@ import "@account-abstraction/contracts/core/BasePaymaster.sol";
 import "./UniswapHelper.sol";
 import "./OracleHelper.sol";
 
+// OG GSN same correlation https://github.com/opengsn/gsn/blob/master/packages/paymasters/contracts/TokenPaymaster.sol
+
 // TODO: note https://github.com/pimlicolabs/erc20-paymaster-contracts/issues/10
 // TODO: set a hard limit on how much gas a single user op may cost (postOp to fix the price)
 /// @title Sample ERC-20 Token Paymaster for ERC-4337
