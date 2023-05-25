@@ -33,7 +33,7 @@ const MOCK_VALID_UNTIL = "0x00000000deadbeef";
 const MOCK_VALID_AFTER = "0x0000000000001234";
 const MOCK_SIG = "0x1234";
 const MOCK_ERC20_ADDR = "0x" + "01".repeat(20);
-const MOCK_FEE = "0";
+const DEFAULT_FEE_MARKUP = 1100000;
 const WETH9 = "0x9c3C9283D3e44854697Cd22D3Faa240Cfb032889"; // not not deploying on local devnet (yet)
 // Assume TOKEN decimals is 18, then 1 ETH = 1000 TOKENS
 // const MOCK_FX = ethers.constants.WeiPerEther.mul(1000);
@@ -49,12 +49,13 @@ export async function deployEntryPoint(
 
 export const encodePaymasterData = (
   feeToken = ethers.constants.AddressZero,
+  oracleAggregator = ethers.constants.AddressZero,
   exchangeRate: BigNumberish = ethers.constants.Zero,
-  fee: BigNumberish = ethers.constants.Zero
+  priceMarkup: BigNumberish = ethers.constants.Zero
 ) => {
   return ethers.utils.defaultAbiCoder.encode(
-    ["uint48", "uint48", "address", "uint256", "uint256"],
-    [MOCK_VALID_UNTIL, MOCK_VALID_AFTER, feeToken, exchangeRate, fee]
+    ["uint48", "uint48", "address", "address", "uint256", "uint256"],
+    [MOCK_VALID_UNTIL, MOCK_VALID_AFTER, feeToken, oracleAggregator, exchangeRate, priceMarkup]
   );
 };
 

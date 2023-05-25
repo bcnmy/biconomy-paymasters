@@ -50,6 +50,9 @@ contract BiconomyTokenPaymaster is
     }
 
     // in case flat fee needs to be enabled
+    // 1. use mode and based on mode treat uint256 fee sent either as priceMarkup or flatFee
+    // 2. (no mode required) add extra value in paymasterandData so uint32 markup and uint224 flatFee both can be parsed
+    // 3. (no mode required) without extra value treat uint256 as packed uint32uint224 and use values accordingly
     /*enum FeePremiumMode {
         PERCENTAGE,
         FLAT
@@ -114,7 +117,7 @@ contract BiconomyTokenPaymaster is
         address indexed token,
         uint256 indexed totalCharge,
         address oracleAggregator,
-        uint256 premium,
+        uint256 priceMarkup, // percentage... 1e6 = 100% = 1x
         bytes32 userOpHash,
         uint256 exchangeRate,
         ExchangeRateSource priceSource
@@ -492,7 +495,7 @@ contract BiconomyTokenPaymaster is
             address feeToken,
             address oracleAggregator,
             uint256 exchangeRate,
-            uint256 fee,
+            uint256 priceMarkup, // could be uint32
             bytes calldata signature
         )
     {
@@ -507,7 +510,7 @@ contract BiconomyTokenPaymaster is
             feeToken,
             oracleAggregator,
             exchangeRate,
-            fee
+            priceMarkup
         ) = abi.decode(
             paymasterAndData[VALID_PND_OFFSET:SIGNATURE_OFFSET],
             (uint48, uint48, address, address, uint256, uint256)
@@ -550,7 +553,7 @@ contract BiconomyTokenPaymaster is
             address feeToken,
             address oracleAggregator,
             uint256 exchangeRate,
-            uint256 fee,
+            uint256 priceMarkup,
             bytes calldata signature
         ) = parsePaymasterAndData(userOp.paymasterAndData);
 
@@ -568,7 +571,7 @@ contract BiconomyTokenPaymaster is
             feeToken,
             oracleAggregator,
             exchangeRate,
-            fee
+            priceMarkup
         ).toEthSignedMessageHash();
 
         context = "";
@@ -589,9 +592,6 @@ contract BiconomyTokenPaymaster is
         // This model assumes irrespective of priceSource exchangeRate is always sent from outside
         // for below checks you would either need maxCost or some exchangeRate
 
-        uint224 flatFee = uint224(fee & ((1 << 224) - 1));
-        uint32 priceMarkup = uint32(fee >> 224);
-
         uint256 tokenRequiredPreFund = ((requiredPreFund + costOfPost) *
             exchangeRate) / 10 ** 18;
         require(
@@ -602,20 +602,14 @@ contract BiconomyTokenPaymaster is
         // check for caps after applying markup against without markup
         require(priceMarkup <= 2e6, "BTPM: price markup percentage too high");
 
-        // cap on flat fee - flat fee is in no of tokens terms
-        require(
-            flatFee <= (tokenRequiredPreFund * 20) / 100,
-            "BTPM: flat fee too high"
-        );
-
         // review: could be lifted if we're considering simulations if payment tokens are being sourced as part of userop.calldata
         require(
             IERC20(feeToken).balanceOf(account) >=
-                (((tokenRequiredPreFund * uint256(priceMarkup)) /
-                    PRICE_DENOMINATOR) + uint256(flatFee)),
+                ((tokenRequiredPreFund * priceMarkup) / PRICE_DENOMINATOR),
             "BTPM: account does not have enough token balance"
         );
 
+        // review using abi.encodePacked and parsing context accordingly in postOp
         context = abi.encode(
             account,
             feeToken,
@@ -623,7 +617,6 @@ contract BiconomyTokenPaymaster is
             priceSource,
             exchangeRate,
             priceMarkup,
-            flatFee,
             userOpHash
         );
 
@@ -650,8 +643,7 @@ contract BiconomyTokenPaymaster is
             address oracleAggregator,
             ExchangeRateSource priceSource,
             uint256 exchangeRate,
-            uint32 priceMarkup,
-            uint224 flatFee,
+            uint256 priceMarkup,
             bytes32 userOpHash
         ) = abi.decode(
                 context,
@@ -661,8 +653,7 @@ contract BiconomyTokenPaymaster is
                     address,
                     ExchangeRateSource,
                     uint256,
-                    uint32,
-                    uint224,
+                    uint256,
                     bytes32
                 )
             );
@@ -686,18 +677,14 @@ contract BiconomyTokenPaymaster is
                 address(feeToken),
                 account,
                 feeReceiver,
-                ((actualTokenCost * priceMarkup) / PRICE_DENOMINATOR) +
-                    uint256(flatFee)
+                ((actualTokenCost * priceMarkup) / PRICE_DENOMINATOR)
             );
-            // todo review and update event
             emit TokenPaymasterOperation(
                 account,
                 address(feeToken),
-                ((actualTokenCost * priceMarkup) / PRICE_DENOMINATOR) +
-                    uint256(flatFee),
+                ((actualTokenCost * priceMarkup) / PRICE_DENOMINATOR),
                 oracleAggregator,
-                // review missing priceMarkup in event
-                uint256(flatFee),
+                priceMarkup,
                 userOpHash,
                 effectiveExchangeRate,
                 priceSource
@@ -708,8 +695,7 @@ contract BiconomyTokenPaymaster is
             emit TokenPaymentDue(
                 address(feeToken),
                 account,
-                ((actualTokenCost * priceMarkup) / PRICE_DENOMINATOR) +
-                    uint256(flatFee)
+                ((actualTokenCost * priceMarkup) / PRICE_DENOMINATOR)
             );
             // review
             // return; // Do nothing here to not revert the whole bundle and harm reputation
