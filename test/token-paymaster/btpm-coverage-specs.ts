@@ -51,7 +51,7 @@ export const encodePaymasterData = (
   priceMarkup: BigNumberish = ethers.constants.Zero
 ) => {
   return ethers.utils.defaultAbiCoder.encode(
-    ["uint48", "uint48", "address", "address", "uint256", "uint256"],
+    ["uint48", "uint48", "address", "address", "uint256", "uint32"],
     [MOCK_VALID_UNTIL, MOCK_VALID_AFTER, feeToken, oracleAggregator, exchangeRate, priceMarkup]
   );
 };

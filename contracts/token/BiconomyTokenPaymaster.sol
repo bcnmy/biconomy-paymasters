@@ -59,7 +59,7 @@ contract BiconomyTokenPaymaster is
     }*/
 
     /// @notice All 'price' variables are multiplied by this value to avoid rounding up
-    uint256 private constant PRICE_DENOMINATOR = 1e6;
+    uint32 private constant PRICE_DENOMINATOR = 1e6;
 
     // Gas used in EntryPoint._handlePostOp() method (including this#postOp() call)
     uint256 public UNACCOUNTED_COST = 45000; // TBD
@@ -117,7 +117,7 @@ contract BiconomyTokenPaymaster is
         address indexed token,
         uint256 indexed totalCharge,
         address oracleAggregator,
-        uint256 priceMarkup, // percentage... 1e6 = 100% = 1x
+        uint32 priceMarkup, // percentage... 1e6 = 100% = 1x
         bytes32 userOpHash,
         uint256 exchangeRate,
         ExchangeRateSource priceSource
@@ -495,7 +495,7 @@ contract BiconomyTokenPaymaster is
             address feeToken,
             address oracleAggregator,
             uint256 exchangeRate,
-            uint256 priceMarkup, // could be uint32
+            uint32 priceMarkup,
             bytes calldata signature
         )
     {
@@ -513,7 +513,7 @@ contract BiconomyTokenPaymaster is
             priceMarkup
         ) = abi.decode(
             paymasterAndData[VALID_PND_OFFSET:SIGNATURE_OFFSET],
-            (uint48, uint48, address, address, uint256, uint256)
+            (uint48, uint48, address, address, uint256, uint32)
         );
         signature = paymasterAndData[SIGNATURE_OFFSET:];
     }
@@ -553,7 +553,7 @@ contract BiconomyTokenPaymaster is
             address feeToken,
             address oracleAggregator,
             uint256 exchangeRate,
-            uint256 priceMarkup,
+            uint32 priceMarkup,
             bytes calldata signature
         ) = parsePaymasterAndData(userOp.paymasterAndData);
 
@@ -642,7 +642,7 @@ contract BiconomyTokenPaymaster is
             address oracleAggregator,
             ExchangeRateSource priceSource,
             uint256 exchangeRate,
-            uint256 priceMarkup,
+            uint32 priceMarkup,
             bytes32 userOpHash
         ) = abi.decode(
                 context,
@@ -652,7 +652,7 @@ contract BiconomyTokenPaymaster is
                     address,
                     ExchangeRateSource,
                     uint256,
-                    uint256,
+                    uint32,
                     bytes32
                 )
             );
