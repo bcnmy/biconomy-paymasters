@@ -485,6 +485,12 @@ contract BiconomyTokenPaymaster is
             bytes calldata signature
         )
     {
+        // either paymasterAndData.length == (SIGNATURE_OFFSET + 65
+        // OR
+        require(
+            paymasterAndData.length >= SIGNATURE_OFFSET,
+            "BTPM: Invalid length for paymasterAndData"
+        );
         priceSource = ExchangeRateSource(
             uint8(
                 bytes1(paymasterAndData[VALID_PND_OFFSET - 1:VALID_PND_OFFSET])
