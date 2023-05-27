@@ -244,6 +244,7 @@ contract BiconomyTokenPaymaster is
         (bool success, bytes memory returndata) = address(_oracleAggregator)
             .staticcall(_data);
         exchangeRate = 0; // this is assigned for fallback
+        // todo: test this with reverting flow (from oa -> getTokenValueForOneEth -> _getThePrice())
         if (success) {
             exchangeRate = abi.decode(returndata, (uint256));
         }
@@ -651,6 +652,7 @@ contract BiconomyTokenPaymaster is
             oracleAggregator != address(NATIVE_ADDRESS) &&
             oracleAggregator != address(0)
         ) {
+            // todo: test this with reverting flow (from oa -> getTokenValueForOneEth -> _getThePrice())
             uint256 result = exchangePrice(address(feeToken), oracleAggregator);
             if (result != 0) effectiveExchangeRate = result;
         }

@@ -2,13 +2,14 @@
 pragma solidity 0.8.17;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "./IOracleAggregator.sol";
+import "../../token/oracles/IOracleAggregator.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 /**
- * @title Primary Oracle Aggregator contract used to maintain price feeds for chainlink supported tokens.
+ * @title Mock Oracle Aggregator contract
+ * @notice DO NOT use this in any environment for use
  */
-contract ChainlinkOracleAggregator is Ownable, IOracleAggregator {
+contract MockChainlinkOracleAggregator is Ownable, IOracleAggregator {
     struct TokenInfo {
         /* Number of decimals represents the precision of the price returned by the feed. For example, 
      a price of $100.50 might be represented as 100500000000 in the contract, with 9 decimal places 
@@ -92,17 +93,11 @@ contract ChainlinkOracleAggregator is Ownable, IOracleAggregator {
             tokenPriceUnadjusted;
     }
 
+    // Making explicit revert
     function _getTokenPrice(
         address token
     ) internal view returns (uint256 tokenPriceUnadjusted) {
-        (bool success, bytes memory ret) = tokensInfo[token]
-            .callAddress
-            .staticcall(tokensInfo[token].callData);
+        bool success = false;
         require(success, "ChainlinkOracleAggregator:: query failed");
-        if (tokensInfo[token].dataSigned) {
-            tokenPriceUnadjusted = uint256(abi.decode(ret, (int256)));
-        } else {
-            tokenPriceUnadjusted = abi.decode(ret, (uint256));
-        }
     }
 }
