@@ -693,6 +693,7 @@ contract BiconomyTokenPaymaster is
         address target,
         uint256 amount
     ) private {
+        if (target == address(0)) revert CanNotWithdrawToZeroAddress();
         SafeTransferLib.safeTransfer(address(token), target, amount);
     }
 

@@ -243,6 +243,9 @@ describe("Biconomy Token Paymaster", function () {
       await expect(sampleTokenPaymaster.connect(ethersSigner[9]).withdrawERC20(token.address, withdrawAddress, collectedTokens))
       .to.be.revertedWith("Ownable: caller is not the owner");
 
+      await expect(sampleTokenPaymaster.connect(ethersSigner[6]).withdrawERC20(token.address, ethers.constants.AddressZero, collectedTokens))
+      .to.be.revertedWithCustomError(sampleTokenPaymaster, "CanNotWithdrawToZeroAddress");
+
       await sampleTokenPaymaster.connect(ethersSigner[6]).withdrawERC20(token.address, withdrawAddress, collectedTokens);
 
       const tokenBalanceAfter = await token.balanceOf(withdrawAddress);
