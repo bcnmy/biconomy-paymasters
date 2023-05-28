@@ -4,6 +4,7 @@ pragma solidity 0.8.17;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "../../token/oracles/IOracleAggregator.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import "hardhat/console.sol";
 
 /**
  * @title Mock Oracle Aggregator contract
@@ -97,7 +98,16 @@ contract MockChainlinkOracleAggregator is Ownable, IOracleAggregator {
     function _getTokenPrice(
         address token
     ) internal view returns (uint256 tokenPriceUnadjusted) {
-        bool success = false;
-        require(success, "ChainlinkOracleAggregator:: query failed");
+        // bool success = false;
+        (bool success, bytes memory ret) = tokensInfo[token]
+            .callAddress
+            .staticcall(tokensInfo[token].callData);
+        console.log("success is %s ", success);
+        // require(success, "ChainlinkOracleAggregator:: query failed");
+        if (tokensInfo[token].dataSigned) {
+            tokenPriceUnadjusted = uint256(abi.decode(ret, (int256)));
+        } else {
+            tokenPriceUnadjusted = abi.decode(ret, (uint256));
+        }
     }
 }
