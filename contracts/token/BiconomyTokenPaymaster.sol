@@ -485,8 +485,7 @@ contract BiconomyTokenPaymaster is
             bytes calldata signature
         )
     {
-        // either paymasterAndData.length == (SIGNATURE_OFFSET + 65
-        // OR
+        // paymasterAndData.length should be at least SIGNATURE_OFFSET + 65 (checked separate)
         require(
             paymasterAndData.length >= SIGNATURE_OFFSET,
             "BTPM: Invalid length for paymasterAndData"
