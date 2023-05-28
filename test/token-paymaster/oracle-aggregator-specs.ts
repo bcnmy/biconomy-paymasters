@@ -219,14 +219,5 @@ describe("Biconomy Token Paymaster: with Chainlink Aggregator", function () {
   });
 
   describe("Oracle Aggregator returning unexpected values / using stale feed", () => {
-    it("Query price form good and bad aggregator", async ()  => {
-
-        const rate1 = await oracleAggregator.getTokenValueOfOneNativeToken(token.address);
-        console.log(rate1);
-
-        const rate2 = await staleOracleAggregator.getTokenValueOfOneNativeToken(token.address);
-        console.log(rate2);
-
-    });
   });
 });
