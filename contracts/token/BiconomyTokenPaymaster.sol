@@ -649,7 +649,6 @@ contract BiconomyTokenPaymaster is
             oracleAggregator != address(NATIVE_ADDRESS) &&
             oracleAggregator != address(0)
         ) {
-            // todo: test this with reverting flow (from oa -> getTokenValueForOneEth -> _getThePrice())
             uint256 result = exchangePrice(address(feeToken), oracleAggregator);
             if (result != 0) effectiveExchangeRate = result;
         }
