@@ -236,17 +236,14 @@ contract BiconomyTokenPaymaster is
         address _token,
         address _oracleAggregator
     ) internal view virtual returns (uint256 exchangeRate) {
-        // get price from chosen oracle aggregator.
-        bytes memory _data = abi.encodeWithSelector(
-            IOracleAggregator.getTokenValueOfOneNativeToken.selector,
-            _token
-        );
-        (bool success, bytes memory returndata) = address(_oracleAggregator)
-            .staticcall(_data);
-        exchangeRate = 0; // this is assigned for fallback
-        // todo: test this with reverting flow (from oa -> getTokenValueForOneEth -> _getThePrice())
-        if (success) {
-            exchangeRate = abi.decode(returndata, (uint256));
+        try
+            IOracleAggregator(_oracleAggregator).getTokenValueOfOneNativeToken(
+                _token
+            )
+        returns (uint256 exchangeRate) {
+            return exchangeRate;
+        } catch {
+            return 0;
         }
     }
 
