@@ -79,6 +79,7 @@ contract BiconomyTokenPaymaster is
         address indexed _actor
     );
 
+
     /**
      * Designed to enable the community to track change in storage variable verifyingSigner which is used
      * to authorize any operation for this paymaster (validation stage) and provides signature*/
@@ -131,6 +132,16 @@ contract BiconomyTokenPaymaster is
         uint256 gasAmountDeposited
     );
 
+    // keccak256(bytes("TokenPaymentDue(address,address,uint256)"))
+    uint256 private constant _TOKENPAYMENTDUE_SIGNATURE = 0x41614445ea2ab6d87c504bdfc83cb5cb840e7219aa772383baff1ab0dd2a3113;
+    // keccak256(bytes("FeeReceiverChanged(address,address,address)"))
+    uint256 private constant _FEERECEIVERCHANGED_SIGNATURE = 0xff179728e4df4b0421c7de2106b1968d0604e1670493f8da3f907f2d020bb6d5;
+    // keccak256(bytes("VerifyingSignerChanged(address,address,address)"))
+    uint256 private constant _VERIFYINGSIGNERCHANGED_SIGNATURE = 0xe1f62c0e6d7bb6d470828565415bf2e87dbfea50e52d2d753788b529bd0c6d62;
+    // keccak256(EPGasOverheadChanged(uint256,uint256,address))
+    uint256 private constant _EPGASOVERHEADCHANGED_SIGNATURE = 0x303a4cca6d7dba1a29764b1c0aabac67516608dd37f88e064abc64c24b9c2743;
+
+
     constructor(
         address _owner,
         IEntryPoint _entryPoint,
@@ -164,8 +175,8 @@ contract BiconomyTokenPaymaster is
         address oldSigner = verifyingSigner;
         assembly ("memory-safe") {
             sstore(verifyingSigner.slot, _newVerifyingSigner)
+            log4(0x00,0x00,_VERIFYINGSIGNERCHANGED_SIGNATURE,oldSigner,_newVerifyingSigner,caller())
         }
-        emit VerifyingSignerChanged(oldSigner, _newVerifyingSigner, msg.sender);
     }
 
     // marked for removal
@@ -183,8 +194,8 @@ contract BiconomyTokenPaymaster is
         address oldFeeReceiver = feeReceiver;
         assembly ("memory-safe") {
             sstore(feeReceiver.slot, _newFeeReceiver)
+            log4(0x00,0x00,_FEERECEIVERCHANGED_SIGNATURE,oldFeeReceiver,_newFeeReceiver,caller())
         }
-        emit FeeReceiverChanged(oldFeeReceiver, _newFeeReceiver, msg.sender);
     }
 
     /**
@@ -202,8 +213,8 @@ contract BiconomyTokenPaymaster is
         uint256 oldValue = UNACCOUNTED_COST;
         assembly ("memory-safe") {
             sstore(UNACCOUNTED_COST.slot, _newOverheadCost)
+            log4(0x00,0x00,_EPGASOVERHEADCHANGED_SIGNATURE,oldValue,_newOverheadCost,caller())
         }
-        emit EPGasOverheadChanged(oldValue, _newOverheadCost, msg.sender);
     }
 
     /**
@@ -678,11 +689,10 @@ contract BiconomyTokenPaymaster is
         } else {
             //in case above transferFrom failed, pay with deposit / notify at least
             //sender could be banned indefinitely or for certain period
-            emit TokenPaymentDue(
-                address(feeToken),
-                account,
-                actualTokenCost + fee
-            );
+            address feeTokenAddress = address(feeToken);
+            assembly{
+                log4(0x00,0x00,_TOKENPAYMENTDUE_SIGNATURE, feeTokenAddress, account, add(actualTokenCost,fee) )
+            }
             // review
             // return; // Do nothing here to not revert the whole bundle and harm reputation
         }
