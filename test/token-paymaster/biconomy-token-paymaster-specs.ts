@@ -36,7 +36,6 @@ const MOCK_VALID_AFTER = "0x0000000000001234";
 const MOCK_SIG = "0x1234";
 const MOCK_ERC20_ADDR = "0x" + "01".repeat(20);
 const DEFAULT_FEE_MARKUP = 1100000;
-const WETH9 = "0x9c3C9283D3e44854697Cd22D3Faa240Cfb032889"; // not not deploying on local devnet (yet)
 // Assume TOKEN decimals is 18, then 1 ETH = 1000 TOKENS
 // const MOCK_FX = ethers.constants.WeiPerEther.mul(1000);
 
@@ -153,8 +152,7 @@ describe("Biconomy Token Paymaster", function () {
     ).deploy(
       walletOwnerAddress,
       entryPoint.address,
-      await offchainSigner.getAddress(),
-      WETH9
+      await offchainSigner.getAddress()
     );
 
     smartWalletImp = await new BiconomyAccountImplementation__factory(deployer).deploy(
@@ -390,6 +388,64 @@ describe("Biconomy Token Paymaster", function () {
       await expect(entryPoint.callStatic.simulateValidation(userOp))
       .to.be.revertedWithCustomError(entryPoint, "FailedOp")
       .withArgs(0, "AA33 reverted: BTPM: invalid signature length in paymasterAndData");
+    });
+
+    it("should revert (from EntryPoint) on invalid paymaster and data length", async ()  => {
+
+      const userSCW: any = BiconomyAccountImplementation__factory.connect(walletAddress, deployer)
+    
+      const userOp = await fillAndSign(
+        {
+          sender: walletAddress,
+          verificationGasLimit: 200000,
+          // initCode: hexConcat([walletFactory.address, deploymentData]),
+          // nonce: 0,
+          callData: encodeERC20Approval(
+            userSCW,
+            token,
+            paymasterAddress,
+            ethers.constants.MaxUint256
+          ),
+          paymasterAndData: '0x1234',
+        },
+        walletOwner,
+        entryPoint,
+        "nonce"
+      );
+
+      await expect(entryPoint.callStatic.simulateValidation(userOp))
+      .to.be.revertedWith("AA93 invalid paymasterAndData")
+    });
+
+    it("should revert (from Paymaster) on invalid paymaster and data length", async ()  => {
+
+      const userSCW: any = BiconomyAccountImplementation__factory.connect(walletAddress, deployer)
+    
+      const userOp = await fillAndSign(
+        {
+          sender: walletAddress,
+          verificationGasLimit: 200000,
+          // initCode: hexConcat([walletFactory.address, deploymentData]),
+          // nonce: 0,
+          callData: encodeERC20Approval(
+            userSCW,
+            token,
+            paymasterAddress,
+            ethers.constants.MaxUint256
+          ),
+          paymasterAndData: ethers.utils.hexConcat([
+            paymasterAddress,
+            '0x1234',
+          ]),
+        },
+        walletOwner,
+        entryPoint,
+        "nonce"
+      );
+
+      await expect(entryPoint.callStatic.simulateValidation(userOp))
+      .to.be.revertedWithCustomError(entryPoint, "FailedOp")
+      .withArgs(0, "AA33 reverted: BTPM: Invalid length for paymasterAndData");
     });
 
     it("should revert on invalid signature", async ()  => {

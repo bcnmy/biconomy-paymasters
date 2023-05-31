@@ -31,7 +31,6 @@ import { BigNumber, BigNumberish, Contract, Signer } from "ethers";
 
 const MOCK_VALID_UNTIL = "0x00000000deadbeef";
 const MOCK_VALID_AFTER = "0x0000000000001234";
-const WETH9 = "0x9c3C9283D3e44854697Cd22D3Faa240Cfb032889"; // not not deploying on local devnet (yet)
 // Assume TOKEN decimals is 18, then 1 ETH = 1000 TOKENS
 // const MOCK_FX = ethers.constants.WeiPerEther.mul(1000);
 
@@ -148,8 +147,7 @@ describe("Biconomy Token Paymaster", function () {
     ).deploy(
       walletOwnerAddress,
       entryPoint.address,
-      await offchainSigner.getAddress(),
-      WETH9
+      await offchainSigner.getAddress()
     );
 
     smartWalletImp = await new BiconomyAccountImplementation__factory(deployer).deploy(

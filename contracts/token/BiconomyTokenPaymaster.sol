@@ -12,7 +12,6 @@ import {IOracleAggregator} from "./oracles/IOracleAggregator.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@account-abstraction/contracts/core/Helpers.sol" as Helpers;
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {IWETH9} from "../interfaces/IWETH9.sol";
 import "../utils/SafeTransferLib.sol";
 import {TokenPaymasterErrors} from "./TokenPaymasterErrors.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
@@ -79,9 +78,6 @@ contract BiconomyTokenPaymaster is
     address private constant NATIVE_ADDRESS =
         0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
-    // address of wrapped native token
-    address private immutable WETH9;
-
     /**
      * Designed to enable the community to track change in storage variable UNACCOUNTED_COST which is used
      * to maintain gas execution cost which can't be calculated within contract*/
@@ -132,31 +128,17 @@ contract BiconomyTokenPaymaster is
         uint256 indexed charge
     );
 
-    /**
-     * Record the information of swap made on dex router and native tokens deposited
-     */
-    event TokenSwappedAndGasDeposited(
-        address indexed dexRouterAddress,
-        address indexed token,
-        bytes indexed routerCalldata,
-        bool success,
-        uint256 gasAmountDeposited
-    );
-
     event Received(address indexed sender, uint256 value);
 
     constructor(
         address _owner,
         IEntryPoint _entryPoint,
-        address _verifyingSigner,
-        address _weth9
+        address _verifyingSigner
     ) payable BasePaymaster(_owner, _entryPoint) {
         if (_owner == address(0)) revert OwnerCannotBeZero();
         if (address(_entryPoint) == address(0)) revert EntryPointCannotBeZero();
         if (_verifyingSigner == address(0))
             revert VerifyingSignerCannotBeZero();
-        if (_weth9 == address(0)) revert WETH9CannotBeZero();
-        WETH9 = _weth9;
         assembly ("memory-safe") {
             sstore(verifyingSigner.slot, _verifyingSigner)
             sstore(feeReceiver.slot, address()) // initialize with self (could also be _owner)
@@ -250,111 +232,15 @@ contract BiconomyTokenPaymaster is
         address _token,
         address _oracleAggregator
     ) internal view virtual returns (uint256 exchangeRate) {
-        // get price from chosen oracle aggregator.
-        bytes memory _data = abi.encodeWithSelector(
-            IOracleAggregator.getTokenValueOfOneNativeToken.selector,
-            _token
-        );
-        (bool success, bytes memory returndata) = address(_oracleAggregator)
-            .staticcall(_data);
-        exchangeRate = 0; // this is assigned for fallback
-        if (success) {
-            exchangeRate = abi.decode(returndata, (uint256));
+        try
+            IOracleAggregator(_oracleAggregator).getTokenValueOfOneNativeToken(
+                _token
+            )
+        returns (uint256 exchangeRate) {
+            return exchangeRate;
+        } catch {
+            return 0;
         }
-    }
-
-    // review can be marked for removal
-    /**
-     * @dev approve ERC20 tokens from this paymaster contract to the dex router. required to generate data for cases like 1Inch
-     * @param _token the token address
-     * @param _dexRouter dex router address to approve
-     * @param _amount amount to approve
-     */
-    function approveRouterPrior(
-        address _token,
-        address _dexRouter,
-        uint256 _amount
-    ) public payable onlyOwner {
-        SafeTransferLib.safeApprove(_token, _dexRouter, _amount);
-    }
-
-    // review could pack attributes in single / 2 structs. A label field string memory label can be added
-    // review if an adapter has to be called instead of router directly then this would add steps to transfer tokens to adapter and make approval of adapter to router
-    /**
-     * @dev Helper function to trigger periodic swap to convert tokens received inside this paymaster back to native tokens and immediately deposit on entry point.
-     * @notice actual swap data is generated offchain basen on i. router ii. token to swap iii. amount of tokens iv. route v. slippage etc
-     * @notice Biconomy may not use feeReceiver to be paymaster contract itself. In this case tokens do not need to be pulled or swapped from the contract
-     * @param _dexRouter dex router/adapter address
-     * @param _swapData calldata for making the swap on chosen router. as function signature also depends on the choice
-     * @param _approveRouter caller sends if the router being used is to be approved or not
-     * @param _token ERC20 token address being swapped. useless is above bool flag is false
-     * @param _amount ERC20 token amount to be approved. useless is above bool flag is false
-     * @param _maxDepositToEP sender can pass maximum amount of gas to be deposited to entry point
-     */
-    function swapTokenForNativeAndDeposit(
-        address _dexRouter,
-        bytes calldata _swapData,
-        bool _approveRouter,
-        address _token,
-        uint256 _amount,
-        uint256 _maxDepositToEP
-    )
-        public
-        payable
-        onlyOwner
-        nonReentrant
-        returns (bool success, uint256 depositAmount)
-    {
-        // only proceed if router is not 0 address
-        if (_dexRouter == address(0)) revert DEXRouterCannotBeZero();
-        // make approval to router
-        if (_approveRouter) {
-            SafeTransferLib.safeApprove(_token, _dexRouter, _amount);
-        }
-
-        // make the swap
-        // review could take snapshot of token balance and native token balance before and after the swap
-        (bool success, bytes memory returndata) = address(_dexRouter).call(
-            _swapData
-        );
-
-        {
-            // if we made a swap to wrapped native asset
-            uint256 weth9Balance = IERC20(WETH9).balanceOf(address(this));
-            if (weth9Balance != 0) {
-                // unwrap
-                bytes memory _data = abi.encodeWithSelector(
-                    IWETH9.withdraw.selector,
-                    weth9Balance
-                );
-
-                (bool success, bytes memory returndata) = address(WETH9).call(
-                    _data
-                );
-            }
-        }
-
-        // here we are assuming that after above call to the router, Native tokens would have been received in the contract
-        uint256 depositAmount = address(this).balance;
-
-        if (depositAmount > _maxDepositToEP) {
-            depositAmount = _maxDepositToEP;
-        }
-
-        if (depositAmount != 0) {
-            // entrypoint.depositTo
-            IEntryPoint(entryPoint).depositTo{value: depositAmount}(
-                address(this)
-            );
-        }
-
-        emit TokenSwappedAndGasDeposited(
-            _dexRouter,
-            _token,
-            _swapData,
-            success,
-            depositAmount
-        );
     }
 
     /**
@@ -424,7 +310,7 @@ contract BiconomyTokenPaymaster is
     }
 
     /**
-     * @dev pull native tokens out of paymaster in case they were sent to the paymaster at any point or excess funds left after swapping tokens and not deposited fully to entry point.
+     * @dev pull native tokens out of paymaster in case they were sent to the paymaster at any point
      * @param dest address to send to
      */
     function withdrawAllNative(
@@ -499,6 +385,11 @@ contract BiconomyTokenPaymaster is
             bytes calldata signature
         )
     {
+        // paymasterAndData.length should be at least SIGNATURE_OFFSET + 65 (checked separate)
+        require(
+            paymasterAndData.length >= SIGNATURE_OFFSET,
+            "BTPM: Invalid length for paymasterAndData"
+        );
         priceSource = ExchangeRateSource(
             uint8(
                 bytes1(paymasterAndData[VALID_PND_OFFSET - 1:VALID_PND_OFFSET])
