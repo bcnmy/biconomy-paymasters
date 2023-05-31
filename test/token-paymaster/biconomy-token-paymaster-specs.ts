@@ -393,6 +393,64 @@ describe("Biconomy Token Paymaster", function () {
       .withArgs(0, "AA33 reverted: BTPM: invalid signature length in paymasterAndData");
     });
 
+    it("should revert (from EntryPoint) on invalid paymaster and data length", async ()  => {
+
+      const userSCW: any = BiconomyAccountImplementation__factory.connect(walletAddress, deployer)
+    
+      const userOp = await fillAndSign(
+        {
+          sender: walletAddress,
+          verificationGasLimit: 200000,
+          // initCode: hexConcat([walletFactory.address, deploymentData]),
+          // nonce: 0,
+          callData: encodeERC20Approval(
+            userSCW,
+            token,
+            paymasterAddress,
+            ethers.constants.MaxUint256
+          ),
+          paymasterAndData: '0x1234',
+        },
+        walletOwner,
+        entryPoint,
+        "nonce"
+      );
+
+      await expect(entryPoint.callStatic.simulateValidation(userOp))
+      .to.be.revertedWith("AA93 invalid paymasterAndData")
+    });
+
+    it("should revert (from Paymaster) on invalid paymaster and data length", async ()  => {
+
+      const userSCW: any = BiconomyAccountImplementation__factory.connect(walletAddress, deployer)
+    
+      const userOp = await fillAndSign(
+        {
+          sender: walletAddress,
+          verificationGasLimit: 200000,
+          // initCode: hexConcat([walletFactory.address, deploymentData]),
+          // nonce: 0,
+          callData: encodeERC20Approval(
+            userSCW,
+            token,
+            paymasterAddress,
+            ethers.constants.MaxUint256
+          ),
+          paymasterAndData: ethers.utils.hexConcat([
+            paymasterAddress,
+            '0x1234',
+          ]),
+        },
+        walletOwner,
+        entryPoint,
+        "nonce"
+      );
+
+      await expect(entryPoint.callStatic.simulateValidation(userOp))
+      .to.be.revertedWithCustomError(entryPoint, "FailedOp")
+      .withArgs(0, "AA33 reverted: BTPM: Invalid length for paymasterAndData");
+    });
+
     it("should revert on invalid signature", async ()  => {
 
       const userSCW: any = BiconomyAccountImplementation__factory.connect(walletAddress, deployer)

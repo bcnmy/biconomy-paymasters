@@ -48,12 +48,13 @@ export async function deployEntryPoint(
 
 export const encodePaymasterData = (
   feeToken = ethers.constants.AddressZero,
+  oracleAggregator = ethers.constants.AddressZero,
   exchangeRate: BigNumberish = ethers.constants.Zero,
   fee: BigNumberish = ethers.constants.Zero
 ) => {
   return ethers.utils.defaultAbiCoder.encode(
-    ["uint48", "uint48", "address", "uint256", "uint256"],
-    [MOCK_VALID_UNTIL, MOCK_VALID_AFTER, feeToken, exchangeRate, fee]
+    ["uint48", "uint48", "address", "address", "uint256", "uint256"],
+    [MOCK_VALID_UNTIL, MOCK_VALID_AFTER, feeToken, oracleAggregator, exchangeRate, fee]
   );
 };
 
