@@ -34,7 +34,7 @@ const MOCK_VALID_UNTIL = "0x00000000deadbeef";
 const MOCK_VALID_AFTER = "0x0000000000001234";
 const MOCK_SIG = "0x1234";
 const MOCK_ERC20_ADDR = "0x" + "01".repeat(20);
-const MOCK_FEE = "0";
+const DEFAULT_FEE_MARKUP = 1100000;
 // Assume TOKEN decimals is 18, then 1 ETH = 1000 TOKENS
 // const MOCK_FX = ethers.constants.WeiPerEther.mul(1000);
 
@@ -51,11 +51,11 @@ export const encodePaymasterData = (
   feeToken = ethers.constants.AddressZero,
   oracleAggregator = ethers.constants.AddressZero,
   exchangeRate: BigNumberish = ethers.constants.Zero,
-  fee: BigNumberish = ethers.constants.Zero
+  priceMarkup: BigNumberish = ethers.constants.Zero
 ) => {
   return ethers.utils.defaultAbiCoder.encode(
-    ["uint48", "uint48", "address", "address", "uint256", "uint256"],
-    [MOCK_VALID_UNTIL, MOCK_VALID_AFTER, feeToken, oracleAggregator, exchangeRate, fee]
+    ["uint48", "uint48", "address", "address", "uint256", "uint32"],
+    [MOCK_VALID_UNTIL, MOCK_VALID_AFTER, feeToken, oracleAggregator, exchangeRate, priceMarkup]
   );
 };
 
@@ -194,7 +194,7 @@ describe("Biconomy Token Paymaster", function () {
       const paymasterAndData = ethers.utils.hexConcat([
         paymasterAddress,
         ethers.utils.hexlify(1).slice(0, 4),
-        encodePaymasterData(token.address, oracleAggregator.address, MOCK_FX),
+        encodePaymasterData(token.address, oracleAggregator.address, MOCK_FX, DEFAULT_FEE_MARKUP),
         "0x" + "00".repeat(65),
       ]);
 
@@ -203,7 +203,7 @@ describe("Biconomy Token Paymaster", function () {
       );
 
       expect(res.priceSource).to.equal(1);
-      expect(res.fee).to.equal(ethers.constants.Zero);
+      expect(res.priceMarkup).to.equal(DEFAULT_FEE_MARKUP);
       expect(res.validUntil).to.equal(ethers.BigNumber.from(MOCK_VALID_UNTIL));
       expect(res.validAfter).to.equal(ethers.BigNumber.from(MOCK_VALID_AFTER));
       expect(res.feeToken).to.equal(token.address);
@@ -268,9 +268,6 @@ describe("Biconomy Token Paymaster", function () {
         "nonce"
       );
 
-      console.log("userOp");
-      console.log(userOp1);
-
       const hash = await sampleTokenPaymaster.getHash(
         userOp1,
         ethers.utils.hexlify(1).slice(2, 4),
@@ -279,7 +276,7 @@ describe("Biconomy Token Paymaster", function () {
         token.address,
         oracleAggregator.address,
         MOCK_FX,
-        MOCK_FEE
+        DEFAULT_FEE_MARKUP
       );
       const sig = await offchainSigner.signMessage(arrayify(hash));
       const userOp = await fillAndSign(
@@ -288,7 +285,7 @@ describe("Biconomy Token Paymaster", function () {
           paymasterAndData: ethers.utils.hexConcat([
             paymasterAddress,
             ethers.utils.hexlify(1).slice(0, 4),
-            encodePaymasterData(token.address, oracleAggregator.address, MOCK_FX),
+            encodePaymasterData(token.address, oracleAggregator.address, MOCK_FX, DEFAULT_FEE_MARKUP),
             sig,
           ]),
         },
