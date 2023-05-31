@@ -2801,9 +2801,9 @@ dom-walk@^0.1.0:
   integrity sha512-6QvTW9mrGeIegrFXdtQi9pk7O/nSK6lSdXW2eqUspN5LWD7UTji2Fqw5V2YLjBpHEoU9Xl/eUWNpDeZvoyOv2w==
 
 dotenv@^16.0.3:
-  version "16.0.3"
-  resolved "https://registry.yarnpkg.com/dotenv/-/dotenv-16.0.3.tgz#115aec42bac5053db3c456db30cc243a5a836a07"
-  integrity sha512-7GO6HghkA5fYG9TYnNxi14/7K9f5occMlp3zXAuSxn7CKCxt9xbNWG7yF8hTCSUchlfWSe3uLmlPfigevRItzQ==
+  version "16.1.1"
+  resolved "https://registry.yarnpkg.com/dotenv/-/dotenv-16.1.1.tgz#9105a6c486ab66076231fbe7cf4ba77131a61d65"
+  integrity sha512-UGmzIqXU/4b6Vb3R1Vrfd/4vGgVlB+mO+vEixOdfRhLeppkyW2BMhuK7TL8d0el+q9c4lW9qK2wZYhNLFhXYLA==
 
 ecc-jsbn@~0.1.1:
   version "0.1.2"
@@ -4156,9 +4156,9 @@ hardhat-watcher@^2.1.1:
     chokidar "^3.5.3"
 
 hardhat@^2.13.0, hardhat@^2.9.5:
-  version "2.14.0"
-  resolved "https://registry.yarnpkg.com/hardhat/-/hardhat-2.14.0.tgz#b60c74861494aeb1b50803cf04cc47865a42b87a"
-  integrity sha512-73jsInY4zZahMSVFurSK+5TNCJTXMv+vemvGia0Ac34Mm19fYp6vEPVGF3sucbumszsYxiTT2TbS8Ii2dsDSoQ==
+  version "2.14.1"
+  resolved "https://registry.yarnpkg.com/hardhat/-/hardhat-2.14.1.tgz#4dd252717f4987d8221c4f6fd08233b7f4251fd8"
+  integrity sha512-H3Qp/UKyQGmPDDBSfMoSyH18rRnac90rsb0LNer+sKe6at6rxLe4D5j+M+1icqZQF02iLPjNRwc/PA8OPf757A==
   dependencies:
     "@ethersproject/abi" "^5.1.2"
     "@metamask/eth-sig-util" "^4.0.0"
