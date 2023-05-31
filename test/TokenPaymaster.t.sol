@@ -62,10 +62,8 @@ contract TokenPaymasterTest is Test {
         walletOwner = users[3];
         vm.label(walletOwner, "Account Owner");
 
-        address WETH9 = 0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270;
-
          _ep = new EntryPoint();
-        _btpm = new BiconomyTokenPaymaster(alice, _ep, bob, WETH9);
+        _btpm = new BiconomyTokenPaymaster(alice, _ep, bob);
 
          _oa1 = new ChainlinkOracleAggregator(alice);
          usdc = new MockToken();
