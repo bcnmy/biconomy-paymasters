@@ -49,6 +49,18 @@ contract BiconomyTokenPaymaster is
         ORACLE_BASED
     }
 
+    // in case flat fee needs to be enabled
+    // 1. use mode and based on mode treat uint256 fee sent either as priceMarkup or flatFee
+    // 2. (no mode required) add extra value in paymasterandData so uint32 markup and uint224 flatFee both can be parsed
+    // 3. (no mode required) without extra value treat uint256 as packed uint32uint224 and use values accordingly
+    /*enum FeePremiumMode {
+        PERCENTAGE,
+        FLAT
+    }*/
+
+    /// @notice All 'price' variables are multiplied by this value to avoid rounding up
+    uint32 private constant PRICE_DENOMINATOR = 1e6;
+
     // Gas used in EntryPoint._handlePostOp() method (including this#postOp() call)
     uint256 public UNACCOUNTED_COST = 45000; // TBD
 
@@ -58,7 +70,7 @@ contract BiconomyTokenPaymaster is
     // receiver of withdrawn fee tokens
     address public feeReceiver;
 
-    // paymasterAndData: concat of [paymasterAddress(address), priceSource(enum 1 byte), abi.encode(validUntil, validAfter, feeToken, oracleAggregator, exchangeRate, fee): makes up 32*6 bytes, signature]
+    // paymasterAndData: concat of [paymasterAddress(address), priceSource(enum 1 byte), abi.encode(validUntil, validAfter, feeToken, oracleAggregator, exchangeRate, priceMarkup): makes up 32*6 bytes, signature]
     // PND offset is used to indicate offsets to decode, used along with Signature offset
     uint256 private constant VALID_PND_OFFSET = 21;
 
@@ -105,7 +117,7 @@ contract BiconomyTokenPaymaster is
         address indexed token,
         uint256 indexed totalCharge,
         address oracleAggregator,
-        uint256 premium,
+        uint32 priceMarkup, // percentage... 1e6 = 100% = 1x
         bytes32 userOpHash,
         uint256 exchangeRate,
         ExchangeRateSource priceSource
@@ -130,6 +142,8 @@ contract BiconomyTokenPaymaster is
         bool success,
         uint256 gasAmountDeposited
     );
+
+    event Received(address indexed sender, uint256 value);
 
     constructor(
         address _owner,
@@ -441,7 +455,7 @@ contract BiconomyTokenPaymaster is
         address feeToken,
         address oracleAggregator,
         uint256 exchangeRate,
-        uint256 fee
+        uint32 priceMarkup
     ) public view returns (bytes32) {
         //can't use userOp.hash(), since it contains also the paymasterAndData itself.
         return
@@ -464,7 +478,7 @@ contract BiconomyTokenPaymaster is
                     feeToken,
                     oracleAggregator,
                     exchangeRate,
-                    fee
+                    priceMarkup
                 )
             );
     }
@@ -481,7 +495,7 @@ contract BiconomyTokenPaymaster is
             address feeToken,
             address oracleAggregator,
             uint256 exchangeRate,
-            uint256 fee,
+            uint32 priceMarkup,
             bytes calldata signature
         )
     {
@@ -496,10 +510,10 @@ contract BiconomyTokenPaymaster is
             feeToken,
             oracleAggregator,
             exchangeRate,
-            fee
+            priceMarkup
         ) = abi.decode(
             paymasterAndData[VALID_PND_OFFSET:SIGNATURE_OFFSET],
-            (uint48, uint48, address, address, uint256, uint256)
+            (uint48, uint48, address, address, uint256, uint32)
         );
         signature = paymasterAndData[SIGNATURE_OFFSET:];
     }
@@ -507,7 +521,7 @@ contract BiconomyTokenPaymaster is
     /**
      * @dev Verify that an external signer signed the paymaster data of a user operation.
      * The paymaster data is expected to be the paymaster address, request data and a signature over the entire request parameters.
-     * paymasterAndData: hexConcat([paymasterAddress, priceSource, abi.encode(validUntil, validAfter, feeToken, oracleAggregator, exchangeRate, fee), signature])
+     * paymasterAndData: hexConcat([paymasterAddress, priceSource, abi.encode(validUntil, validAfter, feeToken, oracleAggregator, exchangeRate, priceMarkup), signature])
      * @param userOp The UserOperation struct that represents the current user operation.
      * userOpHash The hash of the UserOperation struct.
      * @param requiredPreFund The required amount of pre-funding for the paymaster.
@@ -539,7 +553,7 @@ contract BiconomyTokenPaymaster is
             address feeToken,
             address oracleAggregator,
             uint256 exchangeRate,
-            uint256 fee,
+            uint32 priceMarkup,
             bytes calldata signature
         ) = parsePaymasterAndData(userOp.paymasterAndData);
 
@@ -557,7 +571,7 @@ contract BiconomyTokenPaymaster is
             feeToken,
             oracleAggregator,
             exchangeRate,
-            fee
+            priceMarkup
         ).toEthSignedMessageHash();
 
         context = "";
@@ -578,21 +592,17 @@ contract BiconomyTokenPaymaster is
         // This model assumes irrespective of priceSource exchangeRate is always sent from outside
         // for below checks you would either need maxCost or some exchangeRate
 
-        // review: can add some checks here on calculated value, fee cap, exchange rate
         uint256 tokenRequiredPreFund = ((requiredPreFund + costOfPost) *
             exchangeRate) / 10 ** 18;
         require(
             tokenRequiredPreFund != 0,
             "BTPM: calculated token charge invalid"
         );
+        require(priceMarkup <= 2e6, "BTPM: price markup percentage too high");
+        require(priceMarkup >= 1e6, "BTPM: price markup percentage too low");
         require(
-            fee <= (tokenRequiredPreFund * 20) / 100,
-            "BTPM: fee markup too high"
-        );
-
-        // review: could be lifted if we're considering simulations if payment tokens are being sourced as part of userop.calldata
-        require(
-            IERC20(feeToken).balanceOf(account) >= (tokenRequiredPreFund + fee),
+            IERC20(feeToken).balanceOf(account) >=
+                ((tokenRequiredPreFund * priceMarkup) / PRICE_DENOMINATOR),
             "BTPM: account does not have enough token balance"
         );
 
@@ -602,7 +612,7 @@ contract BiconomyTokenPaymaster is
             oracleAggregator,
             priceSource,
             exchangeRate,
-            fee,
+            priceMarkup,
             userOpHash
         );
 
@@ -629,7 +639,7 @@ contract BiconomyTokenPaymaster is
             address oracleAggregator,
             ExchangeRateSource priceSource,
             uint256 exchangeRate,
-            uint256 fee,
+            uint32 priceMarkup,
             bytes32 userOpHash
         ) = abi.decode(
                 context,
@@ -639,7 +649,7 @@ contract BiconomyTokenPaymaster is
                     address,
                     ExchangeRateSource,
                     uint256,
-                    uint256,
+                    uint32,
                     bytes32
                 )
             );
@@ -656,21 +666,27 @@ contract BiconomyTokenPaymaster is
         }
 
         // We could either touch the state for BASEFEE and calculate based on maxPriorityFee passed (to be added in context along with maxFeePerGas) or just use tx.gasprice
-        uint256 actualTokenCost = ((actualGasCost +
-            (UNACCOUNTED_COST * tx.gasprice)) * effectiveExchangeRate) / 1e18;
+        uint256 charge;
+        {
+            uint256 actualTokenCost = ((actualGasCost +
+                (UNACCOUNTED_COST * tx.gasprice)) * effectiveExchangeRate) /
+                1e18;
+            charge = ((actualTokenCost * priceMarkup) / PRICE_DENOMINATOR);
+        }
+
         if (mode != PostOpMode.postOpReverted) {
             SafeTransferLib.safeTransferFrom(
                 address(feeToken),
                 account,
                 feeReceiver,
-                actualTokenCost + fee
+                charge
             );
             emit TokenPaymasterOperation(
                 account,
                 address(feeToken),
-                actualTokenCost + fee,
+                charge,
                 oracleAggregator,
-                fee,
+                priceMarkup,
                 userOpHash,
                 effectiveExchangeRate,
                 priceSource
@@ -678,11 +694,7 @@ contract BiconomyTokenPaymaster is
         } else {
             //in case above transferFrom failed, pay with deposit / notify at least
             //sender could be banned indefinitely or for certain period
-            emit TokenPaymentDue(
-                address(feeToken),
-                account,
-                actualTokenCost + fee
-            );
+            emit TokenPaymentDue(address(feeToken), account, charge);
             // review
             // return; // Do nothing here to not revert the whole bundle and harm reputation
         }
@@ -697,6 +709,7 @@ contract BiconomyTokenPaymaster is
         SafeTransferLib.safeTransfer(address(token), target, amount);
     }
 
-    // in order to receive eth from a trade
-    receive() external payable {}
+    receive() external payable {
+        emit Received(msg.sender, msg.value);
+    }
 }
