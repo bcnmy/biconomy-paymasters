@@ -48,7 +48,6 @@ contract BiconomyTokenPaymaster is
         ORACLE_BASED
     }
 
-    // in case flat fee needs to be enabled
     // 1. use mode and based on mode treat uint256 fee sent either as priceMarkup or flatFee
     // 2. (no mode required) add extra value in paymasterandData so uint32 markup and uint224 flatFee both can be parsed
     // 3. (no mode required) without extra value treat uint256 as packed uint32uint224 and use values accordingly
@@ -57,7 +56,8 @@ contract BiconomyTokenPaymaster is
         FLAT
     }*/
 
-    /// @notice All 'price' variables are multiplied by this value to avoid rounding up
+    /// @notice All 'price' variable coming from outside are expected to be multiple of 1e6, and in actual calculation,
+    /// final value is divided by PRICE_DENOMINATOR to avoid rounding up.
     uint32 private constant PRICE_DENOMINATOR = 1e6;
 
     // Gas used in EntryPoint._handlePostOp() method (including this#postOp() call)
@@ -108,12 +108,13 @@ contract BiconomyTokenPaymaster is
     /**
      * Designed to enable tracking how much fees were charged from the sender and in which ERC20 token
      * More information can be emitted like exchangeRate used, what was the source of exchangeRate etc*/
+    // priceMarkup = Multiplier value to calculate markup, 1e6 means 1x multiplier = No markup
     event TokenPaymasterOperation(
         address indexed sender,
         address indexed token,
         uint256 indexed totalCharge,
         address oracleAggregator,
-        uint32 priceMarkup, // percentage... 1e6 = 100% = 1x
+        uint32 priceMarkup,
         bytes32 userOpHash,
         uint256 exchangeRate,
         ExchangeRateSource priceSource
@@ -557,7 +558,7 @@ contract BiconomyTokenPaymaster is
         }
 
         // We could either touch the state for BASEFEE and calculate based on maxPriorityFee passed (to be added in context along with maxFeePerGas) or just use tx.gasprice
-        uint256 charge;
+        uint256 charge; // Final amount to be charged from user account
         {
             uint256 actualTokenCost = ((actualGasCost +
                 (UNACCOUNTED_COST * tx.gasprice)) * effectiveExchangeRate) /
