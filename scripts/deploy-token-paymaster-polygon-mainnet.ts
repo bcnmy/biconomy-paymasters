@@ -40,7 +40,7 @@ async function main() {
   const tokenPaymaster = await BiconomyTokenPaymaster.deploy(
     earlyOwner,
     entryPoint,
-    verifyingSigner
+    verifyingSigner,
     gasPrices
   );
 
