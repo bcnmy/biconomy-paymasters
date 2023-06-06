@@ -346,14 +346,16 @@ describe("Biconomy Token Paymaster", function () {
         const accountTokenBal = await token.balanceOf(walletAddress)
         const paymasterTokenBal = await token.balanceOf(paymasterAddress)
         const charlieTokenBal = await token.balanceOf(charlie)
-        console.log("account token balance in beginning of third test ", accountTokenBal.toString())
-        console.log("paymaster token balance in beginning of third test ", paymasterTokenBal.toString())
-        console.log("charlie token balance in beginning of third test ", charlieTokenBal.toString())
+        console.log("account token balance in beginning of second test ", accountTokenBal.toString())
+        console.log("paymaster token balance in beginning of second test ", paymasterTokenBal.toString())
+        console.log("charlie token balance in beginning of second test ", charlieTokenBal.toString())
   
         const currentAllowanceToPaymaster = await token.allowance(walletAddress, paymasterAddress);
-        console.log("allowance to paymaster in begining of third test ", currentAllowanceToPaymaster.toString());
-        
-  
+        console.log("allowance to paymaster in begining of second test ", currentAllowanceToPaymaster.toString());
+
+        const paymasterDepositBefore = await entryPoint.balanceOf(paymasterAddress);
+        console.log("paymaster deposit on the entry point in beginning of second test ", paymasterDepositBefore.toString());
+      
         // We make transferFrom impossible by setting allowance to zero
         const userOp1 = await fillAndSign(
           {
@@ -404,6 +406,20 @@ describe("Biconomy Token Paymaster", function () {
       await expect(entryPoint.estimateGas.handleOps([userOp], await offchainSigner.getAddress()))
         .to.to.be.revertedWithCustomError(entryPoint, "FailedOp")
         .withArgs(0, "AA50 postOp revert");
-        });
-      });    
+
+      const accountTokenBalAfter = await token.balanceOf(walletAddress)
+      const paymasterTokenBalAfter = await token.balanceOf(paymasterAddress)
+      const charlieTokenBalAfter = await token.balanceOf(charlie)
+      console.log("account token balance in end of second test ", accountTokenBalAfter.toString())
+      console.log("paymaster token balance in end of second test ", paymasterTokenBalAfter.toString())
+      console.log("charlie token balance in end of second test ", charlieTokenBalAfter.toString())
+  
+      const allowanceToPaymasterAfter = await token.allowance(walletAddress, paymasterAddress);
+      console.log("allowance to paymaster in end of second test ", allowanceToPaymasterAfter.toString());
+
+      const paymasterDepositAfter = await entryPoint.balanceOf(paymasterAddress);
+      console.log("paymaster deposit on the entry point in end of second test ", paymasterDepositAfter.toString());
+      
+    });
+  });    
 });
