@@ -95,6 +95,7 @@ contract ChainlinkOracleAggregator is Ownable, IOracleAggregator {
     function _getTokenPrice(
         address token
     ) internal view returns (uint256 tokenPriceUnadjusted) {
+        // Note // If the callData is for latestAnswer, it could be for latestRoundData and then validateRound and extract price then
         (bool success, bytes memory ret) = tokensInfo[token]
             .callAddress
             .staticcall(tokensInfo[token].callData);
