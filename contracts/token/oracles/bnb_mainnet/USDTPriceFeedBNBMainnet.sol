@@ -11,10 +11,10 @@ error InvalidPriceFromRound();
 error LatestRoundIncomplete();
 error PriceFeedStale();
 
-// @note: USDC / BNB is already available here : https://bscscan.com/address/0x45f86CA2A8BC9EBD757225B19a1A0D7051bE46Db
-// just use appropriate method when registering in oracle aggregator
+// @note: USDT / BNB is already available here : https://bscscan.com/address/0xD5c40f5144848Bd4EF08a9605d860e727b991513
+// just use appropriate method calldata when registering in oracle aggregator
 
-contract USDCPriceFeedBNBMainnet {
+contract USDTPriceFeedBNBMainnet {
     AggregatorV3Interface internal priceFeed1;
     AggregatorV3Interface internal priceFeed2;
 
@@ -23,8 +23,8 @@ contract USDCPriceFeedBNBMainnet {
             0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE
         ); // BNB usd
         priceFeed2 = AggregatorV3Interface(
-            0x51597f405303C4377E36123cBc172b13269EA163
-        ); // usdc usd
+            0xB97Ad0E74fa7d920791E90258A6E2085088b4320
+        ); // usdt usd
 
         // If either of the base or quote price feeds have mismatch in decimal then it could be a problem, so throw!
         uint8 decimals1 = priceFeed1.decimals();
@@ -40,7 +40,7 @@ contract USDCPriceFeedBNBMainnet {
     }
 
     function description() public view returns (string memory) {
-        return "USDC / BNB";
+        return "USDT / BNB";
     }
 
     function validateRound(
@@ -103,7 +103,7 @@ contract USDCPriceFeedBNBMainnet {
         );
 
         // Always using decimals 18 for derived price feeds
-        int usdc_BNB = (price2 * (10 ** 18)) / price1;
-        return usdc_BNB;
+        int usdt_BNB = (price2 * (10 ** 18)) / price1;
+        return usdt_BNB;
     }
 }

@@ -9,7 +9,7 @@ contract DerivedPriceFeedFactory {
         string indexed description
     );
 
-    // TODO // Might use CREATe2 or CREATE3 way here
+    // TODO // Might use CREATE2 or CREATE3 way here
     function deployDerivedPriceFeed(
         address _nativeOracleAddress,
         address _tokenOracleAddress,

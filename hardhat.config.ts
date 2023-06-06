@@ -67,7 +67,7 @@ networks: {
       process.env.PRIVATE_KEY !== undefined
         ? [process.env.PRIVATE_KEY]
         : walletUtils.makeKeyList(),
-    // : 200e9,
+    gas: 10e6
   },
   polygon_mumbai: {
     url: process.env.POLYGON_MUMBAI_URL || "",
@@ -88,7 +88,7 @@ networks: {
   bnb_testnet: {
     url:
       process.env.BSC_TESTNET_URL ||
-      "https://wandering-broken-tree.bsc-testnet.quiknode.pro/7992da20f9e4f97c2a117bea9af37c1c266f63ec/",
+      "https://data-seed-prebsc-1-s2.binance.org:8545",
     chainId: 97,
     accounts:
       process.env.PRIVATE_KEY !== undefined

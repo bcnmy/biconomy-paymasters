@@ -15,7 +15,7 @@ contract DerivedPriceFeed {
     // price is tokens-per-dollar
     AggregatorV3Interface internal tokenOracle;
 
-    string public DESCRIPTION;
+    string internal DESCRIPTION;
 
     constructor(
         address _nativeOracleAddress,
