@@ -350,6 +350,9 @@ describe("Biconomy Token Paymaster", function () {
 
       const currentAllowanceToPaymaster = await token.allowance(walletAddress, paymasterAddress);
       console.log("allowance to paymaster in begining of second test ", currentAllowanceToPaymaster.toString());
+
+      const paymasterDepositBefore = await entryPoint.balanceOf(paymasterAddress);
+      console.log("paymaster deposit on the entry point in beginning of second test ", paymasterDepositBefore.toString());
       
 
       // We make transferFrom impossible by setting allowance to zero
@@ -420,6 +423,10 @@ describe("Biconomy Token Paymaster", function () {
     const allowanceToPaymasterAfter = await token.allowance(walletAddress, paymasterAddress);
     console.log("allowance to paymaster in end of second test ", allowanceToPaymasterAfter.toString());
 
+    const paymasterDepositAfter = await entryPoint.balanceOf(paymasterAddress);
+    console.log("paymaster deposit on the entry point in end of second test ", paymasterDepositAfter.toString());
+    
+
       await expect(
         entryPoint.handleOps([userOp], await offchainSigner.getAddress())
       ).to.be.reverted;
@@ -438,6 +445,9 @@ describe("Biconomy Token Paymaster", function () {
   
         const currentAllowanceToPaymaster = await token.allowance(walletAddress, paymasterAddress);
         console.log("allowance to paymaster in begining of third test ", currentAllowanceToPaymaster.toString());
+
+        const paymasterDepositBefore = await entryPoint.balanceOf(paymasterAddress);
+        console.log("paymaster deposit on the entry point in beginning of third test ", paymasterDepositBefore.toString());
         
   
         // We make transferFrom impossible by setting allowance to zero
@@ -509,6 +519,9 @@ describe("Biconomy Token Paymaster", function () {
   
       const allowanceToPaymasterAfter = await token.allowance(walletAddress, paymasterAddress);
       console.log("allowance to paymaster in end of second test ", allowanceToPaymasterAfter.toString());
+
+      const paymasterDepositAfter = await entryPoint.balanceOf(paymasterAddress);
+      console.log("paymaster deposit on the entry point in end of third test ", paymasterDepositAfter.toString());
   
         await expect(
           entryPoint.handleOps([userOp], await offchainSigner.getAddress())
