@@ -584,11 +584,22 @@ contract BiconomyTokenPaymaster is
                 priceSource
             );
         } else {
-            //in case above transferFrom failed, pay with deposit / notify at least
-            //sender could be banned indefinitely or for certain period
-            emit TokenPaymentDue(address(feeToken), account, charge);
-            // review
-            // return; // Do nothing here to not revert the whole bundle and harm reputation
+            // In case transferFrom failed in first handlePostOp call, attempt to charge the tokens again
+            bytes memory _data = abi.encodeWithSelector(
+                feeToken.transferFrom.selector,
+                account,
+                feeReceiver,
+                charge
+            );
+            (bool success, bytes memory returndata) = address(feeToken).call(
+                _data
+            );
+            if (!success) {
+                // In case above transferFrom failed, pay with deposit / notify at least
+                // Sender could be banned indefinitely or for certain period
+                emit TokenPaymentDue(address(feeToken), account, charge);
+                return; // Do nothing here to not revert the whole bundle and harm reputation
+            }
         }
     }
 
