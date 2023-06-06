@@ -338,93 +338,7 @@ describe("Biconomy Token Paymaster", function () {
     });
   });
 
-  describe("Negative scenarios: approvals and transfers gone wrong", () => {
-    it("should emit event and revert executeop if ERC20 token withdrawal fails (setting allowance to zero)", async ()  => {
-
-      const userSCW: any = BiconomyAccountImplementation__factory.connect(walletAddress, deployer)
-
-      const accountTokenBal = await token.balanceOf(walletAddress)
-      const paymasterTokenBal = await token.balanceOf(paymasterAddress)
-      console.log("account token balance in beginning of second test ", accountTokenBal.toString())
-      console.log("paymaster token balance in beginning of second test ", paymasterTokenBal.toString())
-
-      const currentAllowanceToPaymaster = await token.allowance(walletAddress, paymasterAddress);
-      console.log("allowance to paymaster in begining of second test ", currentAllowanceToPaymaster.toString());
-      
-
-      // We make transferFrom impossible by setting allowance to zero
-      const userOp1 = await fillAndSign(
-        {
-          sender: walletAddress,
-          verificationGasLimit: 200000,
-          // initCode: hexConcat([walletFactory.address, deploymentData]),
-          // nonce: 0,
-          callData: encodeERC20Approval(
-            userSCW,
-            token,
-            paymasterAddress,
-            ethers.constants.Zero 
-          ),
-        },
-        walletOwner,
-        entryPoint,
-        "nonce"
-      );
-
-      const hash = await sampleTokenPaymaster.getHash(
-        userOp1,
-        ethers.utils.hexlify(1).slice(2, 4),
-        MOCK_VALID_UNTIL,
-        MOCK_VALID_AFTER,
-        token.address,
-        oracleAggregator.address,
-        MOCK_FX,
-        DEFAULT_FEE_MARKUP
-      );
-      const sig = await offchainSigner.signMessage(arrayify(hash));
-      const userOp = await fillAndSign(
-        {
-          ...userOp1,
-          paymasterAndData: ethers.utils.hexConcat([
-            paymasterAddress,
-            ethers.utils.hexlify(1).slice(0, 4),
-            encodePaymasterData(token.address, oracleAggregator.address, MOCK_FX, DEFAULT_FEE_MARKUP),
-            sig,
-          ]),
-        },
-        walletOwner,
-        entryPoint,
-        "nonce"
-      );
-
-    const initBalance = await token.balanceOf(paymasterAddress);
-
-      await expect(entryPoint.handleOps(
-        [userOp],
-        await offchainSigner.getAddress()
-      )).to.emit(sampleTokenPaymaster, "TokenPaymentDue")
-
-
-    const postBalance = await token.balanceOf(paymasterAddress);
-
-    const ev = await getUserOpEvent(entryPoint);
-    // Review this because despite explicit revert bundler still pays gas
-    expect(ev.args.success).to.be.false;
-    expect(postBalance.sub(initBalance)).to.equal(ethers.constants.Zero);
-
-    const accountTokenBalAfter = await token.balanceOf(walletAddress)
-    const paymasterTokenBalAfter = await token.balanceOf(paymasterAddress)
-    console.log("account token balance in end of second test ", accountTokenBalAfter.toString())
-    console.log("paymaster token balance in end of second test ", paymasterTokenBalAfter.toString())
-
-    const allowanceToPaymasterAfter = await token.allowance(walletAddress, paymasterAddress);
-    console.log("allowance to paymaster in end of second test ", allowanceToPaymasterAfter.toString());
-
-      await expect(
-        entryPoint.handleOps([userOp], await offchainSigner.getAddress())
-      ).to.be.reverted;
-    });
-    
+  describe("Negative scenarios: approvals and transfers gone wrong", () => {    
     it("should emit event and revert executeop if ERC20 token withdrawal fails (by other means - transferring all tokens in userop calldata)", async ()  => {
 
         const userSCW: any = BiconomyAccountImplementation__factory.connect(walletAddress, deployer)
@@ -487,33 +401,9 @@ describe("Biconomy Token Paymaster", function () {
   
       const initBalance = await token.balanceOf(paymasterAddress);
   
-        await expect(entryPoint.handleOps(
-          [userOp],
-          await offchainSigner.getAddress()
-        )).to.emit(sampleTokenPaymaster, "TokenPaymentDue")
-  
-  
-      const postBalance = await token.balanceOf(paymasterAddress);
-  
-      const ev = await getUserOpEvent(entryPoint);
-      // Review this because despite explicit revert bundler still pays gas
-      expect(ev.args.success).to.be.false;
-      expect(postBalance.sub(initBalance)).to.equal(ethers.constants.Zero);
-  
-      const accountTokenBalAfter = await token.balanceOf(walletAddress)
-      const paymasterTokenBalAfter = await token.balanceOf(paymasterAddress)
-      const charlieTokenBalAfter = await token.balanceOf(charlie)
-      console.log("account token balance in end of third test ", accountTokenBalAfter.toString())
-      console.log("paymaster token balance in end of third test ", paymasterTokenBalAfter.toString())
-      console.log("charlie token balance in end of third test ", charlieTokenBalAfter.toString())
-  
-      const allowanceToPaymasterAfter = await token.allowance(walletAddress, paymasterAddress);
-      console.log("allowance to paymaster in end of second test ", allowanceToPaymasterAfter.toString());
-  
-        await expect(
-          entryPoint.handleOps([userOp], await offchainSigner.getAddress())
-        ).to.be.reverted;
-      });
-    
-  });
+      await expect(entryPoint.estimateGas.handleOps([userOp], await offchainSigner.getAddress()))
+        .to.to.be.revertedWithCustomError(entryPoint, "FailedOp")
+        .withArgs(0, "AA50 postOp revert");
+        });
+      });    
 });

@@ -16,6 +16,8 @@ import "../utils/SafeTransferLib.sol";
 import {TokenPaymasterErrors} from "./TokenPaymasterErrors.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 
+error BiconomyTokenPaymasterTokenPaymentDueExplicitRevert();
+
 // Biconomy Token Paymaster
 /**
  * A token-based paymaster that allows user to pay gas fee in ERC20 tokens. The paymaster owner chooses which tokens to accept.
@@ -587,8 +589,7 @@ contract BiconomyTokenPaymaster is
             //in case above transferFrom failed, pay with deposit / notify at least
             //sender could be banned indefinitely or for certain period
             emit TokenPaymentDue(address(feeToken), account, charge);
-            // review
-            // return; // Do nothing here to not revert the whole bundle and harm reputation
+            revert BiconomyTokenPaymasterTokenPaymentDueExplicitRevert();
         }
     }
 
