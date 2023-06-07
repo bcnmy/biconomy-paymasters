@@ -518,7 +518,7 @@ describe("Biconomy Token Paymaster", function () {
       console.log("charlie token balance in end of third test ", charlieTokenBalAfter.toString())
   
       const allowanceToPaymasterAfter = await token.allowance(walletAddress, paymasterAddress);
-      console.log("allowance to paymaster in end of second test ", allowanceToPaymasterAfter.toString());
+      console.log("allowance to paymaster in end of third test ", allowanceToPaymasterAfter.toString());
 
       const paymasterDepositAfter = await entryPoint.balanceOf(paymasterAddress);
       console.log("paymaster deposit on the entry point in end of third test ", paymasterDepositAfter.toString());
