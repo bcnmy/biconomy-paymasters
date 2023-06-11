@@ -10,5 +10,5 @@ TokenPaymasterTest:testTokenPaymasterFailInvalidPMSignatureLength() (gas: 283496
 TokenPaymasterTest:testTokenPaymasterFailInvalidPaymasteDataLength() (gas: 221406)
 TokenPaymasterTest:testTokenPaymasterFailWrongPMSignature() (gas: 295014)
 TokenPaymasterTest:testTokenPaymasterRefund() (gas: 399655)
-TokenPaymasterTest:testWithdrawERC20(uint256) (runs: 256, μ: 61896, ~: 64060)
+TokenPaymasterTest:testWithdrawERC20(uint256) (runs: 256, μ: 61802, ~: 64060)
 TokenPaymasterTest:testWithdrawERC20FailNotOwner(uint256) (runs: 256, μ: 48871, ~: 51000)

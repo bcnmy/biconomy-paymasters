@@ -10,6 +10,7 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
  */
 
 // TODO // WIP
+// Notice Should not be used in priduction mainnet deployments
 // in addTokenOracle : add native and token / USD oracles both
 // todo: update getThePrice and getTokenValueforOneEth accordingly
 
