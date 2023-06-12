@@ -196,8 +196,8 @@ describe("Biconomy Token Paymaster", function () {
     });
   });
 
-  describe("Pull: ether / tokens recovery", () => {
-    it("only owner should be able to pull tokens, withdraw gas", async () => {
+  describe("Pull: ether / tokens recovery: covers all methods", () => {
+    it("only owner should be able to pull tokens, withdraw gas, set verifying signer etc", async () => {
 
       // paymaster can receive eth
       await deployer.sendTransaction({
