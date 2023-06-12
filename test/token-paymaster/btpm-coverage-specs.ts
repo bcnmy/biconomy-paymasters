@@ -228,6 +228,9 @@ describe("Biconomy Token Paymaster", function () {
       await expect(sampleTokenPaymaster.connect(ethersSigner[9]).withdrawTo(withdrawAddress, ethers.utils.parseEther("0.2")))
       .to.be.revertedWith("Ownable: caller is not the owner");
 
+      await expect(sampleTokenPaymaster.connect(ethersSigner[6]).withdrawTo(ethers.constants.AddressZero, ethers.utils.parseEther("0.2")))
+      .to.be.revertedWithCustomError(sampleTokenPaymaster, "CanNotWithdrawToZeroAddress");
+
       const etherBalanceAfter = await ethers.provider.getBalance(withdrawAddress);
       console.log("balance after ", etherBalanceBefore.toString());
 
@@ -249,6 +252,9 @@ describe("Biconomy Token Paymaster", function () {
 
       expect(tokenBalanceBefore.add(collectedTokens)).to.be.equal(tokenBalanceAfter); 
 
+      await expect(sampleTokenPaymaster.connect(ethersSigner[6]).setVerifyingSigner(ethers.constants.AddressZero))
+      .to.be.revertedWithCustomError(sampleTokenPaymaster, "VerifyingSignerCannotBeZero");
+
       await sampleTokenPaymaster.connect(ethersSigner[6]).unlockStake();
       
       await sampleTokenPaymaster.connect(ethersSigner[6]).withdrawStake(withdrawAddress);
@@ -264,6 +270,9 @@ describe("Biconomy Token Paymaster", function () {
       await token.mint(paymasterAddress, ethers.utils.parseEther("200"));
 
       await sampleTokenPaymaster.connect(ethersSigner[6]).withdrawMultipleERC20([token.address, token.address], withdrawAddressNew, [ethers.utils.parseEther("100"), ethers.utils.parseEther("100")]);
+
+      await expect(sampleTokenPaymaster.connect(ethersSigner[6]).withdrawMultipleERC20([token.address], withdrawAddressNew, [ethers.utils.parseEther("100"), ethers.utils.parseEther("100")]))
+      .to.be.revertedWithCustomError(sampleTokenPaymaster, "TokensAndAmountsLengthMismatch");
 
       expect(await token.balanceOf(withdrawAddressNew)).to.be.equal(ethers.utils.parseEther("300"));
 

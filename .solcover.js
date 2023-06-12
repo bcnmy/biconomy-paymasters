@@ -9,13 +9,14 @@ module.exports = {
     'token/oracles/bnb_mainnet',
     'token/oracles/bnb_testnet',
     'token/oracles/mumbai',
-    'token/oracles/polygon_mainnet',
+    'token/oracles/polygon-mainnet',
     'token/oracles/ChainlinkOracleAggregatorV2.sol',
     'token/oracles/DerivedPriceFeed.sol',
     'token/oracles/DerivedPriceFeedFactory.sol',
     'token/oracles/UniswapTWAPAggregator.sol',
     'token/adapters',
-    'token/feemanager'
+    'token/feemanager',
+    'deployer',
   ],
   providerOptions: {
     default_balance_ether: 10000000000, // Extra zero, coverage consumes more gas
