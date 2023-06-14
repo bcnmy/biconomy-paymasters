@@ -11,10 +11,7 @@ error InvalidPriceFromRound();
 error LatestRoundIncomplete();
 error PriceFeedStale();
 
-// @note: USDC / BNB is already available here : https://bscscan.com/address/0x45f86CA2A8BC9EBD757225B19a1A0D7051bE46Db
-// just use appropriate method when registering in oracle aggregator
-
-contract USDCPriceFeedBNBMainnet {
+contract ONEINCHPriceFeedBNBMainnet {
     AggregatorV3Interface internal priceFeed1;
     AggregatorV3Interface internal priceFeed2;
 
@@ -23,8 +20,8 @@ contract USDCPriceFeedBNBMainnet {
             0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE
         ); // BNB usd
         priceFeed2 = AggregatorV3Interface(
-            0x51597f405303C4377E36123cBc172b13269EA163
-        ); // usdc usd
+            0x9a177Bb9f5b6083E962f9e62bD21d4b5660Aeb03
+        ); // 1Inch usd
 
         // If either of the base or quote price feeds have mismatch in decimal then it could be a problem, so throw!
         uint8 decimals1 = priceFeed1.decimals();
@@ -40,7 +37,7 @@ contract USDCPriceFeedBNBMainnet {
     }
 
     function description() public view returns (string memory) {
-        return "USDC / BNB";
+        return "1INCH / BNB";
     }
 
     function validateRound(
@@ -103,7 +100,7 @@ contract USDCPriceFeedBNBMainnet {
         );
 
         // Always using decimals 18 for derived price feeds
-        int usdc_BNB = (price2 * (10 ** 18)) / price1;
-        return usdc_BNB;
+        int oneInch_BNB = (price2 * (10 ** 18)) / price1;
+        return oneInch_BNB;
     }
 }

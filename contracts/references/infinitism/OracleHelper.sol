@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.12;
+pragma solidity 0.8.17;
 
 /* solhint-disable not-rely-on-time */
 
@@ -15,10 +15,7 @@ import "./IOracle.sol";
 abstract contract OracleHelper {
     event TokenPriceUpdated(uint256 currentPrice, uint256 previousPrice);
 
-    uint256 private constant PRICE_DENOMINATOR = 1e6;
-
-    /// @notice Actually equals 10^(token.decimals) value used for the price calculation
-    uint256 private immutable tokenDecimalPower;
+    uint256 private constant PRICE_DENOMINATOR = 1e26;
 
     struct OracleHelperConfig {
         /// @notice The Oracle contract used to fetch the latest token prices
@@ -28,9 +25,9 @@ abstract contract OracleHelper {
         /// @notice If 'true' we will fetch price directly from tokenOracle
         /// @notice If 'false' we will use nativeOracle to establish a token price through a shared third currency
         bool tokenToNativeOracle;
-        /// @notice 'true' if price is dollars-per-token, 'false' if price is tokens-per-dollar
+        /// @notice 'true' if price is dollars-per-token (or ether-per-token), 'false' if price is tokens-per-dollar
         bool tokenOracleReverse;
-        /// @notice 'true' if price is dollars-per-ether, 'false' if price is ether-per-dollar
+        /// @notice 'false' if price is dollars-per-ether, 'true' if price is ether-per-dollar
         bool nativeOracleReverse;
         /// @notice The price update threshold percentage that triggers a price update (1e6 = 100%)
         uint256 priceUpdateThreshold;
@@ -46,12 +43,14 @@ abstract contract OracleHelper {
 
     OracleHelperConfig private oracleHelperConfig;
 
-    constructor(
-        OracleHelperConfig memory _oracleHelperConfig,
-        uint256 _tokenDecimalPower
-    ) {
+    /// @notice The "10^(tokenOracle.decimals)" value used for the price calculation
+    uint256 private tokenOracleDecimalPower;
+
+    /// @notice The "10^(nativeOracle.decimals)" value used for the price calculation
+    uint256 private nativeOracleDecimalPower;
+
+    constructor(OracleHelperConfig memory _oracleHelperConfig) {
         cachedPrice = type(uint256).max; // initialize the storage slot to invalid value
-        tokenDecimalPower = _tokenDecimalPower;
         _setOracleConfiguration(_oracleHelperConfig);
     }
 
@@ -63,6 +62,10 @@ abstract contract OracleHelper {
             _oracleHelperConfig.priceUpdateThreshold <= 1e6,
             "TPM: update threshold too high"
         );
+        tokenOracleDecimalPower =
+            10 ** oracleHelperConfig.tokenOracle.decimals();
+        nativeOracleDecimalPower =
+            10 ** oracleHelperConfig.nativeOracle.decimals();
     }
 
     /// @notice Updates the token price by fetching the latest price from the Oracle.
@@ -78,8 +81,17 @@ abstract contract OracleHelper {
         }
         uint256 _cachedPrice = cachedPrice;
         uint256 tokenPrice = fetchPrice(tokenOracle);
-        uint256 nativeAssetPrice = fetchPrice(nativeOracle);
-        uint256 price = (nativeAssetPrice * tokenDecimalPower) / tokenPrice;
+        uint256 nativeAssetPrice = 1;
+        // If the 'TokenOracle' returns the price in the native asset units there is no need to fetch native asset price
+        if (!oracleHelperConfig.tokenToNativeOracle) {
+            nativeAssetPrice = fetchPrice(nativeOracle);
+        }
+        uint256 price = calculatePrice(
+            tokenPrice,
+            nativeAssetPrice,
+            oracleHelperConfig.tokenOracleReverse,
+            oracleHelperConfig.nativeOracleReverse
+        );
         uint256 priceNewByOld = (price * PRICE_DENOMINATOR) / _cachedPrice;
 
         bool updateRequired = force ||
@@ -89,10 +101,33 @@ abstract contract OracleHelper {
             return _cachedPrice;
         }
         uint256 previousPrice = _cachedPrice;
-        _cachedPrice = (nativeAssetPrice * tokenDecimalPower) / tokenPrice;
+        _cachedPrice = price;
         cachedPrice = _cachedPrice;
         emit TokenPriceUpdated(_cachedPrice, previousPrice);
         return _cachedPrice;
+    }
+
+    function calculatePrice(
+        uint256 tokenPrice,
+        uint256 nativeAssetPrice,
+        bool tokenOracleReverse,
+        bool nativeOracleReverse
+    ) private view returns (uint256) {
+        if (tokenOracleReverse) {
+            tokenPrice =
+                (PRICE_DENOMINATOR * tokenOracleDecimalPower) /
+                tokenPrice;
+        } else {
+            tokenPrice =
+                (PRICE_DENOMINATOR * tokenPrice) /
+                tokenOracleDecimalPower;
+        }
+
+        if (nativeOracleReverse) {
+            return (nativeAssetPrice * tokenPrice) / nativeOracleDecimalPower;
+        } else {
+            return (tokenPrice * nativeOracleDecimalPower) / nativeAssetPrice;
+        }
     }
 
     /// @notice Fetches the latest price from the given Oracle.

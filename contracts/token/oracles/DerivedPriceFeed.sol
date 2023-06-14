@@ -1,38 +1,40 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.17;
+pragma solidity ^0.8.17;
 
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
-
-//@notice chainlink reference PriceConverter https://docs.chain.link/docs/get-the-latest-price/
-// good practices: https://twitter.com/saxenism/status/1656632735291588609?s=20
 
 error MismatchInBaseAndQuoteDecimals();
 error InvalidPriceFromRound();
 error LatestRoundIncomplete();
 error PriceFeedStale();
+error OracleAddressCannotBeZero();
 
-// @note: USDC / BNB is already available here : https://bscscan.com/address/0x45f86CA2A8BC9EBD757225B19a1A0D7051bE46Db
-// just use appropriate method when registering in oracle aggregator
+contract DerivedPriceFeed {
+    // price is native-per-dollar
+    AggregatorV3Interface internal nativeOracle;
+    // price is tokens-per-dollar
+    AggregatorV3Interface internal tokenOracle;
 
-contract USDCPriceFeedBNBMainnet {
-    AggregatorV3Interface internal priceFeed1;
-    AggregatorV3Interface internal priceFeed2;
+    string internal DESCRIPTION;
 
-    constructor() {
-        priceFeed1 = AggregatorV3Interface(
-            0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE
-        ); // BNB usd
-        priceFeed2 = AggregatorV3Interface(
-            0x51597f405303C4377E36123cBc172b13269EA163
-        ); // usdc usd
+    constructor(
+        address _nativeOracleAddress,
+        address _tokenOracleAddress,
+        string memory _description
+    ) {
+        if (_nativeOracleAddress == address(0))
+            revert OracleAddressCannotBeZero();
+        if (_tokenOracleAddress == address(0))
+            revert OracleAddressCannotBeZero();
+        nativeOracle = AggregatorV3Interface(_nativeOracleAddress);
+        tokenOracle = AggregatorV3Interface(_tokenOracleAddress);
 
         // If either of the base or quote price feeds have mismatch in decimal then it could be a problem, so throw!
-        uint8 decimals1 = priceFeed1.decimals();
-        uint8 decimals2 = priceFeed2.decimals();
-
+        uint8 decimals1 = nativeOracle.decimals();
+        uint8 decimals2 = tokenOracle.decimals();
         if (decimals1 != decimals2) revert MismatchInBaseAndQuoteDecimals();
 
-        // @review could add Sequencer uptime feed for L2s
+        DESCRIPTION = _description;
     }
 
     function decimals() public view returns (uint8) {
@@ -40,7 +42,7 @@ contract USDCPriceFeedBNBMainnet {
     }
 
     function description() public view returns (string memory) {
-        return "USDC / BNB";
+        return DESCRIPTION;
     }
 
     function validateRound(
@@ -69,7 +71,7 @@ contract USDCPriceFeedBNBMainnet {
             ,
             uint256 updatedAt1,
             uint80 answeredInRound1
-        ) = priceFeed1.latestRoundData();
+        ) = nativeOracle.latestRoundData();
 
         // By default 2 days old price is considered stale BUT it may vary per price feed
         // comapred to stable coin feeds this may have different heartbeat
@@ -91,7 +93,7 @@ contract USDCPriceFeedBNBMainnet {
             ,
             uint256 updatedAt2,
             uint80 answeredInRound2
-        ) = priceFeed2.latestRoundData();
+        ) = tokenOracle.latestRoundData();
 
         // By default 2 days old price is considered stale BUT it may vary per price feed
         validateRound(
@@ -103,7 +105,7 @@ contract USDCPriceFeedBNBMainnet {
         );
 
         // Always using decimals 18 for derived price feeds
-        int usdc_BNB = (price2 * (10 ** 18)) / price1;
-        return usdc_BNB;
+        int token_native = (price2 * (10 ** 18)) / price1;
+        return token_native;
     }
 }

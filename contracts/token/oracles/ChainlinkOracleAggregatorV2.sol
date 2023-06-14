@@ -8,7 +8,13 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 /**
  * @title Primary Oracle Aggregator contract used to maintain price feeds for chainlink supported tokens.
  */
-contract ChainlinkOracleAggregator is Ownable, IOracleAggregator {
+
+// TODO // WIP
+// Notice Should not be used in priduction mainnet deployments
+// in addTokenOracle : add native and token / USD oracles both
+// todo: update getThePrice and getTokenValueforOneEth accordingly
+
+contract ChainlinkOracleAggregatorV2 is Ownable, IOracleAggregator {
     struct TokenInfo {
         /* Number of decimals represents the precision of the price returned by the feed. For example, 
      a price of $100.50 might be represented as 100500000000 in the contract, with 9 decimal places 
@@ -95,7 +101,6 @@ contract ChainlinkOracleAggregator is Ownable, IOracleAggregator {
     function _getTokenPrice(
         address token
     ) internal view returns (uint256 tokenPriceUnadjusted) {
-        // Note // If the callData is for latestAnswer, it could be for latestRoundData and then validateRound and extract price then
         (bool success, bytes memory ret) = tokensInfo[token]
             .callAddress
             .staticcall(tokensInfo[token].callData);
