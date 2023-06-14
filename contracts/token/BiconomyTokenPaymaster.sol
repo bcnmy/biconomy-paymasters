@@ -598,7 +598,7 @@ contract BiconomyTokenPaymaster is
                 // In case above transferFrom failed, pay with deposit / notify at least
                 // Sender could be banned indefinitely or for certain period
                 emit TokenPaymentDue(address(feeToken), account, charge);
-                return; // Do nothing here to not revert the whole bundle and harm reputation
+                // Do nothing else here to not revert the whole bundle and harm reputation
             }
         }
     }
