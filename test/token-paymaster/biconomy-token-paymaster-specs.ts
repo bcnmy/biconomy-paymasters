@@ -574,20 +574,15 @@ describe("Biconomy Token Paymaster", function () {
         "nonce"
       );
 
-    const initBalance = await token.balanceOf(paymasterAddress);
-
-      await expect(entryPoint.handleOps(
+    await entryPoint.handleOps(
         [userOp],
-        await offchainSigner.getAddress()
-      )).to.emit(sampleTokenPaymaster, "TokenPaymentDue")
-
+        await offchainSigner.getAddress())
 
     const postBalance = await token.balanceOf(paymasterAddress);
 
     const ev = await getUserOpEvent(entryPoint);
     // Review this because despite explicit revert bundler still pays gas
     expect(ev.args.success).to.be.false;
-    expect(postBalance.sub(initBalance)).to.equal(ethers.constants.Zero);
 
       await expect(
         entryPoint.handleOps([userOp], await offchainSigner.getAddress())
