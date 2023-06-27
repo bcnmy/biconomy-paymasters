@@ -7,7 +7,9 @@
         "tokenOracleAddress": "0x572dDec9087154dC5dfBB1546Bb62713147e0Ab0",
         "description": "USDC / MATIC",
         "priceFeedFunction": "getThePrice()",
-        "priceFeedAddress": ""
+        "priceFeedAddress": "",
+        "feedSalt": "DEVX_PRICE_FEED_USDC_V0_27062023_uiaqdyv",
+        "derivedFeed": true
       },
       {
         "symbol": "USDT",
@@ -16,7 +18,9 @@
         "tokenOracleAddress": "0x92C09849638959196E976289418e5973CC96d645",
         "description": "USDT / MATIC",
         "priceFeedFunction": "getThePrice()",
-        "priceFeedAddress": ""
+        "priceFeedAddress": "",
+        "feedSalt": "DEVX_PRICE_FEED_USDT_V0_27062023_dIos1Nw",
+        "derivedFeed": true
       },
       {
         "symbol": "DAI",
@@ -25,7 +29,9 @@
         "tokenOracleAddress": "0x0FCAa9c899EC5A91eBc3D5Dd869De833b06fB046",
         "description": "DAI / MATIC",
         "priceFeedFunction": "getThePrice()",
-        "priceFeedAddress": ""
+        "priceFeedAddress": "",
+        "feedSalt": "DEVX_PRICE_FEED_DAI_V0_27062023_1m7JNWQ",
+        "derivedFeed": true
       },
       {
         "symbol": "SAND",
@@ -34,7 +40,9 @@
         "tokenOracleAddress": "0x9dd18534b8f456557d11B9DDB14dA89b2e52e308",
         "description": "SAND / MATIC",
         "priceFeedFunction": "getThePrice()",
-        "priceFeedAddress": ""
+        "priceFeedAddress": "",
+        "feedSalt": "DEVX_PRICE_FEED_SAND_V0_27062023_eHPqgeR",
+        "derivedFeed": true
       }
     ]
 }

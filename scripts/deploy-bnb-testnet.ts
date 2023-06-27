@@ -1,5 +1,6 @@
 import { ethers, run, network } from "hardhat";
-import { mumbaiConfigInfo } from "./configs";
+import { bnbTestnetConfigInfo } from "./configs";
+import { Token, TokenConfig } from "./utils/Types";
 import {
   deployContract,
   DEPLOYMENT_SALTS,
@@ -9,19 +10,7 @@ import {
 } from "./utils";
 import { BiconomyTokenPaymaster, BiconomyTokenPaymaster__factory, ChainlinkOracleAggregator, ChainlinkOracleAggregator__factory, Deployer, Deployer__factory } from "../typechain-types";
 
-// Read token configuration from token-config.json file
-interface TokenConfig {
-    tokens: Token[];
-  }
-  
-interface Token {
-    address: string;
-    priceFeedAddress: string;
-    description: string;
-    // Add any other required properties for each token
-  }
-
-const tokenConfig: TokenConfig = mumbaiConfigInfo
+const tokenConfig: TokenConfig = bnbTestnetConfigInfo
 
 const provider = ethers.provider;
 let entryPointAddress =
