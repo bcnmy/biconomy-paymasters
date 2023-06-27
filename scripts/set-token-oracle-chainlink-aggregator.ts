@@ -8,7 +8,7 @@ function delay(ms: number) {
   });
 }
 
-// WIP
+// WIP on existing oracle aggregator given price feeds are already deployed go ahead and set oracle aggregator
 
 async function main() {
 let tx, receipt;
@@ -33,6 +33,8 @@ const priceFeedSand = await ethers.getContractAt(
 
 const priceFeedTxSand: any =
   await priceFeedSand.populateTransaction.getThePrice();
+
+console.log('priceFeedTxSand ', priceFeedTxSand)
 
 tx = await oracleAggregator.setTokenOracle(
     sandAddress,
