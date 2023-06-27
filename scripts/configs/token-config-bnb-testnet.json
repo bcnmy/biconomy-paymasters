@@ -1,41 +1,70 @@
 {
-    "tokens": [
-      {
-        "symbol": "USDC",
-        "address": "0xdA5289fCAAF71d52a80A254da614a192b693e977",
-        "nativeOracleAddress": "0xd0D5e3DB44DE05E9F294BB0a3bEEaF030DE24Ada",
-        "tokenOracleAddress": "0x572dDec9087154dC5dfBB1546Bb62713147e0Ab0",
-        "description": "USDC / MATIC",
-        "priceFeedFunction": "getThePrice()",
-        "priceFeedAddress": ""
-      },
-      {
-        "symbol": "USDT",
-        "address": "0xeaBc4b91d9375796AA4F69cC764A4aB509080A58",
-        "nativeOracleAddress": "0xd0D5e3DB44DE05E9F294BB0a3bEEaF030DE24Ada",
-        "tokenOracleAddress": "0x92C09849638959196E976289418e5973CC96d645",
-        "description": "USDT / MATIC",
-        "priceFeedFunction": "getThePrice()",
-        "priceFeedAddress": ""
-      },
-      {
-        "symbol": "DAI",
-        "address": "0x27a44456bEDb94DbD59D0f0A14fE977c777fC5C3",
-        "nativeOracleAddress": "0xd0D5e3DB44DE05E9F294BB0a3bEEaF030DE24Ada",
-        "tokenOracleAddress": "0x0FCAa9c899EC5A91eBc3D5Dd869De833b06fB046",
-        "description": "DAI / MATIC",
-        "priceFeedFunction": "getThePrice()",
-        "priceFeedAddress": ""
-      },
-      {
-        "symbol": "SAND",
-        "address": "0xE03489D4E90b22c59c5e23d45DFd59Fc0dB8a025",
-        "nativeOracleAddress": "0xd0D5e3DB44DE05E9F294BB0a3bEEaF030DE24Ada",
-        "tokenOracleAddress": "0x9dd18534b8f456557d11B9DDB14dA89b2e52e308",
-        "description": "SAND / MATIC",
-        "priceFeedFunction": "getThePrice()",
-        "priceFeedAddress": ""
-      }
-    ]
+  "tokens": [
+    {
+      "symbol": "USDC",
+      "address": "0x1ffa9c87ead57adc9e4f9a7d26ec3a52150db3b0",
+      "nativeOracleAddress": "0x2514895c72f50D8bd4B4F9b1110F0D6bD2c97526",
+      "tokenOracleAddress": "0x90c069C4538adAc136E051052E14c1cD799C41B7",
+      "description": "USDC / BNB",
+      "priceFeedFunction": "getThePrice()",
+      "priceFeedAddress": "",
+      "feedSalt": "DEVX_PRICE_FEED_USDC_V0_27062023_uiaqdyv",
+      "derivedFeed": true
+    },
+    {
+      "symbol": "USDT",
+      "address": "0x03bbb5660b8687c2aa453a0e42dcb6e0732b1266",
+      "nativeOracleAddress": "0x2514895c72f50D8bd4B4F9b1110F0D6bD2c97526",
+      "tokenOracleAddress": "0xEca2605f0BCF2BA5966372C99837b1F182d3D620",
+      "description": "USDT / BNB",
+      "priceFeedFunction": "getThePrice()",
+      "priceFeedAddress": "",
+      "feedSalt": "DEVX_PRICE_FEED_USDT_V0_27062023_dIos1Nw",
+      "derivedFeed": true
+    },
+    {
+      "symbol": "DAI",
+      "address": "0x355c8c8395fadf2eaa6bb27f86e53e432e3de4e6",
+      "nativeOracleAddress": "0x2514895c72f50D8bd4B4F9b1110F0D6bD2c97526",
+      "tokenOracleAddress": "0xE4eE17114774713d2De0eC0f035d4F7665fc025D",
+      "description": "DAI / BNB",
+      "priceFeedFunction": "getThePrice()",
+      "priceFeedAddress": "",
+      "feedSalt": "DEVX_PRICE_FEED_DAI_V0_27062023_1m7JNWQ",
+      "derivedFeed": true
+    },
+    {
+      "symbol": "AAVE",
+      "address": "0xc1537ab4f2e0b1c578baea06b5baae8f87ce971c",
+      "nativeOracleAddress": "0x2514895c72f50D8bd4B4F9b1110F0D6bD2c97526",
+      "tokenOracleAddress": "0x298619601ebCd58d0b526963Deb2365B485Edc74",
+      "description": "AAVE / BNB",
+      "priceFeedFunction": "getThePrice()",
+      "priceFeedAddress": "",
+      "feedSalt": "DEVX_PRICE_FEED_AAVE_V0_27062023_ivsd3iS",
+      "derivedFeed": true
+    },
+    {
+      "symbol": "CAKE",
+      "address": "0x81f9e7a56f6869a9a8c385d1e0701b312439501f",
+      "nativeOracleAddress": "0x2514895c72f50D8bd4B4F9b1110F0D6bD2c97526",
+      "tokenOracleAddress": "0x81faeDDfeBc2F8Ac524327d70Cf913001732224C",
+      "description": "CAKE / BNB",
+      "priceFeedFunction": "getThePrice()",
+      "priceFeedAddress": "",
+      "feedSalt": "DEVX_PRICE_FEED_CAKE_V0_27062023_1BKpzde",
+      "derivedFeed": true
+    },
+    {
+      "symbol": "LINK",
+      "address": "0xdeb12ea437c116ed823ab49244cafec4e41704cb",
+      "nativeOracleAddress": "0x2514895c72f50D8bd4B4F9b1110F0D6bD2c97526",
+      "tokenOracleAddress": "0x1B329402Cb1825C6F30A0d92aB9E2862BE47333f",
+      "description": "LINK / BNB",
+      "priceFeedFunction": "getThePrice()",
+      "priceFeedAddress": "",
+      "feedSalt": "DEVX_PRICE_FEED_LINK_V0_27062023_JHIxs6o",
+      "derivedFeed": true
+    }
+  ]
 }
-  

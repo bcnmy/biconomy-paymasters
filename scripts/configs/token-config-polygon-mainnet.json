@@ -2,39 +2,47 @@
     "tokens": [
       {
         "symbol": "USDC",
-        "address": "0xdA5289fCAAF71d52a80A254da614a192b693e977",
-        "nativeOracleAddress": "0xd0D5e3DB44DE05E9F294BB0a3bEEaF030DE24Ada",
-        "tokenOracleAddress": "0x572dDec9087154dC5dfBB1546Bb62713147e0Ab0",
+        "address": "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174",
+        "nativeOracleAddress": "0xAB594600376Ec9fD91F8e885dADF0CE036862dE0",
+        "tokenOracleAddress": "0xfE4A8cc5b5B2366C1B58Bea3858e81843581b2F7",
         "description": "USDC / MATIC",
         "priceFeedFunction": "getThePrice()",
-        "priceFeedAddress": ""
+        "priceFeedAddress": "",
+        "feedSalt": "DEVX_PRICE_FEED_USDC_V0_27062023_uiaqdyv",
+        "derivedFeed": true
       },
       {
         "symbol": "USDT",
-        "address": "0xeaBc4b91d9375796AA4F69cC764A4aB509080A58",
-        "nativeOracleAddress": "0xd0D5e3DB44DE05E9F294BB0a3bEEaF030DE24Ada",
-        "tokenOracleAddress": "0x92C09849638959196E976289418e5973CC96d645",
+        "address": "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
+        "nativeOracleAddress": "0xAB594600376Ec9fD91F8e885dADF0CE036862dE0",
+        "tokenOracleAddress": "0x0A6513e40db6EB1b165753AD52E80663aeA50545",
         "description": "USDT / MATIC",
         "priceFeedFunction": "getThePrice()",
-        "priceFeedAddress": ""
+        "priceFeedAddress": "",
+        "feedSalt": "DEVX_PRICE_FEED_USDT_V0_27062023_dIos1Nw",
+        "derivedFeed": true
       },
       {
         "symbol": "DAI",
-        "address": "0x27a44456bEDb94DbD59D0f0A14fE977c777fC5C3",
-        "nativeOracleAddress": "0xd0D5e3DB44DE05E9F294BB0a3bEEaF030DE24Ada",
-        "tokenOracleAddress": "0x0FCAa9c899EC5A91eBc3D5Dd869De833b06fB046",
+        "address": "0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063",
+        "nativeOracleAddress": "0xAB594600376Ec9fD91F8e885dADF0CE036862dE0",
+        "tokenOracleAddress": "0x4746DeC9e833A82EC7C2C1356372CcF2cfcD2F3D",
         "description": "DAI / MATIC",
         "priceFeedFunction": "getThePrice()",
-        "priceFeedAddress": ""
+        "priceFeedAddress": "",
+        "feedSalt": "DEVX_PRICE_FEED_DAI_V0_27062023_1m7JNWQ",
+        "derivedFeed": true
       },
       {
         "symbol": "SAND",
-        "address": "0xE03489D4E90b22c59c5e23d45DFd59Fc0dB8a025",
-        "nativeOracleAddress": "0xd0D5e3DB44DE05E9F294BB0a3bEEaF030DE24Ada",
-        "tokenOracleAddress": "0x9dd18534b8f456557d11B9DDB14dA89b2e52e308",
+        "address": "0xBbba073C31bF03b8ACf7c28EF0738DeCF3695683",
+        "nativeOracleAddress": "0xAB594600376Ec9fD91F8e885dADF0CE036862dE0",
+        "tokenOracleAddress": "0x3D49406EDd4D52Fb7FFd25485f32E073b529C924",
         "description": "SAND / MATIC",
         "priceFeedFunction": "getThePrice()",
-        "priceFeedAddress": ""
+        "priceFeedAddress": "",
+        "feedSalt": "DEVX_PRICE_FEED_SAND_V0_27062023_eHPqgeR",
+        "derivedFeed": true
       }
     ]
 }
