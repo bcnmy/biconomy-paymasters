@@ -4,7 +4,7 @@ export interface TokenConfig {
   
 export interface Token {
     address: string;
-    priceFeedAddress?: string;
+    priceFeedAddress: string;
     priceFeedFunction: string;
     description: string;
     nativeOracleAddress: string;

@@ -7,7 +7,7 @@
         "tokenOracleAddress": "0x572dDec9087154dC5dfBB1546Bb62713147e0Ab0",
         "description": "USDC / MATIC",
         "priceFeedFunction": "getThePrice()",
-        "priceFeedAddress": "",
+        "priceFeedAddress": "0x000005abae3deadbe1fbd12105f950efba9eaec4",
         "feedSalt": "DEVX_PRICE_FEED_USDC_V0_27062023_uiaqdyv",
         "derivedFeed": true
       },
@@ -18,7 +18,7 @@
         "tokenOracleAddress": "0x92C09849638959196E976289418e5973CC96d645",
         "description": "USDT / MATIC",
         "priceFeedFunction": "getThePrice()",
-        "priceFeedAddress": "",
+        "priceFeedAddress": "0x000001e2c2b39542c30a3fe57c4487030bc03adf",
         "feedSalt": "DEVX_PRICE_FEED_USDT_V0_27062023_dIos1Nw",
         "derivedFeed": true
       },
@@ -29,7 +29,7 @@
         "tokenOracleAddress": "0x0FCAa9c899EC5A91eBc3D5Dd869De833b06fB046",
         "description": "DAI / MATIC",
         "priceFeedFunction": "getThePrice()",
-        "priceFeedAddress": "",
+        "priceFeedAddress": "0x000000d2da196474046c7a4d94ab0e566b26d054",
         "feedSalt": "DEVX_PRICE_FEED_DAI_V0_27062023_1m7JNWQ",
         "derivedFeed": true
       },
@@ -40,7 +40,7 @@
         "tokenOracleAddress": "0x9dd18534b8f456557d11B9DDB14dA89b2e52e308",
         "description": "SAND / MATIC",
         "priceFeedFunction": "getThePrice()",
-        "priceFeedAddress": "",
+        "priceFeedAddress": "0x00000980455efb131c1908efa908c1eaf19db352",
         "feedSalt": "DEVX_PRICE_FEED_SAND_V0_27062023_eHPqgeR",
         "derivedFeed": true
       }

@@ -1,5 +1,5 @@
 import { ethers, run, network } from "hardhat";
-import { polygonMainnetConfigInfo } from "./configs";
+import { polygonMainnetConfigInfoDev } from "./configs";
 import { Token, TokenConfig } from "./utils/Types";
 import {
   deployContract,
@@ -10,7 +10,7 @@ import {
 } from "./utils";
 import { BiconomyTokenPaymaster, BiconomyTokenPaymaster__factory, ChainlinkOracleAggregator, ChainlinkOracleAggregator__factory, Deployer, Deployer__factory } from "../typechain-types";
 
-const tokenConfig: TokenConfig = polygonMainnetConfigInfo
+const tokenConfig: TokenConfig = polygonMainnetConfigInfoDev
 
 const provider = ethers.provider;
 let entryPointAddress =

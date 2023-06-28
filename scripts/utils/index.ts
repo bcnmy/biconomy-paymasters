@@ -20,6 +20,7 @@ import { TransactionReceipt, Provider } from "@ethersproject/providers";
 import { Deployer, Deployer__factory } from "../../typechain-types";
 
 // { FACTORY_ADDRESS  } is deployed from chirag's private key for nonce 0
+// Marked for removal
 export const FACTORY_ADDRESS = "0x757056493cd5E44e4cFe2719aE05FbcfC1178087";
 export const FACTORY_BYTE_CODE =
   "0x6080604052348015600f57600080fd5b506004361060285760003560e01c80634af63f0214602d575b600080fd5b60cf60048036036040811015604157600080fd5b810190602081018135640100000000811115605b57600080fd5b820183602082011115606c57600080fd5b80359060200191846001830284011164010000000083111715608d57600080fd5b91908080601f016020809104026020016040519081016040528093929190818152602001838380828437600092019190915250929550509135925060eb915050565b604080516001600160a01b039092168252519081900360200190f35b6000818351602085016000f5939250505056fea26469706673582212206b44f8a82cb6b156bfcc3dc6aadd6df4eefd204bc928a4397fd15dacf6d5320564736f6c63430006020033";
@@ -51,6 +52,7 @@ export enum DEPLOYMENT_SALTS {
   PRICE_FEED_TWT = "DEVX_PRICE_FEED_TWT_V0_27062023_92Xklvq" // 0x00000e862312c82af2301e6c433e75099665649d
 }
 
+// Marked for removal
 export const factoryAbi = [
   {
     inputs: [
@@ -70,6 +72,7 @@ export const factoryAbi = [
   },
 ];
 
+// Marked for removal
 export const buildBytecode = (
   constructorTypes: any[],
   constructorArgs: any[],
@@ -79,6 +82,7 @@ export const buildBytecode = (
     2
   )}`;
 
+// Marked for removal
 export const buildCreate2Address = (saltHex: string, byteCode: string) => {
   return `0x${ethers.utils
     .keccak256(
@@ -201,6 +205,7 @@ export const deployContract = async (
  * @param initCode
  * @param salt
  */
+// Marked for removal
 export const deploy = async (
   provider: Provider,
   initCode: string,
@@ -243,6 +248,7 @@ export const deploy = async (
 
 // deploy the EIP2470 factory, if not already deployed.
 // (note that it requires to have a "signer" with 0.0247 eth, to fund the deployer's deployment
+// Marked for removal
 export const deployFactory = async (provider: Provider): Promise<void> => {
   const signer = (provider as ethers.providers.JsonRpcProvider).getSigner();
   // Return if it's already deployed

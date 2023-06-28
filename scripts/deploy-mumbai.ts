@@ -1,5 +1,5 @@
 import { ethers, run, network } from "hardhat";
-import { mumbaiConfigInfo } from "./configs";
+import { mumbaiConfigInfoDev } from "./configs";
 import { Token, TokenConfig } from "./utils/Types";
 import {
   deployContract,
@@ -10,7 +10,7 @@ import {
 } from "./utils";
 import { BiconomyTokenPaymaster, BiconomyTokenPaymaster__factory, ChainlinkOracleAggregator, ChainlinkOracleAggregator__factory, Deployer, Deployer__factory } from "../typechain-types";
 
-const tokenConfig: TokenConfig = mumbaiConfigInfo
+const tokenConfig: TokenConfig = mumbaiConfigInfoDev
 
 const provider = ethers.provider;
 let entryPointAddress =
@@ -295,12 +295,18 @@ async function main() {
   console.log("==================tokenPaymasterAddress=======================", tokenPaymasterAddress);
   await delay(5000)
 
+  let oracleAggregatorInstance;
+  if (oracleAggregatorAddress) {
+    oracleAggregatorInstance = await getChainlinkOracleAggregatorContractInstance(oracleAggregatorAddress);
+    console.log("==================oracleAggregatorInstance=======================");
+  }
+
   // 3a. Deploy the derived price feeds for all chainlink supported ERC20 tokens  
   for (const token of tokenConfig.tokens) {
-    const { symbol, address, nativeOracleAddress, tokenOracleAddress, description, priceFeedFunction, feedSalt } = token;
+    const { symbol, address, nativeOracleAddress, tokenOracleAddress, priceFeedAddress, description, priceFeedFunction, feedSalt, derivedFeed } = token;
 
     const derivedPriceFeedAddress = await deployDerivedPriceFeed(deployerInstance, nativeOracleAddress, tokenOracleAddress, description, feedSalt);
-    console.log(`==================${symbol}PriceFeedAddress=======================`, derivedPriceFeedAddress);
+    console.log(`==================${symbol} PriceFeedAddress=======================`, derivedPriceFeedAddress);
     await delay(5000);
 
     // Continue with other steps like setting token oracle, transferring ownership, etc.
@@ -308,13 +314,12 @@ async function main() {
     // ...
 
     // 4. Set token oracle on oracle aggregator
-    if (oracleAggregatorAddress) {
-      const oracleAggregatorInstance = await getChainlinkOracleAggregatorContractInstance(oracleAggregatorAddress);
-      console.log("==================oracleAggregatorInstance=======================");
-
+    if (oracleAggregatorInstance) {
+      let feedAddress = derivedPriceFeedAddress
+      if(priceFeedFunction == "latestAnswer()" || derivedFeed == false) {
+        feedAddress = priceFeedAddress
+      }
       await setTokenOracle(oracleAggregatorInstance, address, derivedPriceFeedAddress, 18, priceFeedFunction);
-
-      // Continue with other steps...
     }
   }
   
