@@ -330,6 +330,7 @@ async function main() {
   for (const token of tokenConfig.tokens) {
     const { symbol, address, nativeOracleAddress, tokenOracleAddress, priceFeedAddress, description, priceFeedFunction, feedSalt, derivedFeed } = token;
     let derivedPriceFeedAddress = priceFeedAddress;
+    console.log(`derived price feed address for token ${symbol} is ${derivedPriceFeedAddress}`)
     
     if(derivedPriceFeedAddress == "") {
     derivedPriceFeedAddress = await deployDerivedPriceFeed(deployerInstanceDEV, nativeOracleAddress, tokenOracleAddress, description, feedSalt);

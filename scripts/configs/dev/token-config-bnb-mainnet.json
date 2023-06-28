@@ -7,7 +7,7 @@
       "tokenOracleAddress": "0x90c069C4538adAc136E051052E14c1cD799C41B7",
       "description": "USDC / BNB",
       "priceFeedFunction": "latestAnswer()",
-      "priceFeedAddress": "",
+      "priceFeedAddress": "0x45f86CA2A8BC9EBD757225B19a1A0D7051bE46Db",
       "feedSalt": "DEVX_PRICE_FEED_USDC_V0_27062023_uiaqdyv",
       "derivedFeed": false
     },
@@ -18,7 +18,7 @@
       "tokenOracleAddress": "0xEca2605f0BCF2BA5966372C99837b1F182d3D620",
       "description": "USDT / BNB",
       "priceFeedFunction": "latestAnswer()",
-      "priceFeedAddress": "",
+      "priceFeedAddress": "0xD5c40f5144848Bd4EF08a9605d860e727b991513",
       "feedSalt": "DEVX_PRICE_FEED_USDT_V0_27062023_dIos1Nw",
       "derivedFeed": false
     },
@@ -29,7 +29,7 @@
       "tokenOracleAddress": "0xE4eE17114774713d2De0eC0f035d4F7665fc025D",
       "description": "DAI / BNB",
       "priceFeedFunction": "latestAnswer()",
-      "priceFeedAddress": "",
+      "priceFeedAddress": "0x8EC213E7191488C7873cEC6daC8e97cdbAdb7B35",
       "feedSalt": "DEVX_PRICE_FEED_DAI_V0_27062023_1m7JNWQ",
       "derivedFeed": false
     },
@@ -40,7 +40,7 @@
       "tokenOracleAddress": "0x1B329402Cb1825C6F30A0d92aB9E2862BE47333f",
       "description": "TWT / BNB",
       "priceFeedFunction": "latestAnswer()",
-      "priceFeedAddress": "",
+      "priceFeedAddress": "0x7E728dFA6bCa9023d9aBeE759fDF56BEAb8aC7aD",
       "feedSalt": "DEVX_PRICE_FEED_TWT_V0_27062023_92Xklvq",
       "derivedFeed": false
     },
@@ -51,7 +51,7 @@
       "tokenOracleAddress": "0x81faeDDfeBc2F8Ac524327d70Cf913001732224C",
       "description": "CAKE / BNB",
       "priceFeedFunction": "latestAnswer()",
-      "priceFeedAddress": "",
+      "priceFeedAddress": "0xcB23da9EA243f53194CBc2380A6d4d9bC046161f",
       "feedSalt": "DEVX_PRICE_FEED_CAKE_V0_27062023_1BKpzde",
       "derivedFeed": false
     },
@@ -62,7 +62,7 @@
       "tokenOracleAddress": "0x1B329402Cb1825C6F30A0d92aB9E2862BE47333f",
       "description": "LINK / BNB",
       "priceFeedFunction": "latestAnswer()",
-      "priceFeedAddress": "",
+      "priceFeedAddress": "0xB38722F6A608646a538E882Ee9972D15c86Fc597",
       "feedSalt": "DEVX_PRICE_FEED_LINK_V0_27062023_JHIxs6o",
       "derivedFeed": false
     },
@@ -73,7 +73,7 @@
       "tokenOracleAddress": "0x1B329402Cb1825C6F30A0d92aB9E2862BE47333f",
       "description": "1INCH / BNB",
       "priceFeedFunction": "getThePrice()",
-      "priceFeedAddress": "",
+      "priceFeedAddress": "0x00000C451fA0b0a79a36c82820F061683E26714c",
       "feedSalt": "DEVX_PRICE_FEED_1INCH_V0_27062023_XhXA3sd",
       "derivedFeed": true
     },    
@@ -84,7 +84,7 @@
       "tokenOracleAddress": "0x298619601ebCd58d0b526963Deb2365B485Edc74",
       "description": "AAVE / BNB",
       "priceFeedFunction": "getThePrice()",
-      "priceFeedAddress": "",
+      "priceFeedAddress": "0x000003D85FFd4917103bf6CD8d697F01C28ED194",
       "feedSalt": "DEVX_PRICE_FEED_AAVE_V0_27062023_ivsd3iS",
       "derivedFeed": true
     }
