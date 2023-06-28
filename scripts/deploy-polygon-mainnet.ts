@@ -295,66 +295,33 @@ async function main() {
   console.log("==================tokenPaymasterAddress=======================", tokenPaymasterAddress);
   await delay(5000)
 
-  const usdcAddress = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174";
-  const usdtAddress = "0xc2132D05D31c914a87C6611C10748AEb04B58e8F";
-  const daiAddress = "0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063";
-  const sandAddress = "0xBbba073C31bF03b8ACf7c28EF0738DeCF3695683";
-  // const wMaticAddress = "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270"; // will have exchangeRate = 1e18
+  let oracleAggregatorInstance;
+  if (oracleAggregatorAddress) {
+    oracleAggregatorInstance = await getChainlinkOracleAggregatorContractInstance(oracleAggregatorAddress);
+    console.log("==================oracleAggregatorInstance=======================");
+  }
 
+  // 3a. Deploy the derived price feeds for all chainlink supported ERC20 tokens  
+  for (const token of tokenConfig.tokens) {
+    const { symbol, address, nativeOracleAddress, tokenOracleAddress, priceFeedAddress, description, priceFeedFunction, feedSalt, derivedFeed } = token;
 
-  // 3a. Deploy the derived price feeds for all chainlink supported ERC20 tokens
+    const derivedPriceFeedAddress = await deployDerivedPriceFeed(deployerInstance, nativeOracleAddress, tokenOracleAddress, description, feedSalt);
+    console.log(`==================${symbol} PriceFeedAddress=======================`, derivedPriceFeedAddress);
+    await delay(5000);
 
-  // POLYGON MAINNET
-  const nativeOracleAddress = "0xAB594600376Ec9fD91F8e885dADF0CE036862dE0";
-  const usdcOracleAddress = "0xfE4A8cc5b5B2366C1B58Bea3858e81843581b2F7";
-  const usdtOracleAddress = "0x0A6513e40db6EB1b165753AD52E80663aeA50545";
-  const daiOracleAddress = "0x4746DeC9e833A82EC7C2C1356372CcF2cfcD2F3D";
-  const sandOracleAddress = "0x3D49406EDd4D52Fb7FFd25485f32E073b529C924";
+    // Continue with other steps like setting token oracle, transferring ownership, etc.
+    // Use the derivedPriceFeedAddress and other token-specific information as needed
+    // ...
 
-  const usdtInfo = "USDT / MATIC";
-  const usdcInfo = "USDC / MATIC";
-  const daiInfo = "DAI / MATIC";
-  const sandInfo = "SAND / MATIC";
-
-  const usdcPriceFeedAddress = await deployDerivedPriceFeed(deployerInstance, nativeOracleAddress, usdcOracleAddress, usdcInfo, DEPLOYMENT_SALTS.PRICE_FEED_USDC);
-  console.log("==================usdcPriceFeedAddress=======================", usdcPriceFeedAddress);
-  await delay(5000)
-
-  const usdtPriceFeedAddress = await deployDerivedPriceFeed(deployerInstance, nativeOracleAddress, usdtOracleAddress, usdtInfo, DEPLOYMENT_SALTS.PRICE_FEED_USDT);
-  console.log("==================usdtPriceFeedAddress=======================", usdtPriceFeedAddress);
-  await delay(5000)
-
-  const daiPriceFeedAddress = await deployDerivedPriceFeed(deployerInstance, nativeOracleAddress, daiOracleAddress, daiInfo, DEPLOYMENT_SALTS.PRICE_FEED_DAI);
-  console.log("==================daiPriceFeedAddress=======================", daiPriceFeedAddress);
-  await delay(5000)
-
-  const sandPriceFeedAddress = await deployDerivedPriceFeed(deployerInstance, nativeOracleAddress, sandOracleAddress, sandInfo, DEPLOYMENT_SALTS.PRICE_FEED_SAND);
-  console.log("==================sandPriceFeedAddress=======================", sandPriceFeedAddress);
-  await delay(5000)
-
-  // 3b. If derived price feed is already available, then use that address but callData would change when setting token oracle.
-  
-  
-  // Below addresses would be result of above 3a deployments or already deployed price feeds from 3b
-  // const usdcPriceFeedAddress = "0xE9304e0e2e9A8982B3C819947568AC3dfC7bd9ca";
-  // const usdtPriceFeedAddress = "0x7de3a86c4959Da92966bF1B1E3af5f6155A56032";
-
-
-  // 4. set token oracle using the price feed addresses and depending on the method to call on them
-  if(oracleAggregatorAddress) {
-  const oracleAggregatorInstance = await getChainlinkOracleAggregatorContractInstance(oracleAggregatorAddress);
-  console.log("==================oracleAggregatorInstance=======================");
-
-  await setTokenOracle(oracleAggregatorInstance, usdcAddress, usdcPriceFeedAddress, 18, "getThePrice()");
-  await setTokenOracle(oracleAggregatorInstance, usdtAddress, usdtPriceFeedAddress, 18, "getThePrice()");
-  await setTokenOracle(oracleAggregatorInstance, daiAddress, daiPriceFeedAddress, 18, "getThePrice()");
-  await setTokenOracle(oracleAggregatorInstance, sandAddress, sandPriceFeedAddress, 18, "getThePrice()");
-
-  // 5a. transfer ownership of oracle aggregator to the owner
-  // tx = await oracleAggregatorInstance.transferOwnership(owner)
-  // receipt = await tx.wait()
-  // console.log("oracleAggregatorInstance ownership transferred to %s", owner);
-}
+    // 4. Set token oracle on oracle aggregator
+    if (oracleAggregatorInstance) {
+      let feedAddress = derivedPriceFeedAddress
+      if(priceFeedFunction == "latestAnswer()" || derivedFeed == false) {
+        feedAddress = priceFeedAddress
+      }
+      await setTokenOracle(oracleAggregatorInstance, address, feedAddress, 18, priceFeedFunction);
+    }
+  }
 
 if(tokenPaymasterAddress) {
   // 5b. transfer ownership of token paymaster to the owner

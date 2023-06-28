@@ -319,7 +319,7 @@ async function main() {
       if(priceFeedFunction == "latestAnswer()" || derivedFeed == false) {
         feedAddress = priceFeedAddress
       }
-      await setTokenOracle(oracleAggregatorInstance, address, derivedPriceFeedAddress, 18, priceFeedFunction);
+      await setTokenOracle(oracleAggregatorInstance, address, feedAddress, 18, priceFeedFunction);
     }
   }
 
