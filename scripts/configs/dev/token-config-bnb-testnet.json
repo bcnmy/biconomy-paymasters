@@ -40,8 +40,8 @@
       "tokenOracleAddress": "0x298619601ebCd58d0b526963Deb2365B485Edc74",
       "description": "AAVE / BNB",
       "priceFeedFunction": "getThePrice()",
-      "priceFeedAddress": "0x000003d85ffd4917103bf6cd8d697f01c28ed194",
-      "feedSalt": "DEVX_PRICE_FEED_AAVE_V0_27062023_ivsd3iS",
+      "priceFeedAddress": "0x0000AF22A276F86B405835c18863e1C2A679D9e3",
+      "feedSalt": "DEVX_PRICE_FEED_AAVE_V0_28062023_HsugnpY",
       "derivedFeed": true
     },
     {
