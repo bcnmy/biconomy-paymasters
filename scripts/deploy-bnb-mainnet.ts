@@ -18,8 +18,10 @@ let entryPointAddress =
   "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
 const owner = process.env.PAYMASTER_OWNER_ADDRESS_DEV || "";
 const verifyingSigner = process.env.PAYMASTER_SIGNER_ADDRESS_DEV || "";
-const DEPLOYER_CONTRACT_ADDRESS =
+const DEPLOYER_CONTRACT_ADDRESS_DEV =
   process.env.DEPLOYER_CONTRACT_ADDRESS_DEV || "";
+  const DEPLOYER_CONTRACT_ADDRESS_PROD =
+  process.env.DEPLOYER_CONTRACT_ADDRESS_PROD || "";
 
 function delay(ms: number) {
     return new Promise<void>((resolve) => {
@@ -213,8 +215,8 @@ async function setTokenOracle(oracleAggregatorInstance: ChainlinkOracleAggregato
  *  This function is added to support the flow with pre-deploying the deployer contract
  *  using the `deployer-contract.deploy.ts` script.
  */
-async function getPredeployedDeployerContractInstance(): Promise<Deployer> {
-  const code = await provider.getCode(DEPLOYER_CONTRACT_ADDRESS);
+async function getPredeployedDeployerContractInstanceDEV(): Promise<Deployer> {
+  const code = await provider.getCode(DEPLOYER_CONTRACT_ADDRESS_DEV);
   const chainId = (await provider.getNetwork()).chainId;
   const [signer] = await ethers.getSigners();
 
@@ -227,9 +229,29 @@ async function getPredeployedDeployerContractInstance(): Promise<Deployer> {
     console.log(
       "Deploying with EOA %s through Deployer Contract %s",
       signer.address,
-      DEPLOYER_CONTRACT_ADDRESS
+      DEPLOYER_CONTRACT_ADDRESS_DEV
     );
-    return Deployer__factory.connect(DEPLOYER_CONTRACT_ADDRESS, signer);
+    return Deployer__factory.connect(DEPLOYER_CONTRACT_ADDRESS_DEV, signer);
+  }
+}
+
+async function getPredeployedDeployerContractInstancePROD(): Promise<Deployer> {
+  const code = await provider.getCode(DEPLOYER_CONTRACT_ADDRESS_PROD);
+  const chainId = (await provider.getNetwork()).chainId;
+  const [signer] = await ethers.getSigners();
+
+  if (code === "0x") {
+    console.log(
+      `Deployer not deployed on chain ${chainId}, deploy it with deployer-contract.deploy.ts script before using this script.`
+    );
+    throw new Error("Deployer not deployed");
+  } else {
+    console.log(
+      "Deploying with EOA %s through Deployer Contract %s",
+      signer.address,
+      DEPLOYER_CONTRACT_ADDRESS_PROD
+    );
+    return Deployer__factory.connect(DEPLOYER_CONTRACT_ADDRESS_PROD, signer);
   }
 }
 
@@ -280,18 +302,21 @@ async function main() {
   const accounts = await ethers.getSigners();
   const earlyOwner = await accounts[0].getAddress();
 
-  const deployerInstance = await getPredeployedDeployerContractInstance();
+  const deployerInstanceDEV = await getPredeployedDeployerContractInstanceDEV();
+  console.log("=========================================");
+
+  const deployerInstancePROD = await getPredeployedDeployerContractInstancePROD();
   console.log("=========================================");
 
   // 1. Deploy Chainlink Oracle Aggregator
   // @note: owner is kept the deployer because we need to perform more actions on this contract using owner as part of other scripts
   // @note: ownership should be transferred at the end
-  const oracleAggregatorAddress = await deployChainlinkOracleAggregatorContract(deployerInstance, earlyOwner);
+  const oracleAggregatorAddress = await deployChainlinkOracleAggregatorContract(deployerInstanceDEV, earlyOwner);
   console.log("==================oracleAggregatorAddress=======================", oracleAggregatorAddress);
   await delay(5000)
 
   // 2. Deploy Token paymaster
-  const tokenPaymasterAddress = await deployTokenPaymasterContract(deployerInstance, earlyOwner);
+  const tokenPaymasterAddress = await deployTokenPaymasterContract(deployerInstanceDEV, earlyOwner);
   console.log("==================tokenPaymasterAddress=======================", tokenPaymasterAddress);
   await delay(5000)
 
@@ -322,11 +347,11 @@ async function main() {
   const aaveInfo = "AAVE / BNB";
   const onceInchInfo = "1INCH / BNB";
 
-  const aavePriceFeedAddress = await deployDerivedPriceFeed(deployerInstance, nativeOracleAddress, aaveOracleAddress, aaveInfo, DEPLOYMENT_SALTS.PRICE_FEED_AAVE);
+  const aavePriceFeedAddress = await deployDerivedPriceFeed(deployerInstanceDEV, nativeOracleAddress, aaveOracleAddress, aaveInfo, DEPLOYMENT_SALTS.PRICE_FEED_AAVE);
   console.log("==================aavePriceFeedAddress=======================", aavePriceFeedAddress);
   await delay(5000)
 
-  const onceInchPriceFeedAddress = await deployDerivedPriceFeed(deployerInstance, nativeOracleAddress, oneInchOracleAddress, onceInchInfo, DEPLOYMENT_SALTS.PRICE_FEED_1INCH);
+  const onceInchPriceFeedAddress = await deployDerivedPriceFeed(deployerInstanceDEV, nativeOracleAddress, oneInchOracleAddress, onceInchInfo, DEPLOYMENT_SALTS.PRICE_FEED_1INCH);
   console.log("==================onceInchPriceFeedAddress=======================", onceInchPriceFeedAddress);
   await delay(5000)
 
@@ -339,10 +364,13 @@ async function main() {
   // 3a. Deploy the derived price feeds for all chainlink supported ERC20 tokens  
   for (const token of tokenConfig.tokens) {
     const { symbol, address, nativeOracleAddress, tokenOracleAddress, priceFeedAddress, description, priceFeedFunction, feedSalt, derivedFeed } = token;
-
-    const derivedPriceFeedAddress = await deployDerivedPriceFeed(deployerInstance, nativeOracleAddress, tokenOracleAddress, description, feedSalt);
+    let derivedPriceFeedAddress = priceFeedAddress;
+    
+    if(derivedPriceFeedAddress == "") {
+    derivedPriceFeedAddress = await deployDerivedPriceFeed(deployerInstanceDEV, nativeOracleAddress, tokenOracleAddress, description, feedSalt);
     console.log(`==================${symbol} PriceFeedAddress=======================`, derivedPriceFeedAddress);
     await delay(5000);
+    }
 
     // Continue with other steps like setting token oracle, transferring ownership, etc.
     // Use the derivedPriceFeedAddress and other token-specific information as needed
