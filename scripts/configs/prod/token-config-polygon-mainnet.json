@@ -8,7 +8,7 @@
         "description": "USDC / MATIC",
         "priceFeedFunction": "getThePrice()",
         "priceFeedAddress": "",
-        "feedSalt": "DEVX_PRICE_FEED_USDC_V0_27062023_uiaqdyv",
+        "feedSalt": "PROD_PRICE_FEED_USDC_V0_27062023_dNuVvQX",
         "derivedFeed": true
       },
       {
@@ -19,7 +19,7 @@
         "description": "USDT / MATIC",
         "priceFeedFunction": "getThePrice()",
         "priceFeedAddress": "",
-        "feedSalt": "DEVX_PRICE_FEED_USDT_V0_27062023_dIos1Nw",
+        "feedSalt": "PROD_PRICE_FEED_USDT_V0_27062023_VPjyCNm",
         "derivedFeed": true
       },
       {
@@ -30,7 +30,7 @@
         "description": "DAI / MATIC",
         "priceFeedFunction": "getThePrice()",
         "priceFeedAddress": "",
-        "feedSalt": "DEVX_PRICE_FEED_DAI_V0_27062023_1m7JNWQ",
+        "feedSalt": "PROD_PRICE_FEED_DAI_V0_27062023_YmOS60y",
         "derivedFeed": true
       },
       {
@@ -41,7 +41,7 @@
         "description": "SAND / MATIC",
         "priceFeedFunction": "getThePrice()",
         "priceFeedAddress": "",
-        "feedSalt": "DEVX_PRICE_FEED_SAND_V0_27062023_eHPqgeR",
+        "feedSalt": "PROD_PRICE_FEED_SAND_V0_27062023_PefbVXC",
         "derivedFeed": true
       }
     ]

@@ -8,7 +8,7 @@
       "description": "USDC / BNB",
       "priceFeedFunction": "latestAnswer()",
       "priceFeedAddress": "",
-      "feedSalt": "DEVX_PRICE_FEED_USDC_V0_27062023_uiaqdyv",
+      "feedSalt": "PROD_PRICE_FEED_USDC_V0_27062023_dNuVvQX",
       "derivedFeed": false
     },
     {
@@ -19,7 +19,7 @@
       "description": "USDT / BNB",
       "priceFeedFunction": "latestAnswer()",
       "priceFeedAddress": "",
-      "feedSalt": "DEVX_PRICE_FEED_USDT_V0_27062023_dIos1Nw",
+      "feedSalt": "PROD_PRICE_FEED_USDT_V0_27062023_VPjyCNm",
       "derivedFeed": false
     },
     {
@@ -30,7 +30,7 @@
       "description": "DAI / BNB",
       "priceFeedFunction": "latestAnswer()",
       "priceFeedAddress": "",
-      "feedSalt": "DEVX_PRICE_FEED_DAI_V0_27062023_1m7JNWQ",
+      "feedSalt": "PROD_PRICE_FEED_DAI_V0_27062023_YmOS60y",
       "derivedFeed": false
     },
     {
@@ -41,7 +41,7 @@
       "description": "TWT / BNB",
       "priceFeedFunction": "latestAnswer()",
       "priceFeedAddress": "",
-      "feedSalt": "DEVX_PRICE_FEED_TWT_V0_27062023_92Xklvq",
+      "feedSalt": "PROD_PRICE_FEED_TWT_V0_27062023_lFuWweO",
       "derivedFeed": false
     },
     {
@@ -52,7 +52,7 @@
       "description": "CAKE / BNB",
       "priceFeedFunction": "latestAnswer()",
       "priceFeedAddress": "",
-      "feedSalt": "DEVX_PRICE_FEED_CAKE_V0_27062023_1BKpzde",
+      "feedSalt": "PROD_PRICE_FEED_CAKE_V0_27062023_UzFCD9g",
       "derivedFeed": false
     },
     {
@@ -63,7 +63,7 @@
       "description": "LINK / BNB",
       "priceFeedFunction": "latestAnswer()",
       "priceFeedAddress": "",
-      "feedSalt": "DEVX_PRICE_FEED_LINK_V0_27062023_JHIxs6o",
+      "feedSalt": "PROD_PRICE_FEED_LINK_V0_27062023_VeIArAu",
       "derivedFeed": false
     },
     {
@@ -74,7 +74,7 @@
       "description": "1INCH / BNB",
       "priceFeedFunction": "getThePrice()",
       "priceFeedAddress": "",
-      "feedSalt": "DEVX_PRICE_FEED_1INCH_V0_27062023_XhXA3sd",
+      "feedSalt": "PROD_PRICE_FEED_1INCH_V0_27062023_q90lKRZ",
       "derivedFeed": true
     },    
     {
@@ -85,7 +85,7 @@
       "description": "AAVE / BNB",
       "priceFeedFunction": "getThePrice()",
       "priceFeedAddress": "",
-      "feedSalt": "DEVX_PRICE_FEED_AAVE_V0_27062023_ivsd3iS",
+      "feedSalt": "PROD_PRICE_FEED_AAVE_V0_27062023_0CUevCb",
       "derivedFeed": true
     }
   ]

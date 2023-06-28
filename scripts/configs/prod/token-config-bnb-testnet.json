@@ -7,8 +7,8 @@
       "tokenOracleAddress": "0x90c069C4538adAc136E051052E14c1cD799C41B7",
       "description": "USDC / BNB",
       "priceFeedFunction": "getThePrice()",
-      "priceFeedAddress": "0x000005abae3deadbe1fbd12105f950efba9eaec4",
-      "feedSalt": "DEVX_PRICE_FEED_USDC_V0_27062023_uiaqdyv",
+      "priceFeedAddress": "",
+      "feedSalt": "PROD_PRICE_FEED_USDC_V0_27062023_dNuVvQX",
       "derivedFeed": true
     },
     {
@@ -18,8 +18,8 @@
       "tokenOracleAddress": "0xEca2605f0BCF2BA5966372C99837b1F182d3D620",
       "description": "USDT / BNB",
       "priceFeedFunction": "getThePrice()",
-      "priceFeedAddress": "0x000001e2c2b39542c30a3fe57c4487030bc03adf",
-      "feedSalt": "DEVX_PRICE_FEED_USDT_V0_27062023_dIos1Nw",
+      "priceFeedAddress": "",
+      "feedSalt": "PROD_PRICE_FEED_USDT_V0_27062023_VPjyCNm",
       "derivedFeed": true
     },
     {
@@ -29,8 +29,8 @@
       "tokenOracleAddress": "0xE4eE17114774713d2De0eC0f035d4F7665fc025D",
       "description": "DAI / BNB",
       "priceFeedFunction": "getThePrice()",
-      "priceFeedAddress": "0x000000d2da196474046c7a4d94ab0e566b26d054",
-      "feedSalt": "DEVX_PRICE_FEED_DAI_V0_27062023_1m7JNWQ",
+      "priceFeedAddress": "",
+      "feedSalt": "PROD_PRICE_FEED_DAI_V0_27062023_YmOS60y",
       "derivedFeed": true
     },
     {
@@ -40,8 +40,8 @@
       "tokenOracleAddress": "0x298619601ebCd58d0b526963Deb2365B485Edc74",
       "description": "AAVE / BNB",
       "priceFeedFunction": "getThePrice()",
-      "priceFeedAddress": "0x000003d85ffd4917103bf6cd8d697f01c28ed194",
-      "feedSalt": "DEVX_PRICE_FEED_AAVE_V0_27062023_ivsd3iS",
+      "priceFeedAddress": "",
+      "feedSalt": "PROD_PRICE_FEED_AAVE_V0_27062023_0CUevCb",
       "derivedFeed": true
     },
     {
@@ -51,8 +51,8 @@
       "tokenOracleAddress": "0x81faeDDfeBc2F8Ac524327d70Cf913001732224C",
       "description": "CAKE / BNB",
       "priceFeedFunction": "getThePrice()",
-      "priceFeedAddress": "0x000007198738f877c01d9b7e4a4e1bd17e46e4a8",
-      "feedSalt": "DEVX_PRICE_FEED_CAKE_V0_27062023_1BKpzde",
+      "priceFeedAddress": "",
+      "feedSalt": "PROD_PRICE_FEED_CAKE_V0_27062023_UzFCD9g",
       "derivedFeed": true
     },
     {
@@ -62,8 +62,8 @@
       "tokenOracleAddress": "0x1B329402Cb1825C6F30A0d92aB9E2862BE47333f",
       "description": "LINK / BNB",
       "priceFeedFunction": "getThePrice()",
-      "priceFeedAddress": "0x00000da809fe7be1297ee731f998141ba352778d",
-      "feedSalt": "DEVX_PRICE_FEED_LINK_V0_27062023_JHIxs6o",
+      "priceFeedAddress": "",
+      "feedSalt": "PROD_PRICE_FEED_LINK_V0_27062023_VeIArAu",
       "derivedFeed": true
     }
   ]
