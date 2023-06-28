@@ -3,8 +3,8 @@
     {
       "symbol": "USDC",
       "address": "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d",
-      "nativeOracleAddress": "0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE",
-      "tokenOracleAddress": "0x90c069C4538adAc136E051052E14c1cD799C41B7",
+      "nativeOracleAddress": "",
+      "tokenOracleAddress": "",
       "description": "USDC / BNB",
       "priceFeedFunction": "latestAnswer()",
       "priceFeedAddress": "0x45f86CA2A8BC9EBD757225B19a1A0D7051bE46Db",
@@ -14,8 +14,8 @@
     {
       "symbol": "USDT",
       "address": "0x55d398326f99059fF775485246999027B3197955",
-      "nativeOracleAddress": "0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE",
-      "tokenOracleAddress": "0xEca2605f0BCF2BA5966372C99837b1F182d3D620",
+      "nativeOracleAddress": "",
+      "tokenOracleAddress": "",
       "description": "USDT / BNB",
       "priceFeedFunction": "latestAnswer()",
       "priceFeedAddress": "0xD5c40f5144848Bd4EF08a9605d860e727b991513",
@@ -25,8 +25,8 @@
     {
       "symbol": "DAI",
       "address": "0x1AF3F329e8BE154074D8769D1FFa4eE058B1DBc3",
-      "nativeOracleAddress": "0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE",
-      "tokenOracleAddress": "0xE4eE17114774713d2De0eC0f035d4F7665fc025D",
+      "nativeOracleAddress": "",
+      "tokenOracleAddress": "",
       "description": "DAI / BNB",
       "priceFeedFunction": "latestAnswer()",
       "priceFeedAddress": "0x8EC213E7191488C7873cEC6daC8e97cdbAdb7B35",
@@ -36,8 +36,8 @@
     {
       "symbol": "TWT",
       "address": "0x4b0f1812e5df2a09796481ff14017e6005508003",
-      "nativeOracleAddress": "0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE",
-      "tokenOracleAddress": "0x1B329402Cb1825C6F30A0d92aB9E2862BE47333f",
+      "nativeOracleAddress": "",
+      "tokenOracleAddress": "",
       "description": "TWT / BNB",
       "priceFeedFunction": "latestAnswer()",
       "priceFeedAddress": "0x7E728dFA6bCa9023d9aBeE759fDF56BEAb8aC7aD",
@@ -47,8 +47,8 @@
     {
       "symbol": "CAKE",
       "address": "0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82",
-      "nativeOracleAddress": "0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE",
-      "tokenOracleAddress": "0x81faeDDfeBc2F8Ac524327d70Cf913001732224C",
+      "nativeOracleAddress": "",
+      "tokenOracleAddress": "",
       "description": "CAKE / BNB",
       "priceFeedFunction": "latestAnswer()",
       "priceFeedAddress": "0xcB23da9EA243f53194CBc2380A6d4d9bC046161f",
@@ -58,8 +58,8 @@
     {
       "symbol": "LINK",
       "address": "0xF8A0BF9cF54Bb92F17374d9e9A321E6a111a51bD",
-      "nativeOracleAddress": "0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE",
-      "tokenOracleAddress": "0x1B329402Cb1825C6F30A0d92aB9E2862BE47333f",
+      "nativeOracleAddress": "",
+      "tokenOracleAddress": "",
       "description": "LINK / BNB",
       "priceFeedFunction": "latestAnswer()",
       "priceFeedAddress": "0xB38722F6A608646a538E882Ee9972D15c86Fc597",
@@ -81,10 +81,10 @@
       "symbol": "AAVE",
       "address": "0xfb6115445Bff7b52FeB98650C87f44907E58f802",
       "nativeOracleAddress": "0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE",
-      "tokenOracleAddress": "0x298619601ebCd58d0b526963Deb2365B485Edc74",
+      "tokenOracleAddress": "0xA8357BF572460fC40f4B0aCacbB2a6A61c89f475",
       "description": "AAVE / BNB",
       "priceFeedFunction": "getThePrice()",
-      "priceFeedAddress": "0x000003D85FFd4917103bf6CD8d697F01C28ED194",
+      "priceFeedAddress": "",
       "feedSalt": "DEVX_PRICE_FEED_AAVE_V0_27062023_ivsd3iS",
       "derivedFeed": true
     }

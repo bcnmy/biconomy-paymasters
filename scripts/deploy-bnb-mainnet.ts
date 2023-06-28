@@ -320,41 +320,6 @@ async function main() {
   console.log("==================tokenPaymasterAddress=======================", tokenPaymasterAddress);
   await delay(5000)
 
-  const usdcAddress = "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d";
-  const usdtAddress = "0x55d398326f99059fF775485246999027B3197955";
-  const aaveAddress = "0xfb6115445Bff7b52FeB98650C87f44907E58f802";
-  const cakeAddress = "0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82";
-  const daiAddress = "0x1AF3F329e8BE154074D8769D1FFa4eE058B1DBc3";
-  const oneInchAddress = "0x111111111117dC0aa78b770fA6A738034120C302";
-  const linkAddress = "0xF8A0BF9cF54Bb92F17374d9e9A321E6a111a51bD";
-  const twtAddress = "0x4b0f1812e5df2a09796481ff14017e6005508003";
-
-
-  // 3a. Deploy the derived price feeds for all chainlink supported ERC20 tokens
-
-  // BNB MAINNET
-  const nativeOracleAddress = "0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE";
-  const aaveOracleAddress = "0xA8357BF572460fC40f4B0aCacbB2a6A61c89f475";
-  const oneInchOracleAddress = "0x9a177Bb9f5b6083E962f9e62bD21d4b5660Aeb03";
-
-  // below oracles are not needed because derived price feeds are already available on mainnet
-  // const usdcOracleAddress = "0x51597f405303C4377E36123cBc172b13269EA163";
-  // const usdtOracleAddress = "0xB97Ad0E74fa7d920791E90258A6E2085088b4320";
-  // const daiOracleAddress = "0x132d3C0B1D2cEa0BC552588063bdBb210FDeecfA";
-  // const linkOracleAddress = "0xca236E327F629f9Fc2c30A4E95775EbF0B89fac8";
-  // const cakeOracleAddress = "0xB6064eD41d4f67e353768aA239cA86f4F73665a1";
-
-  const aaveInfo = "AAVE / BNB";
-  const onceInchInfo = "1INCH / BNB";
-
-  const aavePriceFeedAddress = await deployDerivedPriceFeed(deployerInstanceDEV, nativeOracleAddress, aaveOracleAddress, aaveInfo, DEPLOYMENT_SALTS.PRICE_FEED_AAVE);
-  console.log("==================aavePriceFeedAddress=======================", aavePriceFeedAddress);
-  await delay(5000)
-
-  const onceInchPriceFeedAddress = await deployDerivedPriceFeed(deployerInstanceDEV, nativeOracleAddress, oneInchOracleAddress, onceInchInfo, DEPLOYMENT_SALTS.PRICE_FEED_1INCH);
-  console.log("==================onceInchPriceFeedAddress=======================", onceInchPriceFeedAddress);
-  await delay(5000)
-
   let oracleAggregatorInstance;
   if (oracleAggregatorAddress) {
     oracleAggregatorInstance = await getChainlinkOracleAggregatorContractInstance(oracleAggregatorAddress);
@@ -365,6 +330,7 @@ async function main() {
   for (const token of tokenConfig.tokens) {
     const { symbol, address, nativeOracleAddress, tokenOracleAddress, priceFeedAddress, description, priceFeedFunction, feedSalt, derivedFeed } = token;
     let derivedPriceFeedAddress = priceFeedAddress;
+    console.log(`derived price feed address for token ${symbol} is ${derivedPriceFeedAddress}`)
     
     if(derivedPriceFeedAddress == "") {
     derivedPriceFeedAddress = await deployDerivedPriceFeed(deployerInstanceDEV, nativeOracleAddress, tokenOracleAddress, description, feedSalt);
