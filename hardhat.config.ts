@@ -60,6 +60,14 @@ networks: {
         ? [process.env.PRIVATE_KEY]
         : walletUtils.makeKeyList(),
   },
+  sepolia: {
+    url: process.env.SEPOLIA_URL || "",
+    chainId: 11155111,
+    accounts:
+      process.env.PRIVATE_KEY !== undefined
+        ? [process.env.PRIVATE_KEY]
+        : walletUtils.makeKeyList(),
+  },
   polygon_mainnet: {
     url: process.env.POLYGON_URL || "",
     chainId: 137,
