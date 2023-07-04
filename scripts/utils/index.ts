@@ -49,7 +49,8 @@ export enum DEPLOYMENT_SALTS {
   PRICE_FEED_CAKE = "DEVX_PRICE_FEED_CAKE_V0_27062023_1BKpzde", // 0x000007198738f877c01d9b7e4a4e1bd17e46e4a8
   PRICE_FEED_LINK = "DEVX_PRICE_FEED_LINK_V0_27062023_JHIxs6o", // 0x00000da809fe7be1297ee731f998141ba352778d
   PRICE_FEED_1INCH = "DEVX_PRICE_FEED_1INCH_V0_27062023_XhXA3sd", // 0x00000c451fa0b0a79a36c82820f061683e26714c
-  PRICE_FEED_TWT = "DEVX_PRICE_FEED_TWT_V0_27062023_92Xklvq" // 0x00000e862312c82af2301e6c433e75099665649d
+  PRICE_FEED_TWT = "DEVX_PRICE_FEED_TWT_V0_27062023_92Xklvq", // 0x00000e862312c82af2301e6c433e75099665649d
+  PRICE_FEED_UNI = "DEVX_PRICE_FEED_UNI_V0_27062023_PBQ6vdq" // 0x0000095cce092e83e5826cfeb0f03cfa74915b41 
 }
 
 // Marked for removal
@@ -158,7 +159,7 @@ export const deployContract = async (
   //const { hash, wait } = await deployerInstance.deploy(salt, contractByteCode, {maxFeePerGas: 200e9, maxPriorityFeePerGas: 75e9});
   // TODO
   // Review gas price
-  const { hash, wait } = await deployerInstance.deploy(salt, contractByteCode, {gasPrice: 40e9});
+  const { hash, wait } = await deployerInstance.deploy(salt, contractByteCode, {gasPrice: 15e9});
 
   console.log(`Submitted transaction ${hash} for deployment`);
 

@@ -172,7 +172,10 @@ networks: {
   },
   optimismGoerli: {
     url: `https://goerli.optimism.io`,
-    accounts: walletUtils.makeKeyList(),
+    accounts: process.env.PRIVATE_KEY !== undefined
+    ? [process.env.PRIVATE_KEY]
+    : walletUtils.makeKeyList(),
+    gasPrice: 10e9,
     chainId: 420,
   },
   optimismMainnet: {
