@@ -494,8 +494,6 @@ contract BiconomyTokenPaymaster is
 
         address account = userOp.getSender();
 
-        // uint256 costOfPost = userOp.maxFeePerGas * UNACCOUNTED_COST; // unaccountedEPGasOverhead
-
         // This model assumes irrespective of priceSource exchangeRate is always sent from outside
         // for below checks you would either need maxCost or some exchangeRate
 
