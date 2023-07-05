@@ -1,0 +1,114 @@
+{
+    "tokens": [
+      {
+        "symbol": "USDT",
+        "address": "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
+        "nativeOracleAddress": "0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612",
+        "tokenOracleAddress": "0x3f3f5dF88dC9F13eac63DF89EC16ef6e7E25DdE7",
+        "description": "USDT / ETH",
+        "priceFeedFunction": "getThePrice()",
+        "priceFeedAddress": "0x000001E2C2B39542c30A3fE57c4487030bC03adF",
+        "feedSalt": "DEVX_PRICE_FEED_USDT_V0_27062023_dIos1Nw",
+        "derivedFeed": true
+      },
+      {
+        "symbol": "WBTC",
+        "address": "0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f",
+        "nativeOracleAddress": "0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612",
+        "tokenOracleAddress": "0xd0C7101eACbB49F3deCcCc166d238410D6D46d57",
+        "description": "WBTC / ETH",
+        "priceFeedFunction": "getThePrice()",
+        "priceFeedAddress": "0x00002D444779516f9D60368f3fa1E2b036BCCc7D",
+        "feedSalt": "DEVX_PRICE_FEED_WBTC_V0_27062023_z41FLvK",
+        "derivedFeed": true
+      },
+      {
+        "symbol": "DAI",
+        "address": "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1",
+        "nativeOracleAddress": "0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612",
+        "tokenOracleAddress": "0xc5C8E77B397E531B8EC06BFb0048328B30E9eCfB",
+        "description": "DAI / ETH",
+        "priceFeedFunction": "getThePrice()",
+        "priceFeedAddress": "0x000000d2Da196474046c7a4D94Ab0E566B26d054",
+        "feedSalt": "DEVX_PRICE_FEED_DAI_V0_27062023_1m7JNWQ",
+        "derivedFeed": true
+      },
+      {
+        "symbol": "wstETH",
+        "address": "0x5979D7b546E38E414F7E9822514be443A4800529",
+        "nativeOracleAddress": "",
+        "tokenOracleAddress": "",
+        "description": "wstETH / ETH",
+        "priceFeedFunction": "latestAnswer()",
+        "priceFeedAddress": "0xb523AE262D20A936BC152e6023996e46FDC2A95D",
+        "feedSalt": "DEVX_PRICE_FEED_WSTETH_V0_27062023_mg8XpNM",
+        "derivedFeed": false
+      },
+      {
+        "symbol": "ARB",
+        "address": "0x912CE59144191C1204E64559FE8253a0e49E6548",
+        "nativeOracleAddress": "0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612",
+        "tokenOracleAddress": "0xb2A824043730FE05F3DA2efaFa1CBbe83fa548D6",
+        "description": "ARB / ETH",
+        "priceFeedFunction": "getThePrice()",
+        "priceFeedAddress": "0x00003eCC9947e6E5128427290DEBBCAaE8199B3F",
+        "feedSalt": "DEVX_PRICE_FEED_ARB_V0_27062023_3wuHuct",
+        "derivedFeed": true
+      },
+      {
+        "symbol": "USDC",
+        "address": "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
+        "nativeOracleAddress": "0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612",
+        "tokenOracleAddress": "0x50834F3163758fcC1Df9973b6e91f0F0F0434aD3",
+        "description": "USDC / ETH",
+        "priceFeedFunction": "getThePrice()",
+        "priceFeedAddress": "0x000005ABaE3DEAdbe1FBD12105F950efbA9eaec4",
+        "feedSalt": "DEVX_PRICE_FEED_USDC_V0_27062023_uiaqdyv",
+        "derivedFeed": true
+      },
+      {
+        "symbol": "GMX",
+        "address": "0xfc5A1A6EB076a2C7aD06eD22C90d7E710E35ad0a",
+        "nativeOracleAddress": "0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612",
+        "tokenOracleAddress": "0xDB98056FecFff59D032aB628337A4887110df3dB",
+        "description": "GMX / ETH",
+        "priceFeedFunction": "getThePrice()",
+        "priceFeedAddress": "0x00001BC10BaB33fb8c0f93330e16153894F02a61",
+        "feedSalt": "DEVX_PRICE_FEED_GMX_V0_27062023_qKe9UwO",
+        "derivedFeed": true
+      },
+      {
+        "symbol": "UNI",
+        "address": "0xFa7F8980b0f1E64A2062791cc3b0871572f1F7f0",
+        "nativeOracleAddress": "0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612",
+        "tokenOracleAddress": "0x9C917083fDb403ab5ADbEC26Ee294f6EcAda2720",
+        "description": "UNI / ETH",
+        "priceFeedFunction": "getThePrice()",
+        "priceFeedAddress": "0x0000095CcE092E83E5826cFeb0f03cFa74915b41",
+        "feedSalt": "DEVX_PRICE_FEED_UNI_V0_27062023_PBQ6vdq",
+        "derivedFeed": true
+      },
+      {
+        "symbol": "DPX",
+        "address": "0x6C2C06790b3E3E3c38e12Ee22F8183b37a13EE55",
+        "nativeOracleAddress": "0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612",
+        "tokenOracleAddress": "0xc373B9DB0707fD451Bc56bA5E9b029ba26629DF0",
+        "description": "DPX / ETH",
+        "priceFeedFunction": "getThePrice()",
+        "priceFeedAddress": "0x00003e7f4BB63a6B24f2b45AFc698A20D7eFED65",
+        "feedSalt": "DEVX_PRICE_FEED_DPX_V0_27062023_5Y1OOrG",
+        "derivedFeed": true
+      },
+      {
+        "symbol": "JOE",
+        "address": "0x371c7ec6D8039ff7933a2AA28EB827Ffe1F52f07",
+        "nativeOracleAddress": "0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612",
+        "tokenOracleAddress": "0x04180965a782E487d0632013ABa488A472243542",
+        "description": "JOE / ETH",
+        "priceFeedFunction": "getThePrice()",
+        "priceFeedAddress": "0x000074df2B9Ad8a7Be4d07a85F278ca0017513d3",
+        "feedSalt": "DEVX_PRICE_FEED_JOE_V0_27062023_XxQWl65",
+        "derivedFeed": true
+      }
+    ]
+}

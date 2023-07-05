@@ -1,0 +1,26 @@
+{
+    "tokens": [
+      {
+        "symbol": "USDC",
+        "address": "0x9C73373C70F23920EA54F7883dCB1F85b162Df40",
+        "nativeOracleAddress": "0x694AA1769357215DE4FAC081bf1f309aDC325306",
+        "tokenOracleAddress": "0xA2F78ab2355fe2f984D808B5CeE7FD0A93D5270E",
+        "description": "USDC / ETH",
+        "priceFeedFunction": "getThePrice()",
+        "priceFeedAddress": "0x000005ABaE3DEAdbe1FBD12105F950efbA9eaec4",
+        "feedSalt": "DEVX_PRICE_FEED_USDC_V0_27062023_uiaqdyv",
+        "derivedFeed": true
+      },
+      {
+        "symbol": "DAI",
+        "address": "0x5Bc7c8cFC6d54c055547Fcd8f6Ee4f2eDcda613e",
+        "nativeOracleAddress": "0x694AA1769357215DE4FAC081bf1f309aDC325306",
+        "tokenOracleAddress": "0x14866185B1962B63C3Ea9E03Bc1da838bab34C19",
+        "description": "DAI / ETH",
+        "priceFeedFunction": "getThePrice()",
+        "priceFeedAddress": "0x000000d2da196474046c7a4d94ab0e566b26d054",
+        "feedSalt": "DEVX_PRICE_FEED_DAI_V0_27062023_1m7JNWQ",
+        "derivedFeed": true
+      }
+    ]
+}
