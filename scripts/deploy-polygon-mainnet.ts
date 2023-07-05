@@ -1,5 +1,5 @@
 import { ethers, run, network } from "hardhat";
-import { polygonMainnetConfigInfoDev } from "./configs";
+import { polygonMainnetConfigInfoProd } from "./configs";
 import { Token, TokenConfig } from "./utils/Types";
 import {
   deployContract,
@@ -10,7 +10,7 @@ import {
 } from "./utils";
 import { BiconomyTokenPaymaster, BiconomyTokenPaymaster__factory, ChainlinkOracleAggregator, ChainlinkOracleAggregator__factory, Deployer, Deployer__factory } from "../typechain-types";
 
-const tokenConfig: TokenConfig = polygonMainnetConfigInfoDev
+const tokenConfig: TokenConfig = polygonMainnetConfigInfoProd
 
 const provider = ethers.provider;
 let entryPointAddress =
@@ -113,7 +113,7 @@ async function deployTokenPaymasterContract(deployerInstance: Deployer, earlyOwn
         tokenPaymasterBytecode,
         deployerInstance
       );
-      await delay(5000)
+      await delay(7000)
     }  catch (err) {
         console.log(err);
         console.log('issue with the deployment')
@@ -168,7 +168,7 @@ async function deployDerivedPriceFeed(deployerInstance: Deployer, nativeOracleAd
             derivedPriceFeedBytecode,
             deployerInstance
           );
-          await delay(5000)
+          await delay(7000)
         } catch (err) {
             console.log(err);
             console.log('issue with the deployment')
@@ -311,14 +311,14 @@ async function main() {
   // 1. Deploy Chainlink Oracle Aggregator
   // @note: owner is kept the deployer because we need to perform more actions on this contract using owner as part of other scripts
   // @note: ownership should be transferred at the end
-  const oracleAggregatorAddress = await deployChainlinkOracleAggregatorContract(deployerInstanceDEV, earlyOwner);
+  const oracleAggregatorAddress = await deployChainlinkOracleAggregatorContract(deployerInstancePROD, earlyOwner);
   console.log("==================oracleAggregatorAddress=======================", oracleAggregatorAddress);
-  await delay(5000)
+  await delay(7000)
 
   // 2. Deploy Token paymaster
-  const tokenPaymasterAddress = await deployTokenPaymasterContract(deployerInstanceDEV, earlyOwner);
+  const tokenPaymasterAddress = await deployTokenPaymasterContract(deployerInstancePROD, earlyOwner);
   console.log("==================tokenPaymasterAddress=======================", tokenPaymasterAddress);
-  await delay(5000)
+  await delay(7000)
 
   let oracleAggregatorInstance;
   if (oracleAggregatorAddress) {
@@ -335,7 +335,7 @@ async function main() {
     if(derivedPriceFeedAddress == "") {
     derivedPriceFeedAddress = await deployDerivedPriceFeed(deployerInstanceDEV, nativeOracleAddress, tokenOracleAddress, description, feedSalt);
     console.log(`==================${symbol} PriceFeedAddress=======================`, derivedPriceFeedAddress);
-    await delay(5000);
+    await delay(7000);
     }
 
     // Continue with other steps like setting token oracle, transferring ownership, etc.

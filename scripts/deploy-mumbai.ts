@@ -1,5 +1,5 @@
 import { ethers, run, network } from "hardhat";
-import { mumbaiConfigInfoDev } from "./configs";
+import { mumbaiConfigInfoProd } from "./configs";
 import { Token, TokenConfig } from "./utils/Types";
 import {
   deployContract,
@@ -10,14 +10,14 @@ import {
 } from "./utils";
 import { BiconomyTokenPaymaster, BiconomyTokenPaymaster__factory, ChainlinkOracleAggregator, ChainlinkOracleAggregator__factory, Deployer, Deployer__factory } from "../typechain-types";
 
-const tokenConfig: TokenConfig = mumbaiConfigInfoDev
+const tokenConfig: TokenConfig = mumbaiConfigInfoProd
 
 const provider = ethers.provider;
 let entryPointAddress =
   process.env.ENTRY_POINT_ADDRESS ||
   "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
-const owner = process.env.PAYMASTER_OWNER_ADDRESS_DEV || "";
-const verifyingSigner = process.env.PAYMASTER_SIGNER_ADDRESS_DEV || "";
+const owner = process.env.PAYMASTER_OWNER_ADDRESS_PROD || "";
+const verifyingSigner = process.env.PAYMASTER_SIGNER_ADDRESS_PROD || "";
 const DEPLOYER_CONTRACT_ADDRESS_DEV =
   process.env.DEPLOYER_CONTRACT_ADDRESS_DEV || "";
   const DEPLOYER_CONTRACT_ADDRESS_PROD =
@@ -311,12 +311,12 @@ async function main() {
   // 1. Deploy Chainlink Oracle Aggregator
   // @note: owner is kept the deployer because we need to perform more actions on this contract using owner as part of other scripts
   // @note: ownership should be transferred at the end
-  const oracleAggregatorAddress = await deployChainlinkOracleAggregatorContract(deployerInstanceDEV, earlyOwner);
+  const oracleAggregatorAddress = await deployChainlinkOracleAggregatorContract(deployerInstancePROD, earlyOwner);
   console.log("==================oracleAggregatorAddress=======================", oracleAggregatorAddress);
   await delay(5000)
 
   // 2. Deploy Token paymaster
-  const tokenPaymasterAddress = await deployTokenPaymasterContract(deployerInstanceDEV, earlyOwner);
+  const tokenPaymasterAddress = await deployTokenPaymasterContract(deployerInstancePROD, earlyOwner);
   console.log("==================tokenPaymasterAddress=======================", tokenPaymasterAddress);
   await delay(5000)
 

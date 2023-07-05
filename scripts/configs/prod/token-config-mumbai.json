@@ -1,0 +1,49 @@
+{
+    "tokens": [
+      {
+        "symbol": "USDC",
+        "address": "0xdA5289fCAAF71d52a80A254da614a192b693e977",
+        "nativeOracleAddress": "0xd0D5e3DB44DE05E9F294BB0a3bEEaF030DE24Ada",
+        "tokenOracleAddress": "0x572dDec9087154dC5dfBB1546Bb62713147e0Ab0",
+        "description": "USDC / MATIC",
+        "priceFeedFunction": "getThePrice()",
+        "priceFeedAddress": "0x000005abae3deadbe1fbd12105f950efba9eaec4",
+        "feedSalt": "DEVX_PRICE_FEED_USDC_V0_27062023_uiaqdyv",
+        "derivedFeed": true
+      },
+      {
+        "symbol": "USDT",
+        "address": "0xeaBc4b91d9375796AA4F69cC764A4aB509080A58",
+        "nativeOracleAddress": "0xd0D5e3DB44DE05E9F294BB0a3bEEaF030DE24Ada",
+        "tokenOracleAddress": "0x92C09849638959196E976289418e5973CC96d645",
+        "description": "USDT / MATIC",
+        "priceFeedFunction": "getThePrice()",
+        "priceFeedAddress": "0x000001e2c2b39542c30a3fe57c4487030bc03adf",
+        "feedSalt": "DEVX_PRICE_FEED_USDT_V0_27062023_dIos1Nw",
+        "derivedFeed": true
+      },
+      {
+        "symbol": "DAI",
+        "address": "0x27a44456bEDb94DbD59D0f0A14fE977c777fC5C3",
+        "nativeOracleAddress": "0xd0D5e3DB44DE05E9F294BB0a3bEEaF030DE24Ada",
+        "tokenOracleAddress": "0x0FCAa9c899EC5A91eBc3D5Dd869De833b06fB046",
+        "description": "DAI / MATIC",
+        "priceFeedFunction": "getThePrice()",
+        "priceFeedAddress": "0x000000d2da196474046c7a4d94ab0e566b26d054",
+        "feedSalt": "DEVX_PRICE_FEED_DAI_V0_27062023_1m7JNWQ",
+        "derivedFeed": true
+      },
+      {
+        "symbol": "SAND",
+        "address": "0xE03489D4E90b22c59c5e23d45DFd59Fc0dB8a025",
+        "nativeOracleAddress": "0xd0D5e3DB44DE05E9F294BB0a3bEEaF030DE24Ada",
+        "tokenOracleAddress": "0x9dd18534b8f456557d11B9DDB14dA89b2e52e308",
+        "description": "SAND / MATIC",
+        "priceFeedFunction": "getThePrice()",
+        "priceFeedAddress": "0x00000980455efb131c1908efa908c1eaf19db352",
+        "feedSalt": "DEVX_PRICE_FEED_SAND_V0_27062023_eHPqgeR",
+        "derivedFeed": true
+      }
+    ]
+}
+  

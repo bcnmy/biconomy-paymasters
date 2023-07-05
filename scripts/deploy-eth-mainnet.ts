@@ -1,5 +1,5 @@
 import { ethers, run, network } from "hardhat";
-import { sepoliaConfigInfoProd } from "./configs";
+import { ethMainnetConfigInfoProd } from "./configs";
 import { Token, TokenConfig } from "./utils/Types";
 import {
   deployContract,
@@ -10,7 +10,7 @@ import {
 } from "./utils";
 import { BiconomyTokenPaymaster, BiconomyTokenPaymaster__factory, ChainlinkOracleAggregator, ChainlinkOracleAggregator__factory, Deployer, Deployer__factory } from "../typechain-types";
 
-const tokenConfig: TokenConfig = sepoliaConfigInfoProd
+const tokenConfig: TokenConfig = ethMainnetConfigInfoProd
 
 const provider = ethers.provider;
 let entryPointAddress =
@@ -113,7 +113,7 @@ async function deployTokenPaymasterContract(deployerInstance: Deployer, earlyOwn
         tokenPaymasterBytecode,
         deployerInstance
       );
-      await delay(5000)
+      await delay(7000)
     }  catch (err) {
         console.log(err);
         console.log('issue with the deployment')
@@ -168,7 +168,7 @@ async function deployDerivedPriceFeed(deployerInstance: Deployer, nativeOracleAd
             derivedPriceFeedBytecode,
             deployerInstance
           );
-          await delay(5000)
+          await delay(7000)
         } catch (err) {
             console.log(err);
             console.log('issue with the deployment')
@@ -302,8 +302,8 @@ async function main() {
   const accounts = await ethers.getSigners();
   const earlyOwner = await accounts[0].getAddress();
 
-  const deployerInstanceDEV = await getPredeployedDeployerContractInstanceDEV();
-  console.log("=========================================");
+  //const deployerInstanceDEV = await getPredeployedDeployerContractInstanceDEV();
+  // console.log("=========================================");
 
   const deployerInstancePROD = await getPredeployedDeployerContractInstancePROD();
   console.log("=========================================");
@@ -313,12 +313,12 @@ async function main() {
   // @note: ownership should be transferred at the end
   const oracleAggregatorAddress = await deployChainlinkOracleAggregatorContract(deployerInstancePROD, earlyOwner);
   console.log("==================oracleAggregatorAddress=======================", oracleAggregatorAddress);
-  await delay(5000)
+  await delay(7000)
 
   // 2. Deploy Token paymaster
   const tokenPaymasterAddress = await deployTokenPaymasterContract(deployerInstancePROD, earlyOwner);
   console.log("==================tokenPaymasterAddress=======================", tokenPaymasterAddress);
-  await delay(5000)
+  await delay(7000)
 
   let oracleAggregatorInstance;
   if (oracleAggregatorAddress) {
@@ -330,11 +330,12 @@ async function main() {
   for (const token of tokenConfig.tokens) {
     const { symbol, address, nativeOracleAddress, tokenOracleAddress, priceFeedAddress, description, priceFeedFunction, feedSalt, derivedFeed } = token;
     let derivedPriceFeedAddress = priceFeedAddress;
+    console.log(`derived price feed address for token ${symbol} is ${derivedPriceFeedAddress}`)
     
     if(derivedPriceFeedAddress == "") {
-    derivedPriceFeedAddress = await deployDerivedPriceFeed(deployerInstanceDEV, nativeOracleAddress, tokenOracleAddress, description, feedSalt);
+    // derivedPriceFeedAddress = await deployDerivedPriceFeed(deployerInstanceDEV, nativeOracleAddress, tokenOracleAddress, description, feedSalt);
     console.log(`==================${symbol} PriceFeedAddress=======================`, derivedPriceFeedAddress);
-    await delay(5000);
+    // await delay(7000);
     }
 
     // Continue with other steps like setting token oracle, transferring ownership, etc.
@@ -350,7 +351,7 @@ async function main() {
       await setTokenOracle(oracleAggregatorInstance, address, feedAddress, 18, priceFeedFunction);
     }
   }
-  
+
 if(tokenPaymasterAddress) {
   // 5b. transfer ownership of token paymaster to the owner
   const tokenPaymasterInstance = await getTokenPaymasterContractInstance(tokenPaymasterAddress);

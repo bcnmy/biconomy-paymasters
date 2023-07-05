@@ -104,6 +104,22 @@ networks: {
         : walletUtils.makeKeyList(),
     gasPrice: 50e9,
   },
+  baseTestnet: {
+    url: process.env.BASE_TESTNET_URL || `https://base-goerli.blockpi.network/v1/rpc/public`,
+    accounts:
+      process.env.PRIVATE_KEY !== undefined
+        ? [process.env.PRIVATE_KEY]
+        : walletUtils.makeKeyList(),
+    chainId: 84531,
+  },
+  linea: {
+    url: process.env.LINEA_TESTNET_URL || `https://rpc.goerli.linea.build`,
+    accounts:
+      process.env.PRIVATE_KEY !== undefined
+        ? [process.env.PRIVATE_KEY]
+        : walletUtils.makeKeyList(),
+    chainId: 59140,
+  },
   avalancheMain: {
     url: "https://api.avax.network/ext/bc/C/rpc",
     accounts:

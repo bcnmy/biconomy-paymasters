@@ -1,0 +1,15 @@
+{
+    "tokens": [
+      {
+        "symbol": "USDC",
+        "address": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+        "nativeOracleAddress": "",
+        "tokenOracleAddress": "",
+        "description": "USDC / ETH",
+        "priceFeedFunction": "latestAnswer()",
+        "priceFeedAddress": "0x986b5E1e1755e3C2440e960477f25201B0a8bbD4",
+        "feedSalt": "DEVX_PRICE_FEED_USDC_V0_27062023_uiaqdyv",
+        "derivedFeed": false
+      }
+    ]
+}

@@ -1,5 +1,5 @@
 import { ethers, run, network } from "hardhat";
-import { arbGoerliConfigInfoDev } from "./configs";
+import { arbGoerliConfigInfoProd } from "./configs";
 import { Token, TokenConfig } from "./utils/Types";
 import {
   deployContract,
@@ -10,7 +10,7 @@ import {
 } from "./utils";
 import { BiconomyTokenPaymaster, BiconomyTokenPaymaster__factory, ChainlinkOracleAggregator, ChainlinkOracleAggregator__factory, Deployer, Deployer__factory } from "../typechain-types";
 
-const tokenConfig: TokenConfig = arbGoerliConfigInfoDev
+const tokenConfig: TokenConfig = arbGoerliConfigInfoProd
 
 const provider = ethers.provider;
 let entryPointAddress =
@@ -311,12 +311,12 @@ async function main() {
   // 1. Deploy Chainlink Oracle Aggregator
   // @note: owner is kept the deployer because we need to perform more actions on this contract using owner as part of other scripts
   // @note: ownership should be transferred at the end
-  const oracleAggregatorAddress = await deployChainlinkOracleAggregatorContract(deployerInstanceDEV, earlyOwner);
+  const oracleAggregatorAddress = await deployChainlinkOracleAggregatorContract(deployerInstancePROD, earlyOwner);
   console.log("==================oracleAggregatorAddress=======================", oracleAggregatorAddress);
   await delay(5000)
 
   // 2. Deploy Token paymaster
-  const tokenPaymasterAddress = await deployTokenPaymasterContract(deployerInstanceDEV, earlyOwner);
+  const tokenPaymasterAddress = await deployTokenPaymasterContract(deployerInstancePROD, earlyOwner);
   console.log("==================tokenPaymasterAddress=======================", tokenPaymasterAddress);
   await delay(5000)
 
