@@ -410,6 +410,19 @@ contract BiconomyTokenPaymaster is
         signature = paymasterAndData[SIGNATURE_OFFSET:];
     }
 
+    function _getRequiredPrefund(
+        UserOperation calldata userOp
+    ) internal view returns (uint256 requiredPrefund) {
+        unchecked {
+            uint256 requiredGas = userOp.callGasLimit +
+                userOp.verificationGasLimit +
+                userOp.preVerificationGas +
+                UNACCOUNTED_COST;
+
+            requiredPrefund = requiredGas * userOp.maxFeePerGas;
+        }
+    }
+
     /**
      * @dev Verify that an external signer signed the paymaster data of a user operation.
      * The paymaster data is expected to be the paymaster address, request data and a signature over the entire request parameters.
@@ -430,6 +443,7 @@ contract BiconomyTokenPaymaster is
         override
         returns (bytes memory context, uint256 validationData)
     {
+        (requiredPreFund);
         // verificationGasLimit is dual-purposed, as gas limit for postOp. make sure it is high enough
         // make sure that verificationGasLimit is high enough to handle postOp
         require(
@@ -479,13 +493,15 @@ contract BiconomyTokenPaymaster is
 
         address account = userOp.getSender();
 
-        uint256 costOfPost = userOp.maxFeePerGas * UNACCOUNTED_COST; // unaccountedEPGasOverhead
+        // uint256 costOfPost = userOp.maxFeePerGas * UNACCOUNTED_COST; // unaccountedEPGasOverhead
 
         // This model assumes irrespective of priceSource exchangeRate is always sent from outside
         // for below checks you would either need maxCost or some exchangeRate
 
-        uint256 tokenRequiredPreFund = ((requiredPreFund + costOfPost) *
-            exchangeRate) / 10 ** 18;
+        uint256 btpmRequiredPrefund = _getRequiredPrefund(userOp);
+
+        uint256 tokenRequiredPreFund = (btpmRequiredPrefund * exchangeRate) /
+            10 ** 18;
         require(
             tokenRequiredPreFund != 0,
             "BTPM: calculated token charge invalid"
