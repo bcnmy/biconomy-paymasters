@@ -417,8 +417,7 @@ contract BiconomyTokenPaymaster is
             uint256 requiredGas = userOp.callGasLimit +
                 userOp.verificationGasLimit +
                 userOp.preVerificationGas +
-                UNACCOUNTED_COST *
-                2;
+                UNACCOUNTED_COST;
 
             requiredPrefund = requiredGas * userOp.maxFeePerGas;
         }
