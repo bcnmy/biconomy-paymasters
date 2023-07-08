@@ -232,7 +232,7 @@ contract BiconomyTokenPaymaster is
     function exchangePrice(
         address _token,
         address _oracleAggregator
-    ) internal view virtual returns (uint256 exchangeRate) {
+    ) internal view virtual returns (uint256) {
         try
             IOracleAggregator(_oracleAggregator).getTokenValueOfOneNativeToken(
                 _token
