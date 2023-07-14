@@ -104,7 +104,7 @@ networks: {
         : walletUtils.makeKeyList(),
     gasPrice: 50e9,
   },
-  baseTestnet: {
+  baseGoerli: {
     url: process.env.BASE_TESTNET_URL || `https://base-goerli.blockpi.network/v1/rpc/public`,
     accounts:
       process.env.PRIVATE_KEY !== undefined
@@ -112,7 +112,7 @@ networks: {
         : walletUtils.makeKeyList(),
     chainId: 84531,
   },
-  linea: {
+  lineaGoerli: {
     url: process.env.LINEA_TESTNET_URL || `https://rpc.goerli.linea.build`,
     accounts:
       process.env.PRIVATE_KEY !== undefined
