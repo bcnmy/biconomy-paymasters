@@ -347,6 +347,9 @@ async function main() {
       if(priceFeedFunction == "latestAnswer()" || derivedFeed == false) {
         feedAddress = priceFeedAddress
       }
+      // TODO
+      // This should not hardcode tokenOracleDeciamls to 18 
+      // It works in case of derived price feeds and chainlink feeds which are in the erc20 / native base and quote format. 
       await setTokenOracle(oracleAggregatorInstance, address, feedAddress, 18, priceFeedFunction);
     }
   }
