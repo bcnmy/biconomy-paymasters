@@ -1,0 +1,37 @@
+{
+    "tokens": [
+      {
+        "symbol": "USDC",
+        "address": "0xD6a8c1eee4D4e4EF998b911B03d52bc301d9b332",
+        "nativeOracleAddress": "0xcD2A119bD1F7DF95d706DE6F2057fDD45A0503E2",
+        "tokenOracleAddress": "0xb85765935B4d9Ab6f841c9a00690Da5F34368bc0",
+        "description": "USDC / ETH",
+        "priceFeedFunction": "getThePrice()",
+        "priceFeedAddress": "0x000005ABaE3DEAdbe1FBD12105F950efbA9eaec4",
+        "feedSalt": "DEVX_PRICE_FEED_USDC_V0_27062023_uiaqdyv",
+        "derivedFeed": true
+      },
+      {
+        "symbol": "USDT",
+        "address": "0xe01435b1767aED7c25C943faCbdB582b6278650f",
+        "nativeOracleAddress": "0xcD2A119bD1F7DF95d706DE6F2057fDD45A0503E2",
+        "tokenOracleAddress": "0xd5973EB46D6fE54E82C5337dD9536B35D080912C",
+        "description": "USDT / ETH",
+        "priceFeedFunction": "getThePrice()",
+        "priceFeedAddress": "0x000001E2C2B39542c30A3fE57c4487030bC03adF",
+        "feedSalt": "DEVX_PRICE_FEED_USDT_V0_27062023_dIos1Nw",
+        "derivedFeed": true
+      },
+      {
+        "symbol": "DAI",
+        "address": "0x7c81B296d84802ec2d5e63846912011f2Cd3C31C",
+        "nativeOracleAddress": "0xcD2A119bD1F7DF95d706DE6F2057fDD45A0503E2",
+        "tokenOracleAddress": "0x440bD1535a02243d72E0fEED45B137efcC98bF7e",
+        "description": "DAI / ETH",
+        "priceFeedFunction": "getThePrice()",
+        "priceFeedAddress": "0x000000d2Da196474046c7a4D94Ab0E566B26d054",
+        "feedSalt": "DEVX_PRICE_FEED_DAI_V0_27062023_1m7JNWQ",
+        "derivedFeed": true
+      }
+    ]
+}

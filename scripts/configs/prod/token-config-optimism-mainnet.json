@@ -1,0 +1,48 @@
+{
+    "tokens": [
+      {
+        "symbol": "USDC",
+        "address": "0x7F5c764cBc14f9669B88837ca1490cCa17c31607",
+        "nativeOracleAddress": "0x13e3Ee699D1909E989722E753853AE30b17e08c5",
+        "tokenOracleAddress": "0x16a9FA2FDa030272Ce99B29CF780dFA30361E0f3",
+        "description": "USDC / ETH",
+        "priceFeedFunction": "getThePrice()",
+        "priceFeedAddress": "",
+        "feedSalt": "DEVX_PRICE_FEED_USDC_V0_27062023_uiaqdyv",
+        "derivedFeed": true
+      },
+      {
+        "symbol": "USDT",
+        "address": "0x94b008aA00579c1307B0EF2c499aD98a8ce58e58",
+        "nativeOracleAddress": "0x13e3Ee699D1909E989722E753853AE30b17e08c5",
+        "tokenOracleAddress": "0xECef79E109e997bCA29c1c0897ec9d7b03647F5E",
+        "description": "USDT / ETH",
+        "priceFeedFunction": "getThePrice()",
+        "priceFeedAddress": "",
+        "feedSalt": "DEVX_PRICE_FEED_USDT_V0_27062023_dIos1Nw",
+        "derivedFeed": true
+      },
+      {
+        "symbol": "DAI",
+        "address": "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1",
+        "nativeOracleAddress": "0x13e3Ee699D1909E989722E753853AE30b17e08c5",
+        "tokenOracleAddress": "0x8dBa75e83DA73cc766A7e5a0ee71F656BAb470d6",
+        "description": "DAI / ETH",
+        "priceFeedFunction": "getThePrice()",
+        "priceFeedAddress": "",
+        "feedSalt": "DEVX_PRICE_FEED_DAI_V0_27062023_1m7JNWQ",
+        "derivedFeed": true
+      },
+      {
+        "symbol": "WBTC",
+        "address": "0x68f180fcCe6836688e9084f035309E29Bf0A2095",
+        "nativeOracleAddress": "0x13e3Ee699D1909E989722E753853AE30b17e08c5",
+        "tokenOracleAddress": "0x718A5788b89454aAE3A028AE9c111A29Be6c2a6F",
+        "description": "WBTC / ETH",
+        "priceFeedFunction": "getThePrice()",
+        "priceFeedAddress": "",
+        "feedSalt": "DEVX_PRICE_FEED_WBTC_V0_27062023_z41FLvK",
+        "derivedFeed": true
+      }
+    ]
+}

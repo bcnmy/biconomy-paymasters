@@ -1,0 +1,48 @@
+{
+    "tokens": [
+      {
+        "symbol": "USDC",
+        "address": "0x818ec0A7Fe18Ff94269904fCED6AE3DaE6d6dC0b",
+        "nativeOracleAddress": "0x4497B606be93e773bbA5eaCFCb2ac5E2214220Eb",
+        "tokenOracleAddress": "0xA122591F60115D63421f66F752EF9f6e0bc73abC",
+        "description": "USDC / GLMR",
+        "priceFeedFunction": "getThePrice()",
+        "priceFeedAddress": "0x000005ABaE3DEAdbe1FBD12105F950efbA9eaec4",
+        "feedSalt": "DEVX_PRICE_FEED_USDC_V0_27062023_uiaqdyv",
+        "derivedFeed": true
+      },
+      {
+        "symbol": "USDT",
+        "address": "0xeFAeeE334F0Fd1712f9a8cc375f427D9Cdd40d73",
+        "nativeOracleAddress": "0x4497B606be93e773bbA5eaCFCb2ac5E2214220Eb",
+        "tokenOracleAddress": "0xD925C5BF88Bd0ca09312625d429240F811b437c6",
+        "description": "USDT / GLMR",
+        "priceFeedFunction": "getThePrice()",
+        "priceFeedAddress": "0x000001E2C2B39542c30A3fE57c4487030bC03adF",
+        "feedSalt": "DEVX_PRICE_FEED_USDT_V0_27062023_dIos1Nw",
+        "derivedFeed": true
+      },
+      {
+        "symbol": "DAI",
+        "address": "0x765277EebeCA2e31912C9946eAe1021199B39C61",
+        "nativeOracleAddress": "0x4497B606be93e773bbA5eaCFCb2ac5E2214220Eb",
+        "tokenOracleAddress": "0x6063e1037B1afDA2bE5A3340757261E4d6a402ac",
+        "description": "DAI / GLMR",
+        "priceFeedFunction": "getThePrice()",
+        "priceFeedAddress": "0x000000d2Da196474046c7a4D94Ab0E566B26d054",
+        "feedSalt": "DEVX_PRICE_FEED_DAI_V0_27062023_1m7JNWQ",
+        "derivedFeed": true
+      },
+      {
+        "symbol": "BUSD",
+        "address": "0xA649325Aa7C5093d12D6F98EB4378deAe68CE23F",
+        "nativeOracleAddress": "0x4497B606be93e773bbA5eaCFCb2ac5E2214220Eb",
+        "tokenOracleAddress": "0x2330fd83662bba3Fc62bc48cC935ca58847A8957",
+        "description": "BUSD / GLMR",
+        "priceFeedFunction": "getThePrice()",
+        "priceFeedAddress": "0x000020c39775542112E3DB0DbAD0d47A44bEB49A",
+        "feedSalt": "DEVX_PRICE_FEED_BUSD_V0_27062023_J8nJR8O",
+        "derivedFeed": true
+      }
+    ]
+}
