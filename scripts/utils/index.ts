@@ -146,6 +146,9 @@ export enum DEPLOYMENT_SALTS { // PROD
   PRICE_FEED_FXS = "DEVX_PRICE_FEED_FXS_V0_24072023_WCKMhk1", // 0x00002f9671412725ceb1a283f72cbb44ba3d1893
   PRICE_FEED_SAVAX = "DEVX_PRICE_FEED_SAVAX_V0_24072023_ZjA5Bd7", // 0x000074c26fd8b4172b4648fa8b879d2a5387a92c 
   PRICE_FEED_MKR = "DEVX_PRICE_FEED_MKR_V0_24072023_2Chh0Sh", // 0x000075866d453c2cfccb586d200153fb606e3d6d
+  PRICE_FEED_SUSD = "DEVX_PRICE_FEED_SUSD_V0_24072023_0Dv7g4m", // 0x000037cd348e5b79adee29148e6d05520b2c45d2
+  PRICE_FEED_PERP = "DEVX_PRICE_FEED_PERP_V0_24072023_uh65wbb", // 0x000068aa7f8c85bf8ada5aa18099bafcd2e1df5b
+  PRICE_FEED_OP = "DEVX_PRICE_FEED_OP_V0_24072023_riqc17D", // 0x0000462be5bbda0a7b5414044c32c7e37d0d35f3 
 }
 
 // Marked for removal
@@ -254,7 +257,7 @@ export const deployContract = async (
   //const { hash, wait } = await deployerInstance.deploy(salt, contractByteCode, {maxFeePerGas: 200e9, maxPriorityFeePerGas: 75e9});
   // TODO
   // Review gas price
-  const { hash, wait } = await deployerInstance.deploy(salt, contractByteCode, {maxFeePerGas: 5e8, maxPriorityFeePerGas: 1e8});
+  const { hash, wait } = await deployerInstance.deploy(salt, contractByteCode, {maxFeePerGas: 1e9, maxPriorityFeePerGas: 1e8});
 
   console.log(`Submitted transaction ${hash} for deployment`);
 

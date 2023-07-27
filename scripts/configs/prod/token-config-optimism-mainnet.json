@@ -7,7 +7,7 @@
         "tokenOracleAddress": "0x16a9FA2FDa030272Ce99B29CF780dFA30361E0f3",
         "description": "USDC / ETH",
         "priceFeedFunction": "getThePrice()",
-        "priceFeedAddress": "",
+        "priceFeedAddress": "0x000005ABaE3DEAdbe1FBD12105F950efbA9eaec4",
         "feedSalt": "DEVX_PRICE_FEED_USDC_V0_27062023_uiaqdyv",
         "derivedFeed": true
       },
@@ -18,7 +18,7 @@
         "tokenOracleAddress": "0xECef79E109e997bCA29c1c0897ec9d7b03647F5E",
         "description": "USDT / ETH",
         "priceFeedFunction": "getThePrice()",
-        "priceFeedAddress": "",
+        "priceFeedAddress": "0x000001E2C2B39542c30A3fE57c4487030bC03adF",
         "feedSalt": "DEVX_PRICE_FEED_USDT_V0_27062023_dIos1Nw",
         "derivedFeed": true
       },
@@ -29,7 +29,7 @@
         "tokenOracleAddress": "0x8dBa75e83DA73cc766A7e5a0ee71F656BAb470d6",
         "description": "DAI / ETH",
         "priceFeedFunction": "getThePrice()",
-        "priceFeedAddress": "",
+        "priceFeedAddress": "0x000000d2Da196474046c7a4D94Ab0E566B26d054",
         "feedSalt": "DEVX_PRICE_FEED_DAI_V0_27062023_1m7JNWQ",
         "derivedFeed": true
       },
@@ -40,8 +40,63 @@
         "tokenOracleAddress": "0x718A5788b89454aAE3A028AE9c111A29Be6c2a6F",
         "description": "WBTC / ETH",
         "priceFeedFunction": "getThePrice()",
-        "priceFeedAddress": "",
+        "priceFeedAddress": "0x00002D444779516f9D60368f3fa1E2b036BCCc7D",
         "feedSalt": "DEVX_PRICE_FEED_WBTC_V0_27062023_z41FLvK",
+        "derivedFeed": true
+      },
+      {
+        "symbol": "SNX",
+        "address": "0x8700dAec35aF8Ff88c16BdF0418774CB3D7599B4",
+        "nativeOracleAddress": "0x13e3Ee699D1909E989722E753853AE30b17e08c5",
+        "tokenOracleAddress": "0x2FCF37343e916eAEd1f1DdaaF84458a359b53877",
+        "description": "SNX / ETH",
+        "priceFeedFunction": "getThePrice()",
+        "priceFeedAddress": "0x0000f303a2ED1eDF64C3B41E937028b7140d94c8",
+        "feedSalt": "DEVX_PRICE_FEED_SNX_V0_27062023_4DrwwXZ",
+        "derivedFeed": true
+      },
+      {
+        "symbol": "LINK",
+        "address": "0x350a791Bfc2C21F9Ed5d10980Dad2e2638ffa7f6",
+        "nativeOracleAddress": "0x13e3Ee699D1909E989722E753853AE30b17e08c5",
+        "tokenOracleAddress": "",
+        "description": "LINK / ETH",
+        "priceFeedFunction": "latestAnswer()",
+        "priceFeedAddress": "0x464A1515ADc20de946f8d0DEB99cead8CEAE310d",
+        "feedSalt": "",
+        "derivedFeed": false
+      },
+      {
+        "symbol": "SUSD",
+        "address": "0x8c6f28f2F1A3C87F0f938b96d27520d9751ec8d9",
+        "nativeOracleAddress": "0x13e3Ee699D1909E989722E753853AE30b17e08c5",
+        "tokenOracleAddress": "0x7f99817d87baD03ea21E05112Ca799d715730efe",
+        "description": "SUSD / ETH",
+        "priceFeedFunction": "getThePrice()",
+        "priceFeedAddress": "0x000037cD348e5B79AdEe29148E6D05520B2c45D2",
+        "feedSalt": "DEVX_PRICE_FEED_SUSD_V0_24072023_0Dv7g4m",
+        "derivedFeed": true
+      },
+      {
+        "symbol": "PERP",
+        "address": "0x9e1028F5F1D5eDE59748FFceE5532509976840E0",
+        "nativeOracleAddress": "0x13e3Ee699D1909E989722E753853AE30b17e08c5",
+        "tokenOracleAddress": "0xA12CDDd8e986AF9288ab31E58C60e65F2987fB13",
+        "description": "PERP / ETH",
+        "priceFeedFunction": "getThePrice()",
+        "priceFeedAddress": "0x000068aa7F8C85Bf8aDa5AA18099baFcd2e1dF5B",
+        "feedSalt": "DEVX_PRICE_FEED_PERP_V0_24072023_uh65wbb",
+        "derivedFeed": true
+      },
+      {
+        "symbol": "OP",
+        "address": "0x4200000000000000000000000000000000000042",
+        "nativeOracleAddress": "0x13e3Ee699D1909E989722E753853AE30b17e08c5",
+        "tokenOracleAddress": "0x0D276FC14719f9292D5C1eA2198673d1f4269246",
+        "description": "OP / ETH",
+        "priceFeedFunction": "getThePrice()",
+        "priceFeedAddress": "0x0000462be5bbdA0a7B5414044C32C7e37D0D35f3",
+        "feedSalt": "DEVX_PRICE_FEED_OP_V0_24072023_riqc17D",
         "derivedFeed": true
       }
     ]
