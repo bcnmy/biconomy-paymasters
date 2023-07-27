@@ -54,7 +54,7 @@ async function deployChainlinkOracleAggregatorContract(deployerInstance: Deploye
         oracleAggregatorBytecode,
         deployerInstance
       );
-      await delay(10000)
+      await delay(5000)
     } catch (err) {
         console.log('issue with the deployment')
         console.log(err);
@@ -113,7 +113,7 @@ async function deployTokenPaymasterContract(deployerInstance: Deployer, earlyOwn
         tokenPaymasterBytecode,
         deployerInstance
       );
-      await delay(7000)
+      await delay(5000)
     }  catch (err) {
         console.log(err);
         console.log('issue with the deployment')
@@ -168,7 +168,7 @@ async function deployDerivedPriceFeed(deployerInstance: Deployer, nativeOracleAd
             derivedPriceFeedBytecode,
             deployerInstance
           );
-          await delay(7000)
+          await delay(5000)
         } catch (err) {
             console.log(err);
             console.log('issue with the deployment')
@@ -313,12 +313,12 @@ async function main() {
   // @note: ownership should be transferred at the end
   const oracleAggregatorAddress = await deployChainlinkOracleAggregatorContract(deployerInstancePROD, earlyOwner);
   console.log("==================oracleAggregatorAddress=======================", oracleAggregatorAddress);
-  await delay(7000)
+  await delay(5000)
 
   // 2. Deploy Token paymaster
   const tokenPaymasterAddress = await deployTokenPaymasterContract(deployerInstancePROD, earlyOwner);
   console.log("==================tokenPaymasterAddress=======================", tokenPaymasterAddress);
-  await delay(7000)
+  await delay(5000)
 
   let oracleAggregatorInstance;
   if (oracleAggregatorAddress) {
@@ -335,7 +335,7 @@ async function main() {
     if(derivedPriceFeedAddress == "") {
     derivedPriceFeedAddress = await deployDerivedPriceFeed(deployerInstanceDEV, nativeOracleAddress, tokenOracleAddress, description, feedSalt);
     console.log(`==================${symbol} PriceFeedAddress=======================`, derivedPriceFeedAddress);
-    await delay(7000);
+    await delay(5000);
     }
 
     // Continue with other steps like setting token oracle, transferring ownership, etc.

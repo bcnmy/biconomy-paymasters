@@ -109,6 +109,105 @@
         "priceFeedAddress": "0x000074df2B9Ad8a7Be4d07a85F278ca0017513d3",
         "feedSalt": "DEVX_PRICE_FEED_JOE_V0_27062023_XxQWl65",
         "derivedFeed": true
+      },
+      {
+        "symbol": "BAL",
+        "address": "0x040d1EdC9569d4Bab2D15287Dc5A4F10F56a56B8",
+        "nativeOracleAddress": "0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612",
+        "tokenOracleAddress": "0xBE5eA816870D11239c543F84b71439511D70B94f",
+        "description": "BAL / ETH",
+        "priceFeedFunction": "getThePrice()",
+        "priceFeedAddress": "",
+        "feedSalt": "DEVX_PRICE_FEED_BAL_V0_27062023_IzEMruz",
+        "derivedFeed": true
+      },
+      {
+        "symbol": "COMP",
+        "address": "0x354A6dA3fcde098F8389cad84b0182725c6C91dE",
+        "nativeOracleAddress": "0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612",
+        "tokenOracleAddress": "0xe7C53FFd03Eb6ceF7d208bC4C13446c76d1E5884",
+        "description": "COMP / ETH",
+        "priceFeedFunction": "getThePrice()",
+        "priceFeedAddress": "",
+        "feedSalt": "DEVX_PRICE_FEED_COMP_V0_27062023_54gIpet",
+        "derivedFeed": true
+      },
+      {
+        "symbol": "CRV",
+        "address": "0x11cDb42B0EB46D95f990BeDD4695A6e3fA034978",
+        "nativeOracleAddress": "0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612",
+        "tokenOracleAddress": "0xaebDA2c976cfd1eE1977Eac079B4382acb849325",
+        "description": "CRV / ETH",
+        "priceFeedFunction": "getThePrice()",
+        "priceFeedAddress": "",
+        "feedSalt": "DEVX_PRICE_FEED_CRV_V0_27062023_GrIWEtf",
+        "derivedFeed": true
+      },
+      {
+        "symbol": "LINK",
+        "address": "0xf97f4df75117a78c1A5a0DBb814Af92458539FB4",
+        "nativeOracleAddress": "0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612",
+        "tokenOracleAddress": "0x86E53CF1B870786351Da77A57575e79CB55812CB",
+        "description": "LINK / ETH",
+        "priceFeedFunction": "latestAnswer()",
+        "priceFeedAddress": "0xb7c8Fb1dB45007F98A68Da0588e1AA524C317f27",
+        "feedSalt": "DEVX_PRICE_FEED_LINK_V0_27062023_JHIxs6o",
+        "derivedFeed": false
+      },
+      {
+        "symbol": "MKR",
+        "address": "0x2e9a6Df78E42a30712c10a9Dc4b1C8656f8F2879",
+        "nativeOracleAddress": "0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612",
+        "tokenOracleAddress": "0xdE9f0894670c4EFcacF370426F10C3AD2Cdf147e",
+        "description": "MKR / ETH",
+        "priceFeedFunction": "getThePrice()",
+        "priceFeedAddress": "",
+        "feedSalt": "DEVX_PRICE_FEED_MKR_V0_24072023_2Chh0Sh",
+        "derivedFeed": true
+      },
+      {
+        "symbol": "SUSHI",
+        "address": "0xd4d42F0b6DEF4CE0383636770eF773390d85c61A",
+        "nativeOracleAddress": "0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612",
+        "tokenOracleAddress": "0xb2A8BA74cbca38508BA1632761b56C897060147C",
+        "description": "SUSHI / ETH",
+        "priceFeedFunction": "getThePrice()",
+        "priceFeedAddress": "",
+        "feedSalt": "DEVX_PRICE_FEED_SUSHI_V0_27062023_dyZta4I",
+        "derivedFeed": true
+      },
+      {
+        "symbol": "SPELL",
+        "address": "0x3E6648C5a70A150A88bCE65F4aD4d506Fe15d2AF",
+        "nativeOracleAddress": "0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612",
+        "tokenOracleAddress": "0x383b3624478124697BEF675F07cA37570b73992f",
+        "description": "SPELL / ETH",
+        "priceFeedFunction": "getThePrice()",
+        "priceFeedAddress": "",
+        "feedSalt": "DEVX_PRICE_FEED_SPELL_V0_24072023_v0CCYNa",
+        "derivedFeed": true
+      },
+      {
+        "symbol": "FRAX",
+        "address": "0x17FC002b466eEc40DaE837Fc4bE5c67993ddBd6F",
+        "nativeOracleAddress": "0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612",
+        "tokenOracleAddress": "0x0809E3d38d1B4214958faf06D8b1B1a2b73f2ab8",
+        "description": "FRAX / ETH",
+        "priceFeedFunction": "getThePrice()",
+        "priceFeedAddress": "",
+        "feedSalt": "DEVX_PRICE_FEED_FRAX_V0_27062023_MmgkOOQ",
+        "derivedFeed": true
+      },
+      {
+        "symbol": "RDNT",
+        "address": "0x3082CC23568eA640225c2467653dB90e9250AaA0",
+        "nativeOracleAddress": "0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612",
+        "tokenOracleAddress": "0x20d0Fcab0ECFD078B036b6CAf1FaC69A6453b352",
+        "description": "RDNT / ETH",
+        "priceFeedFunction": "getThePrice()",
+        "priceFeedAddress": "",
+        "feedSalt": "DEVX_PRICE_FEED_RDNT_V0_27062023_CE7LvWZ",
+        "derivedFeed": true
       }
     ]
 }

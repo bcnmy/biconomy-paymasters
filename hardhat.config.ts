@@ -120,6 +120,20 @@ networks: {
         : walletUtils.makeKeyList(),
     chainId: 59140,
   },
+  lineaMainnet: {
+    url: process.env.LINEA_MAINNET_URL || ``,
+    accounts: process.env.PRIVATE_KEY !== undefined
+    ? [process.env.PRIVATE_KEY]
+    : walletUtils.makeKeyList(),
+    chainId: 59144,
+  },
+  baseMainnet: {
+    url: process.env.BASE_MAINNET_URL || `https://developer-access-mainnet.base.org`,
+    accounts: process.env.PRIVATE_KEY !== undefined
+    ? [process.env.PRIVATE_KEY]
+    : walletUtils.makeKeyList(),
+    chainId: 8453,
+  },
   avalancheMain: {
     url: "https://api.avax.network/ext/bc/C/rpc",
     accounts:
