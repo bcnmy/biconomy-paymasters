@@ -33,7 +33,7 @@ networks: {
     allowUnlimitedContractSize: true,
     chainId: 31337,
   },
-  ganache: {
+  local: {
     chainId: 1337,
     url: "http://localhost:8545",
     accounts: {
