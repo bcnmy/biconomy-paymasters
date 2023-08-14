@@ -113,10 +113,7 @@ describe("Biconomy Token Paymaster (with Bundler)", function () {
     ethersSigner = await ethers.getSigners();
     deployer = ethersSigner[0];
 
-    entryPoint = EntryPoint__factory.connect(
-      process.env.ENTRYPOINT!,
-      deployer
-    );
+    entryPoint = EntryPoint__factory.connect(process.env.ENTRYPOINT!, deployer);
 
     offchainSigner = ethersSigner[1];
     walletOwner = deployer; // ethersSigner[3];
@@ -190,6 +187,18 @@ describe("Biconomy Token Paymaster (with Bundler)", function () {
       .addStake(1, { value: parseEther("2") });
 
     await entryPoint.depositTo(paymasterAddress, { value: parseEther("2") });
+  });
+
+  after(async function () {
+    const chainId = (await ethers.provider.getNetwork()).chainId;
+    if (chainId !== BundlerTestEnvironment.BUNDLER_ENVIRONMENT_CHAIN_ID) {
+      this.skip();
+    }
+
+    await Promise.all([
+      environment.revert(environment.defaultSnapshot!),
+      environment.resetBundler(),
+    ]);
   });
 
   describe("Token Payamster functionality: positive test", () => {
