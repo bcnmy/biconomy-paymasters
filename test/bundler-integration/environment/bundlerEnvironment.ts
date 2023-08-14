@@ -21,6 +21,30 @@ export class BundlerResetError extends Error {
     this.name = "BundleResetError";
   }
 }
+export class GetUserOpReceiptError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "GetUserOpReceiptError";
+  }
+}
+
+export type JsonRpcResponse<T> = {
+  jsonrpc: string;
+  result: T;
+};
+
+export type EthSendUserOperationResult = JsonRpcResponse<string>;
+
+export type EthGetUserOperationReceipt = JsonRpcResponse<{
+  userOpHash: string;
+  sender: string;
+  nonce: string;
+  actualGasCost: string;
+  actualGasUsed: string;
+  success: boolean;
+  logs: Array<any>;
+  receipt: any;
+}>;
 
 export const serializeUserOp = (op: UserOperation) => ({
   sender: op.sender,
@@ -117,7 +141,7 @@ export class BundlerTestEnvironment {
   sendUserOperation = async (
     userOperation: UserOperation,
     entrypointAddress: string
-  ): Promise<string> => {
+  ): Promise<EthSendUserOperationResult> => {
     const result = await this.apiClient.post("/rpc", {
       jsonrpc: "2.0",
       method: "eth_sendUserOperation",
@@ -126,6 +150,28 @@ export class BundlerTestEnvironment {
     if (result.status !== 200) {
       throw new Error(
         `Failed to send user operation: ${JSON.stringify(
+          result.data.error.message
+        )}`
+      );
+    }
+    if (result.data.error) {
+      throw new UserOperationSubmissionError(JSON.stringify(result.data.error));
+    }
+
+    return result.data;
+  };
+
+  getUserOperationReceipt = async (
+    userOperationHash: string
+  ): Promise<EthGetUserOperationReceipt> => {
+    const result = await this.apiClient.post("/rpc", {
+      jsonrpc: "2.0",
+      method: "eth_getUserOperationReceipt",
+      params: [userOperationHash],
+    });
+    if (result.status !== 200) {
+      throw new Error(
+        `Failed to get userop receipt: ${JSON.stringify(
           result.data.error.message
         )}`
       );
