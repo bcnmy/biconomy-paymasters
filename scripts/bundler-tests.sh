@@ -40,7 +40,7 @@ while true; do
 done
 
 echo "⚙️  5. Running tests with params --network local $@"
-npx hardhat test $(find $ROOT_PATH/test/bundler-integration -type f -name "*.ts") --network local "$@"
+ENTRYPOINT=$ENTRYPOINT npx hardhat test $(find $ROOT_PATH/test/bundler-integration -type f -name "*.ts") --network local "$@"
 
 echo "⚙️  6. Stopping geth and bundler...."
 docker compose -f $COMPOSE_FILE_PATH down
