@@ -177,6 +177,10 @@ describe("Biconomy Token Paymaster (with Bundler)", function () {
     paymasterAddress = sampleTokenPaymaster.address;
 
     await entryPoint.depositTo(paymasterAddress, { value: parseEther("2") });
+
+    await sampleTokenPaymaster.addStake(100, {
+      value: parseEther("10")
+    });
   });
 
   after(async function () {
