@@ -3,7 +3,6 @@ import {
   deployContract,
   DEPLOYMENT_SALTS,
   encodeParam,
-  getDeployerInstance,
   isContract,
 } from "./utils";
 import { Deployer, Deployer__factory } from "../typechain-types";

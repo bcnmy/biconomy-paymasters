@@ -276,6 +276,7 @@ etherscan: {
     optimisticEthereum: process.env.OPTIMISTIC_API_KEY || "",
     "base-goerli": "PLACEHOLDER_STRING",
     "linea-goerli": "PLACEHOLDER_STRING",
+    "linea-mainnet": "PLACEHOLDER_STRING",
     "base-mainnet": process.env.BASE_API_KEY || "",
   },
   customChains: [
@@ -283,8 +284,16 @@ etherscan: {
       network: "linea-goerli",
       chainId: 59140,
       urls: {
-        apiURL: " https://explorer.goerli.linea.build/api",
+        apiURL: "https://explorer.goerli.linea.build/api",
         browserURL: "https://goerli.lineascan.build",
+      },
+    },
+    {
+      network: "linea-mainnet",
+      chainId: 59144,
+      urls: {
+        apiURL: "http://explorer.linea.build/api",
+        browserURL: "https://explorer.lineascan.build",
       },
     },
     {
