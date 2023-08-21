@@ -4,7 +4,7 @@ import { Deployer, Deployer__factory } from "../typechain-types";
 import { TokenPaymaster__factory } from "@account-abstraction/contracts";
 import { BigNumber } from "ethers";
 import { EntryPoint__factory } from "../account-abstraction/typechain";
-import { formatEther } from "ethers/lib/utils";
+import { formatEther, parseEther } from "ethers/lib/utils";
 
 const provider = ethers.provider;
 const DEPLOYER_CONTRACT_ADDRESS =
@@ -23,9 +23,80 @@ type PaymasterStakeConfig = {
 };
 
 const paymasterStakeConfig: Record<number, PaymasterStakeConfig> = {
+  // Testnets
   80001: {
     unstakeDelayInSec: 60 * 60 * 24, // 1 Day
-    paymasterStakeInWei: ethers.utils.parseEther("0.001"),
+    paymasterStakeInWei: parseEther("0.01"),
+  },
+  97: {
+    unstakeDelayInSec: 60 * 60 * 24, // 1 Day
+    paymasterStakeInWei: parseEther("0.01"),
+  },
+  5: {
+    unstakeDelayInSec: 60 * 60 * 24, // 1 Day
+    paymasterStakeInWei: parseEther("0.01"),
+  },
+  421613: {
+    unstakeDelayInSec: 60 * 60 * 24, // 1 Day
+    paymasterStakeInWei: parseEther("0.01"),
+  },
+  420: {
+    unstakeDelayInSec: 60 * 60 * 24, // 1 Day
+    paymasterStakeInWei: parseEther("0.01"),
+  },
+  43113: {
+    unstakeDelayInSec: 60 * 60 * 24, // 1 Day
+    paymasterStakeInWei: parseEther("0.01"),
+  },
+  1442: {
+    unstakeDelayInSec: 60 * 60 * 24, // 1 Day
+    paymasterStakeInWei: parseEther("0.01"),
+  },
+  59140: {
+    unstakeDelayInSec: 60 * 60 * 24, // 1 Day
+    paymasterStakeInWei: parseEther("0.01"),
+  },
+  84531: {
+    unstakeDelayInSec: 60 * 60 * 24, // 1 Day
+    paymasterStakeInWei: parseEther("0.01"),
+  },
+
+  // Mainnets
+  137: {
+    unstakeDelayInSec: 60 * 60 * 24, // 1 Day
+    paymasterStakeInWei: parseEther("173"), // 1 MATIC = $0.5788
+  },
+  56: {
+    unstakeDelayInSec: 60 * 60 * 24, // 1 Day
+    paymasterStakeInWei: parseEther("0.46"), // 1 BNB = $217.43
+  },
+  1: {
+    unstakeDelayInSec: 60 * 60 * 24, // 1 Day
+    paymasterStakeInWei: parseEther("0.06"), // 1 ETH = $1,674.88
+  },
+  42161: {
+    unstakeDelayInSec: 60 * 60 * 24, // 1 Day
+    paymasterStakeInWei: parseEther("0.06"), // 1 ETH = $1,674.88
+  },
+  10: {
+    unstakeDelayInSec: 60 * 60 * 24, // 1 Day
+    paymasterStakeInWei: parseEther("0.06"), // 1 ETH = $1,674.88
+  },
+  43114: {
+    unstakeDelayInSec: 60 * 60 * 24, // 1 Day
+    paymasterStakeInWei: parseEther("9.337"), // 1 AVAX = $10.71
+  },
+  1101: {
+    unstakeDelayInSec: 60 * 60 * 24, // 1 Day
+    paymasterStakeInWei: parseEther("0.06"), // 1 ETH = $1,674.88
+  },
+  59144: {
+    unstakeDelayInSec: 60 * 60 * 24, // 1 Day
+    paymasterStakeInWei: parseEther("0.06"), // 1 ETH = $1,674.88
+  },
+  8453: {
+    unstakeDelayInSec: 60 * 60 * 24, // 1 Day
+    paymasterStakeInWei: parseEther("0.06"), // 1 ETH = $1,674.88
   },
 };
 
