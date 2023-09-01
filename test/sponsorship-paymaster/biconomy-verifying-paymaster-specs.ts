@@ -63,7 +63,8 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
       await new VerifyingSingletonPaymaster__factory(deployer).deploy(
         await deployer.getAddress(),
         entryPoint.address,
-        offchainSignerAddress
+        offchainSignerAddress,
+        1200000 // 20%
       );
 
     smartWalletImp = await new BiconomyAccountImplementation__factory(deployer).deploy(
@@ -192,6 +193,9 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
       await expect(
         entryPoint.handleOps([userOp], await offchainSigner.getAddress())
       ).to.be.reverted;
+
+      // TODO
+      // Owner should be able to withdraw collected fees from entry point
     });
   });
 });

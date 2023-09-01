@@ -19,6 +19,12 @@ import {VerifyingPaymasterErrors} from "../common/Errors.sol";
  *  - The paymaster signs to agree to PAY for GAS.
  *  - The wallet signs to prove identity and wallet ownership.
  */
+
+// 2.0.0 version with support to charge premium
+
+// Note: Review
+// Could remove Helpers and also start using parsePaymasterData() here
+
 contract VerifyingSingletonPaymaster is
     BasePaymaster,
     ReentrancyGuard,
@@ -30,13 +36,25 @@ contract VerifyingSingletonPaymaster is
     using PaymasterHelpers for bytes;
     using PaymasterHelpers for PaymasterData;
 
+    uint32 private constant PRICE_DENOMINATOR = 1e6;
+
+    // Review
+    // biconomyPaymasterId could be set explicitly (currently as good as paymaster owner)
+
     // Gas used in EntryPoint._handlePostOp() method (including this#postOp() call)
     uint256 private unaccountedEPGasOverhead;
     mapping(address => uint256) public paymasterIdBalances;
 
     address public verifyingSigner;
 
+    uint32 public fixedPriceMarkup;
+
     event EPGasOverheadChanged(
+        uint256 indexed _oldValue,
+        uint256 indexed _newValue
+    );
+
+    event FixedPriceMarkupChanged(
         uint256 indexed _oldValue,
         uint256 indexed _newValue
     );
@@ -60,15 +78,19 @@ contract VerifyingSingletonPaymaster is
     constructor(
         address _owner,
         IEntryPoint _entryPoint,
-        address _verifyingSigner
+        address _verifyingSigner,
+        uint32 _fixedPriceMarkup
     ) payable BasePaymaster(_owner, _entryPoint) {
         if (address(_entryPoint) == address(0)) revert EntryPointCannotBeZero();
+        // Review // maybe <= 1300000
+        require(_fixedPriceMarkup <= PRICE_DENOMINATOR * 2, "markup too high");
         if (_verifyingSigner == address(0))
             revert VerifyingSignerCannotBeZero();
         assembly {
             sstore(verifyingSigner.slot, _verifyingSigner)
         }
         unaccountedEPGasOverhead = 12000;
+        fixedPriceMarkup = _fixedPriceMarkup;
     }
 
     /**
@@ -145,6 +167,12 @@ contract VerifyingSingletonPaymaster is
         emit EPGasOverheadChanged(oldValue, value);
     }
 
+    function setFixedPriceMarkup(uint32 _markup) external onlyOwner {
+        uint256 oldValue = fixedPriceMarkup;
+        fixedPriceMarkup = _markup;
+        emit FixedPriceMarkupChanged(oldValue, _markup);
+    }
+
     /**
      * @dev This method is called by the off-chain service, to sign the request.
      * It is called on-chain from the validatePaymasterUserOp, to validate the signature.
@@ -152,6 +180,7 @@ contract VerifyingSingletonPaymaster is
      * which will carry the signature itself.
      * @return hash we're going to sign off-chain (and validate on-chain)
      */
+    // Review : could add dynamic price markup as part of paymasterAndData
     function getHash(
         UserOperation calldata userOp,
         address paymasterId,
@@ -190,6 +219,8 @@ contract VerifyingSingletonPaymaster is
      * @return context A context string returned by the entry point after successful validation.
      * @return validationData An integer returned by the entry point after successful validation.
      */
+    // Review : could add dynamic price markup as part of paymasterAndData
+    // Then this min(dynamicMarkup, fixedPriceMarkup) could be used
     function _validatePaymasterUserOp(
         UserOperation calldata userOp,
         bytes32 /*userOpHash*/,
@@ -220,7 +251,16 @@ contract VerifyingSingletonPaymaster is
                 )
             );
         }
-        if (requiredPreFund > paymasterIdBalances[paymasterData.paymasterId])
+
+        // Review
+        // In case of markup is sent in pnd
+        // require(priceMarkup <= 2e6, "Verifying PM: price markup percentage too high");
+        // require(priceMarkup >= 1e6, "Verifying PM: price markup percentage too low");
+
+        if (
+            (requiredPreFund * fixedPriceMarkup) / PRICE_DENOMINATOR >
+            paymasterIdBalances[paymasterData.paymasterId]
+        )
             revert InsufficientBalance(
                 requiredPreFund,
                 paymasterIdBalances[paymasterData.paymasterId]
@@ -271,12 +311,19 @@ contract VerifyingSingletonPaymaster is
             data.maxFeePerGas,
             data.maxPriorityFeePerGas
         );
+
         uint256 balToDeduct = actualGasCost +
             unaccountedEPGasOverhead *
             effectiveGasPrice;
         paymasterIdBalances[extractedPaymasterId] =
             paymasterIdBalances[extractedPaymasterId] -
-            balToDeduct;
+            ((balToDeduct * fixedPriceMarkup) / PRICE_DENOMINATOR);
+
+        paymasterIdBalances[owner()] =
+            paymasterIdBalances[owner()] +
+            ((balToDeduct * (fixedPriceMarkup - 1e6)) / PRICE_DENOMINATOR);
         emit GasBalanceDeducted(extractedPaymasterId, balToDeduct);
+        // Review
+        // emit FeeCollected();
     }
 }
