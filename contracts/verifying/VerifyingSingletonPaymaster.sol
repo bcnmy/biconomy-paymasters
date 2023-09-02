@@ -55,8 +55,8 @@ contract VerifyingSingletonPaymaster is
     );
 
     event FixedPriceMarkupChanged(
-        uint256 indexed _oldValue,
-        uint256 indexed _newValue
+        uint32 indexed _oldValue,
+        uint32 indexed _newValue
     );
 
     event VerifyingSignerChanged(
