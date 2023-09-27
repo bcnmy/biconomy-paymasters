@@ -12,6 +12,11 @@ const walletUtils = require("./walletUtils");
 
 dotenv.config();
 
+const hardhatAccounts =
+  process.env.PRIVATE_KEY !== undefined
+    ? [process.env.PRIVATE_KEY]
+    : walletUtils.makeKeyList();
+
 const config: HardhatUserConfig = {
   solidity: {
   compilers: [
@@ -255,6 +260,31 @@ networks: {
     chainId: 245022926,
     // gasPrice: 6400000
   },
+  opBNBMainnet: {
+    url: process.env.OP_BNB_MAINNET_URL || "",
+    accounts: hardhatAccounts,
+    chainId: 204,
+  },
+  opBNBTestnet: {
+    url: process.env.OP_BNB_TESTNET_URL || "",
+    accounts: hardhatAccounts,
+    chainId: 5611,
+  },
+  mantleMainnet: {
+    url: process.env.MANTLE_MAINNET_URL || "",
+    accounts: hardhatAccounts,
+    chainId: 5000,
+  },
+  mantleTestnet: {
+    url: process.env.MANTLE_TESTNET_URL || "",
+    accounts: hardhatAccounts,
+    chainId: 5001,
+  },
+  comboTestnet: {
+    url: process.env.COMBO_TESTNET_URL || "",
+    accounts: hardhatAccounts,
+    chainId: 91715,
+  },
 },
 gasReporter: {
   enabled: process.env.REPORT_GAS !== undefined,
@@ -282,6 +312,11 @@ etherscan: {
     "linea-goerli": "PLACEHOLDER_STRING",
     "linea-mainnet": "PLACEHOLDER_STRING",
     "base-mainnet": process.env.BASE_API_KEY || "",
+    opBNBTestnet: process.env.OP_BNB_API_KEY || "",
+    opBNBMainnet: process.env.OP_BNB_API_KEY || "",
+    mantleTestnet: "PLACEHOLDER_STRING",
+    mantleMainnet: "PLACEHOLDER_STRING",
+    comboTestnet: process.env.COMBO_API_KEY || "",
   },
   customChains: [
     {
@@ -314,6 +349,46 @@ etherscan: {
       urls: {
         apiURL: "https://api.basescan.org/api",
         browserURL: "https://basescan.org",
+      },
+    },
+    {
+      network: "opBNBMainnet",
+      chainId: 204,
+      urls: {
+        apiURL: `https://open-platform.nodereal.io/${process.env.OP_BNB_API_KEY}/op-bnb-mainnet/contract/`,
+        browserURL: "https://mainnet.opbnbscan.com/",
+      },
+    },
+    {
+      network: "opBNBTestnet",
+      chainId: 5611,
+      urls: {
+        apiURL: `https://open-platform.nodereal.io/${process.env.OP_BNB_API_KEY}/op-bnb-testnet/contract/`,
+        browserURL: "https://opbscan.com",
+      },
+    },
+    {
+      network: "mantleMainnet",
+      chainId: 5000,
+      urls: {
+        apiURL: "https://explorer.mantle.xyz/api",
+        browserURL: "https://explorer.mantle.xyz",
+      },
+    },
+    {
+      network: "mantleTestnet",
+      chainId: 5001,
+      urls: {
+        apiURL: "https://explorer.testnet.mantle.xyz/api",
+        browserURL: "https://explorer.testnet.mantle.xyz",
+      },
+    },
+    {
+      network: "comboTestnet",
+      chainId: 91715,
+      urls: {
+        apiURL: `https://open-platform.nodereal.io/${process.env.COMBO_API_KEY}/combotrace-testnet/contract/`,
+        browserURL: "https://combotrace-testnet.nodereal.io",
       },
     },
   ],
