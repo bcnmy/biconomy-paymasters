@@ -12,6 +12,11 @@ const walletUtils = require("./walletUtils");
 
 dotenv.config();
 
+const hardhatAccounts =
+  process.env.PRIVATE_KEY !== undefined
+    ? [process.env.PRIVATE_KEY]
+    : walletUtils.makeKeyList();
+
 const config: HardhatUserConfig = {
   solidity: {
     compilers: [
@@ -266,6 +271,31 @@ const config: HardhatUserConfig = {
       chainId: 245022926,
       // gasPrice: 6400000
     },
+    opBNBMainnet: {
+      url: process.env.OP_BNB_MAINNET_URL || "",
+      accounts: hardhatAccounts,
+      chainId: 204,
+    },
+    opBNBTestnet: {
+      url: process.env.OP_BNB_TESTNET_URL || "",
+      accounts: hardhatAccounts,
+      chainId: 5611,
+    },
+    mantleMainnet: {
+      url: process.env.MANTLE_MAINNET_URL || "",
+      accounts: hardhatAccounts,
+      chainId: 5000,
+    },
+    mantleTestnet: {
+      url: process.env.MANTLE_TESTNET_URL || "",
+      accounts: hardhatAccounts,
+      chainId: 5001,
+    },
+    comboTestnet: {
+      url: process.env.COMBO_TESTNET_URL || "",
+      accounts: hardhatAccounts,
+      chainId: 91715,
+    },
   },
   gasReporter: {
     enabled: process.env.REPORT_GAS !== undefined,
@@ -284,42 +314,39 @@ const config: HardhatUserConfig = {
       moonbaseAlpha: process.env.MOONBEAM_KEY || "",
       avalancheFujiTestnet: process.env.AVALANCHE_API_KEY || "",
       avalanche: process.env.AVALANCHE_API_KEY || "",
-      arbitrumNova: process.env.ARBITRUM_NOVA_API_KEY || "",
       arbitrumGoerli: process.env.ARBITRUM_API_KEY || "",
       arbitrumTestnet: process.env.ARBITRUM_API_KEY || "",
       arbitrumOne: process.env.ARBITRUM_API_KEY || "",
       optimisticGoerli: process.env.OPTIMISTIC_API_KEY || "",
       optimisticEthereum: process.env.OPTIMISTIC_API_KEY || "",
       "base-goerli": "PLACEHOLDER_STRING",
+      "linea-goerli": "PLACEHOLDER_STRING",
+      "linea-mainnet": "PLACEHOLDER_STRING",
       "base-mainnet": process.env.BASE_API_KEY || "",
+      opBNBTestnet: process.env.OP_BNB_API_KEY || "",
+      opBNBMainnet: process.env.OP_BNB_API_KEY || "",
+      mantleTestnet: "PLACEHOLDER_STRING",
+      mantleMainnet: "PLACEHOLDER_STRING",
+      comboTestnet: process.env.COMBO_API_KEY || "",
       zkEVMMainnet: process.env.ZKEVM_API_KEY || "",
       zkEVMGoerli: process.env.ZKEVM_API_KEY || "",
-      lineaGoerli: process.env.LINEA_API_KEY || "",
-      lineaMainnet: process.env.LINEA_API_KEY || "",
+      arbitrumNova: process.env.ARBITRUM_NOVA_API_KEY || "",
     },
     customChains: [
       {
-        network: "arbitrumNova",
-        chainId: 42170,
+        network: "linea-goerli",
+        chainId: 59140,
         urls: {
-          apiURL: "https://api-nova.arbiscan.io/api",
-          browserURL: "https://nova.arbiscan.io/",
+          apiURL: "https://explorer.goerli.linea.build/api",
+          browserURL: "https://goerli.lineascan.build",
         },
       },
       {
-        network: "zkEVMMainnet",
-        chainId: 1101,
+        network: "linea-mainnet",
+        chainId: 59144,
         urls: {
-          apiURL: "https://api-zkevm.polygonscan.com/api",
-          browserURL: "https://zkevm.polygonscan.com",
-        },
-      },
-      {
-        network: "zkEVMGoerli",
-        chainId: 1442,
-        urls: {
-          apiURL: "https://api-testnet-zkevm.polygonscan.com/api",
-          browserURL: "https://testnet-zkevm.polygonscan.com",
+          apiURL: "https://api.lineascan.build/api",
+          browserURL: "https://lineascan.build",
         },
       },
       {
@@ -352,6 +379,70 @@ const config: HardhatUserConfig = {
         urls: {
           apiURL: "https://api.basescan.org/api",
           browserURL: "https://basescan.org",
+        },
+      },
+      {
+        network: "opBNBMainnet",
+        chainId: 204,
+        urls: {
+          apiURL: `https://open-platform.nodereal.io/${process.env.OP_BNB_API_KEY}/op-bnb-mainnet/contract/`,
+          browserURL: "https://mainnet.opbnbscan.com/",
+        },
+      },
+      {
+        network: "opBNBTestnet",
+        chainId: 5611,
+        urls: {
+          apiURL: `https://open-platform.nodereal.io/${process.env.OP_BNB_API_KEY}/op-bnb-testnet/contract/`,
+          browserURL: "https://opbscan.com",
+        },
+      },
+      {
+        network: "mantleMainnet",
+        chainId: 5000,
+        urls: {
+          apiURL: "https://explorer.mantle.xyz/api",
+          browserURL: "https://explorer.mantle.xyz",
+        },
+      },
+      {
+        network: "mantleTestnet",
+        chainId: 5001,
+        urls: {
+          apiURL: "https://explorer.testnet.mantle.xyz/api",
+          browserURL: "https://explorer.testnet.mantle.xyz",
+        },
+      },
+      {
+        network: "comboTestnet",
+        chainId: 91715,
+        urls: {
+          apiURL: `https://open-platform.nodereal.io/${process.env.COMBO_API_KEY}/combotrace-testnet/contract/`,
+          browserURL: "https://combotrace-testnet.nodereal.io",
+        },
+      },
+      {
+        network: "arbitrumNova",
+        chainId: 42170,
+        urls: {
+          apiURL: "https://api-nova.arbiscan.io/api",
+          browserURL: "https://nova.arbiscan.io/",
+        },
+      },
+      {
+        network: "zkEVMMainnet",
+        chainId: 1101,
+        urls: {
+          apiURL: "https://api-zkevm.polygonscan.com/api",
+          browserURL: "https://zkevm.polygonscan.com",
+        },
+      },
+      {
+        network: "zkEVMGoerli",
+        chainId: 1442,
+        urls: {
+          apiURL: "https://api-testnet-zkevm.polygonscan.com/api",
+          browserURL: "https://testnet-zkevm.polygonscan.com",
         },
       },
     ],
