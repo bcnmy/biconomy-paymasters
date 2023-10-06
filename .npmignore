@@ -22,3 +22,8 @@ coverage.json
 arguments.js
 typings/
 account-abstraction
+DerivedPriceFeedFlat.sol
+lib/forge-std/
+.husky/pre-commit
+.gitmodules
+.gas-snapshot
