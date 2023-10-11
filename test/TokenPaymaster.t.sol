@@ -82,7 +82,7 @@ contract TokenPaymasterTest is Test {
         console2.log(priceToLog);
 
         smartAccount = new BiconomyAccountImplementation(_ep);
-        smartAccountFactory = new BiconomyAccountFactory(address(smartAccount));
+        smartAccountFactory = new BiconomyAccountFactory(address(smartAccount), users[4]);
 
         address accountAddress = smartAccountFactory.deployCounterFactualAccount(charlie, 0);
         console2.log(" smart account address ", accountAddress);

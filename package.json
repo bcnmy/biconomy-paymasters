@@ -53,6 +53,7 @@
     "typescript": "^5.0.4"
   },
   "dependencies": {
+    "@biconomy-devx/account-contracts-v2": "^2.0.2",
     "@account-abstraction/contracts": "^0.6.0",
     "@biconomy/account-contracts": "^2.0.0",
     "@chainlink/contracts": "^0.6.0",

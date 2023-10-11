@@ -28,6 +28,7 @@ import { EntryPoint, EntryPoint__factory, SimpleAccount, TestToken, TestToken__f
 export const AddressZero = ethers.constants.AddressZero;
 import { arrayify, hexConcat, parseEther } from "ethers/lib/utils";
 import { BigNumber, BigNumberish, Contract, Signer } from "ethers";
+import { EcdsaOwnershipRegistryModule, EcdsaOwnershipRegistryModule__factory } from "@biconomy-devx/account-contracts-v2/dist/types";
 
 const MOCK_VALID_UNTIL = "0x00000000deadbeef";
 const MOCK_VALID_AFTER = "0x0000000000001234";
@@ -41,6 +42,14 @@ export async function deployEntryPoint(
   provider = ethers.provider
 ): Promise<EntryPoint> {
   return new EntryPoint__factory(provider.getSigner()).deploy();
+}
+
+function delay(ms: number) {
+  return new Promise<void>((resolve) => {
+    setTimeout(() => {
+      resolve();
+    }, ms);
+  });
 }
 
 export const encodePaymasterData = (
@@ -69,7 +78,7 @@ export const encodeERC20Approval = (
   spender: string,
   amount: BigNumber
 ) => {
-  return account.interface.encodeFunctionData("executeCall", [
+  return account.interface.encodeFunctionData("execute_ncC", [
     token.address,
     0,
     token.interface.encodeFunctionData("approve", [spender, amount]),
@@ -92,7 +101,9 @@ describe("Biconomy Token Paymaster", function () {
   let mockPriceFeed: MockPriceFeed;
   let oracleAggregator: ChainlinkOracleAggregator;
 
+  // Could also use published package or added submodule (for Account Implementation and Factory)
   let smartWalletImp: BiconomyAccountImplementation;
+  let ecdsaModule: EcdsaOwnershipRegistryModule;
   let walletFactory: BiconomyAccountFactory;
   const abi = ethers.utils.defaultAbiCoder;
 
@@ -110,6 +121,8 @@ describe("Biconomy Token Paymaster", function () {
     const walletOwnerAddress = await walletOwner.getAddress();
 
     oracleAggregator = await new ChainlinkOracleAggregator__factory(deployer).deploy(walletOwnerAddress);
+
+    ecdsaModule = await new EcdsaOwnershipRegistryModule__factory(deployer).deploy();
 
     const MockToken = await ethers.getContractFactory("MockToken");
     token = await MockToken.deploy();
@@ -155,14 +168,25 @@ describe("Biconomy Token Paymaster", function () {
     );
 
     walletFactory = await new BiconomyAccountFactory__factory(deployer).deploy(
-      smartWalletImp.address
+      smartWalletImp.address,
+      walletOwnerAddress
     );
 
-    await walletFactory.deployCounterFactualAccount(walletOwnerAddress, 0);
+    await walletFactory.connect(deployer).addStake(entryPoint.address, 86400, { value: parseEther("2") })
+
+    const ecdsaOwnershipSetupData =
+        ecdsaModule.interface.encodeFunctionData(
+          "initForSmartAccount",
+          [walletOwnerAddress]
+   );
+
+    const smartAccountDeploymentIndex = 0;
+
+
+    await walletFactory.deployCounterFactualAccount(ecdsaModule.address, ecdsaOwnershipSetupData, smartAccountDeploymentIndex);
 
     const expected = await walletFactory.getAddressForCounterFactualAccount(
-      walletOwnerAddress,
-      0
+      ecdsaModule.address, ecdsaOwnershipSetupData, smartAccountDeploymentIndex
     );
 
     console.log("mint tokens to owner address..");
@@ -250,6 +274,8 @@ describe("Biconomy Token Paymaster", function () {
       expect(tokenBalanceBefore.add(collectedTokens)).to.be.equal(tokenBalanceAfter); 
 
       await sampleTokenPaymaster.connect(ethersSigner[6]).unlockStake();
+
+      await delay(1000);
       
       await sampleTokenPaymaster.connect(ethersSigner[6]).withdrawStake(withdrawAddress);
 

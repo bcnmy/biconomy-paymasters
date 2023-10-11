@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import "@biconomy/account-contracts/contracts/smart-contract-wallet/SmartAccount.sol";
+import {SmartAccount} from "@biconomy-devx/account-contracts-v2/contracts/smart-account/SmartAccount.sol";
+import {IEntryPoint} from "@account-abstraction/contracts/interfaces/IEntryPoint.sol";
+
+// Could also use published package or added submodule.
 
 contract BiconomyAccountImplementation is SmartAccount {
     /**

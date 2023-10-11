@@ -17,6 +17,7 @@ import {
   MockPriceFeed__factory,
   MockToken,
 } from "../../../typechain-types";
+import { EcdsaOwnershipRegistryModule, EcdsaOwnershipRegistryModule__factory } from "@biconomy-devx/account-contracts-v2/dist/types";
 
 import { fillAndSign } from "../../../account-abstraction/test/UserOp";
 import {
@@ -77,7 +78,7 @@ export const encodeERC20Approval = (
   spender: string,
   amount: BigNumber
 ) => {
-  return account.interface.encodeFunctionData("executeCall", [
+  return account.interface.encodeFunctionData("execute_ncC", [
     token.address,
     0,
     token.interface.encodeFunctionData("approve", [spender, amount]),
@@ -96,7 +97,9 @@ describe("Biconomy Token Paymaster (with Bundler)", function () {
   let sampleTokenPaymaster: BiconomyTokenPaymaster;
   let oracleAggregator: ChainlinkOracleAggregator;
 
+  // Could also use published package or added submodule (for Account Implementation and Factory)
   let smartWalletImp: BiconomyAccountImplementation;
+  let ecdsaModule: EcdsaOwnershipRegistryModule;
   let walletFactory: BiconomyAccountFactory;
   let environment: BundlerTestEnvironment;
 
@@ -124,6 +127,8 @@ describe("Biconomy Token Paymaster (with Bundler)", function () {
     oracleAggregator = await new ChainlinkOracleAggregator__factory(
       deployer
     ).deploy(walletOwnerAddress);
+
+    ecdsaModule = await new EcdsaOwnershipRegistryModule__factory(deployer).deploy();
 
     const MockToken = await ethers.getContractFactory("MockToken");
     token = await MockToken.deploy();
@@ -162,12 +167,22 @@ describe("Biconomy Token Paymaster (with Bundler)", function () {
     ).deploy(entryPoint.address);
 
     walletFactory = await new BiconomyAccountFactory__factory(deployer).deploy(
-      smartWalletImp.address
+      smartWalletImp.address,
+      walletOwnerAddress
     );
 
+    await walletFactory.connect(deployer).addStake(entryPoint.address, 86400, { value: parseEther("2") })
+
+    const ecdsaOwnershipSetupData =
+    ecdsaModule.interface.encodeFunctionData(
+      "initForSmartAccount",
+      [walletOwnerAddress]
+    );
+
+    const smartAccountDeploymentIndex = 0;
+
     const expected = await walletFactory.getAddressForCounterFactualAccount(
-      walletOwnerAddress,
-      0
+      ecdsaModule.address, ecdsaOwnershipSetupData, smartAccountDeploymentIndex
     );
 
     await token.mint(walletOwnerAddress, ethers.utils.parseEther("1000000"));
@@ -210,10 +225,18 @@ describe("Biconomy Token Paymaster (with Bundler)", function () {
       const AccountFactory = await ethers.getContractFactory(
         "SmartAccountFactory"
       );
-      const deploymentData = AccountFactory.interface.encodeFunctionData(
-        "deployCounterFactualAccount",
-        [owner, 0]
+      const ecdsaOwnershipSetupData = ecdsaModule.interface.encodeFunctionData(
+        "initForSmartAccount",
+        [owner]
       );
+  
+      const smartAccountDeploymentIndex = 0;
+  
+      const deploymentData = AccountFactory.interface.encodeFunctionData(
+          "deployCounterFactualAccount",
+          [ecdsaModule.address, ecdsaOwnershipSetupData, smartAccountDeploymentIndex]
+      );
+  
 
       const userOp1 = await fillAndSign(
         {
@@ -222,7 +245,7 @@ describe("Biconomy Token Paymaster (with Bundler)", function () {
           callGasLimit: 200000, // need to pass this because for undeployed account it wouldn't estimate accurately
           initCode: hexConcat([walletFactory.address, deploymentData]),
           nonce: 0,
-          preVerificationGas: 50000,
+          preVerificationGas: 60000,
           callData: encodeERC20Approval(
             userSCW,
             token,
@@ -265,6 +288,13 @@ describe("Biconomy Token Paymaster (with Bundler)", function () {
         entryPoint,
         "nonce"
       );
+
+      const signatureWithModuleAddress = ethers.utils.defaultAbiCoder.encode(
+        ["bytes", "address"],
+        [userOp.signature, ecdsaModule.address]
+      );
+
+      userOp.signature = signatureWithModuleAddress
 
       await environment.sendUserOperation(userOp, entryPoint.address);
 
