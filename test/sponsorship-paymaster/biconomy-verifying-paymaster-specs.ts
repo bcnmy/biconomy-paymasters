@@ -11,7 +11,8 @@ import {
   VerifyingSingletonPaymaster,
   VerifyingSingletonPaymaster__factory,
 } from "../../typechain-types";
-import { fillAndSign } from "../../account-abstraction/test/UserOp";
+// Review: Could import from scw-contracts submodules to be consistent
+import { fillAndSign } from "../utils/userOp";
 import { UserOperation } from "../../account-abstraction/test/UserOperation";
 import { createAccount, simulationResultCatch } from "../../account-abstraction/test/testutils";
 import { EntryPoint, EntryPoint__factory, SimpleAccount, TestToken, TestToken__factory } from "../../account-abstraction/typechain";

@@ -19,7 +19,7 @@ import {
   MockToken,
 } from "../../typechain-types";
 
-
+// Review: Could import from scw-contracts submodules to be consistent
 import { fillAndSign } from "../../account-abstraction/test/UserOp";
 import { UserOperation } from "../../account-abstraction/test/UserOperation";
 import { createAccount, simulationResultCatch } from "../../account-abstraction/test/testutils";

@@ -19,7 +19,8 @@ import {
 } from "../../../typechain-types";
 import { EcdsaOwnershipRegistryModule, EcdsaOwnershipRegistryModule__factory } from "@biconomy-devx/account-contracts-v2/dist/types";
 
-import { fillAndSign } from "../../../account-abstraction/test/UserOp";
+// Review: Could import from scw-contracts submodules to be consistent
+import { fillAndSign } from "../../utils/userOp";
 import {
   EntryPoint,
   EntryPoint__factory,

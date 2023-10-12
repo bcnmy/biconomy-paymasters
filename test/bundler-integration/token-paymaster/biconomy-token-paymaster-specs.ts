@@ -18,7 +18,8 @@ import {
   MockToken,
 } from "../../../typechain-types";
 
-import { fillAndSign } from "../../../account-abstraction/test/UserOp";
+// Review: Could import from scw-contracts submodules to be consistent
+import { fillAndSign } from "../../utils/userOp";
 import {
   EntryPoint,
   EntryPoint__factory,
