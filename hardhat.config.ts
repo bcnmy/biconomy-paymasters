@@ -229,6 +229,11 @@ const config: HardhatUserConfig = {
       accounts: hardhatAccounts,
       chainId: 91715,
     },
+    jpmAvaxSubnetTestnet: {
+      url: process.env.JPM_AVAX_SUBNET_TESTNET_URL || "",
+      accounts: hardhatAccounts,
+      chainId: 88018,
+    },
   },
   gasReporter: {
     enabled: process.env.REPORT_GAS !== undefined,

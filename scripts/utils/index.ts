@@ -576,7 +576,7 @@ export const deployContract = async (
 
   console.log(`Submitted transaction ${hash} for deployment`);
 
-  const { status, logs, blockNumber } = await wait(5);
+  const { status, logs, blockNumber } = await wait();
 
   if (status !== 1) {
     throw new Error(`Transaction ${hash} failed`);
