@@ -16,6 +16,7 @@ import {
   keccak256,
   Interface,
   parseEther,
+  parseUnits,
 } from "ethers/lib/utils";
 import { TransactionReceipt, Provider } from "@ethersproject/providers";
 import { Deployer, Deployer__factory } from "../../typechain-types";
@@ -152,6 +153,10 @@ type PaymasterStakeConfig = {
 
 export const paymasterStakeConfigDevx: Record<number, PaymasterStakeConfig> = {
   // Testnets
+  31337: {
+    unstakeDelayInSec: 60 * 60 * 24, // 1 Day
+    stakeInWei: parseEther("0.1"),
+  },
   80001: {
     unstakeDelayInSec: 60 * 60 * 24, // 1 Day
     stakeInWei: parseEther("0.1"),
@@ -395,6 +400,72 @@ export const paymasterStakeConfigProd: Record<number, PaymasterStakeConfig> = {
   },
 };
 
+export const DEPLOYMENT_CHAIN_GAS_PRICES: Record<
+  number,
+  | { maxFeePerGas?: BigNumberish; maxPriorityFeePerGas?: BigNumberish }
+  | { gasPrice: BigNumberish }
+> = {
+  // Testnets
+  80001: { gasPrice: parseUnits("100", "gwei") },
+  97: { gasPrice: parseUnits("5", "gwei") },
+  5: {
+    maxPriorityFeePerGas: parseUnits("1", "gwei"),
+    maxFeePerGas: parseUnits("100", "gwei"),
+  },
+  421613: {
+    gasPrice: parseUnits("0.1", "gwei"),
+  },
+  420: {
+    gasPrice: parseUnits("0.1", "gwei"),
+  },
+  43113: {
+    gasPrice: parseUnits("30", "gwei"),
+  },
+  1442: {
+    gasPrice: parseUnits("1", "gwei"),
+  },
+  59140: {
+    gasPrice: parseUnits("0.1", "gwei"),
+  },
+  84531: {
+    gasPrice: parseUnits("1.5", "gwei"),
+  },
+  5611: {
+    gasPrice: parseUnits("0.1", "gwei"),
+  },
+  91715: {
+    gasPrice: parseUnits("0.1", "gwei"),
+  },
+  5001: {
+    gasPrice: parseUnits("0.1", "gwei"),
+  },
+  81: {
+    // gasPrice: parseUnits("5", "gwei"),
+  },
+  7116: {
+    // gasPrice: parseUnits("15", "gwei"),
+  },
+  88018: {},
+
+  // Mainnets
+  137: { maxPriorityFeePerGas: parseUnits("50", "gwei") },
+  56: { maxPriorityFeePerGas: parseUnits("10", "gwei") },
+  1: { maxPriorityFeePerGas: parseUnits("30", "gwei") },
+  42161: { gasPrice: parseUnits("1", "gwei") },
+  42170: {
+    gasPrice: parseUnits("1", "gwei"),
+  },
+  10: { gasPrice: parseUnits("1", "gwei") },
+  43114: { gasPrice: parseUnits("30", "gwei") },
+  1101: { gasPrice: parseUnits("1", "gwei") },
+  59144: { gasPrice: parseUnits("2", "gwei") },
+  8453: { gasPrice: parseUnits("1.5", "gwei") },
+  204: { gasPrice: parseUnits("0.1", "gwei") },
+  5000: { gasPrice: parseUnits("1", "gwei") },
+  1284: { gasPrice: parseUnits("200", "gwei") },
+  592: { gasPrice: parseUnits("2", "gwei") },
+};
+
 // Marked for removal
 export const factoryAbi = [
   {
@@ -498,12 +569,9 @@ export const deployContract = async (
   contractByteCode: string,
   deployerInstance: Deployer
 ): Promise<string> => {
-  //const { hash, wait } = await deployerInstance.deploy(salt, contractByteCode, {maxFeePerGas: 200e9, maxPriorityFeePerGas: 75e9});
-  // TODO
-  // Review gas price
+  const chainId = (await hardhatEthersInstance.provider.getNetwork()).chainId;
   const { hash, wait } = await deployerInstance.deploy(salt, contractByteCode, {
-    maxFeePerGas: 3e9,
-    maxPriorityFeePerGas: 2e9,
+    ...DEPLOYMENT_CHAIN_GAS_PRICES[chainId],
   });
 
   console.log(`Submitted transaction ${hash} for deployment`);

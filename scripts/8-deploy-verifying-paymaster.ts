@@ -7,6 +7,7 @@ import {
   isContract,
   paymasterStakeConfigDevx,
   paymasterStakeConfigProd,
+  DEPLOYMENT_CHAIN_GAS_PRICES,
 } from "./utils";
 import {
   BiconomyTokenPaymaster__factory,
@@ -136,7 +137,7 @@ async function deployVerifyingPaymasterContract(
     );
     console.log("Current Paymaster Stake: ", JSON.stringify(stake, null, 2));
     if (stake.staked) {
-      console.log("Factory Pm staked");
+      console.log("Paymater already staked");
       return;
     }
 
@@ -148,6 +149,7 @@ async function deployVerifyingPaymasterContract(
         unstakeDelayInSec,
         {
           value: stakeInWei,
+          ...DEPLOYMENT_CHAIN_GAS_PRICES[chainId],
         }
       );
       console.log("Paymaster Stake Transaction Hash: ", hash);
@@ -159,7 +161,10 @@ async function deployVerifyingPaymasterContract(
     if (contractOwner !== finalOwnerAddress) {
       console.log("Transferring Ownership of Paymaster...");
       const { hash, wait } = await verifyingPaymasterInstance.transferOwnership(
-        finalOwnerAddress
+        finalOwnerAddress,
+        {
+          ...DEPLOYMENT_CHAIN_GAS_PRICES[chainId],
+        }
       );
       console.log("Paymaster Transfer Ownership Transaction Hash: ", hash);
       await wait();
@@ -193,7 +198,9 @@ async function getPredeployedDeployerContractInstance(): Promise<Deployer> {
   }
 }
 
-function verifyDeploymentParams() {
+async function verifyDeploymentParams() {
+  const chainId = (await provider.getNetwork()).chainId;
+
   if (!isAddress(entryPointAddress)) {
     throw new Error("Invalid entry point address");
   }
@@ -209,11 +216,17 @@ function verifyDeploymentParams() {
   if (!isAddress(DEPLOYER_CONTRACT_ADDRESS ?? "")) {
     throw new Error("Invalid deployer contract address");
   }
+
+  if (!DEPLOYMENT_CHAIN_GAS_PRICES[chainId]) {
+    throw new Error("Deployment gas price not found for chainId " + chainId);
+  }
 }
 
 async function main() {
   const deployerInstance = await getPredeployedDeployerContractInstance();
   console.log("=========================================");
+
+  await verifyDeploymentParams();
 
   // Deploy Verifying paymaster
   const verifyingPaymasterAddress = await deployVerifyingPaymasterContract(
