@@ -19,9 +19,9 @@ import { EntryPoint__factory } from "@account-abstraction/contracts";
 import { isAddress } from "ethers/lib/utils";
 
 const provider = ethers.provider;
-let entryPointAddress = "0x29D4cFA9869C4fb4a78a6F7f32468f5e0b78da4e";
-// process.env.ENTRY_POINT_ADDRESS ||
-// "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
+let entryPointAddress =
+  process.env.ENTRY_POINT_ADDRESS ||
+  "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
 
 const DEPLOYMENT_MODE = (process.env.DEPLOYMENT_MODE || "dev") as
   | "dev"
