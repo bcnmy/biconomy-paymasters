@@ -137,7 +137,7 @@ async function deployVerifyingPaymasterContract(
     );
     console.log("Current Paymaster Stake: ", JSON.stringify(stake, null, 2));
     if (stake.staked) {
-      console.log("Paymater already staked");
+      console.log("Paymaster already staked");
       return;
     }
 
