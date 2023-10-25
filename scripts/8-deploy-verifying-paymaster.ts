@@ -19,9 +19,9 @@ import { EntryPoint__factory } from "@account-abstraction/contracts";
 import { isAddress } from "ethers/lib/utils";
 
 const provider = ethers.provider;
-let entryPointAddress =
-  process.env.ENTRY_POINT_ADDRESS ||
-  "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
+let entryPointAddress = "0x29D4cFA9869C4fb4a78a6F7f32468f5e0b78da4e";
+// process.env.ENTRY_POINT_ADDRESS ||
+// "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
 
 const DEPLOYMENT_MODE = (process.env.DEPLOYMENT_MODE || "dev") as
   | "dev"
@@ -108,7 +108,7 @@ async function deployVerifyingPaymasterContract(
     }
 
     const verifyingPaymasterBytecode = `${
-      BiconomyTokenPaymaster__factory.bytecode
+      VerifyingSingletonPaymaster__factory.bytecode
     }${encodeParam("address", signer.address).slice(2)}${encodeParam(
       "address",
       entryPointAddress
@@ -204,18 +204,25 @@ async function verifyDeploymentParams() {
   if (!isAddress(entryPointAddress)) {
     throw new Error("Invalid entry point address");
   }
+  console.log("Entry Point Address: ", entryPointAddress);
 
   if (!isAddress(owner ?? "")) {
     throw new Error("Invalid owner address");
   }
 
+  console.log("Paymaster Owner Address: ", owner);
+
   if (!isAddress(verifyingSigner ?? "")) {
     throw new Error("Invalid verifying signer address");
   }
 
+  console.log("Verifying Signer Address: ", verifyingSigner);
+
   if (!isAddress(DEPLOYER_CONTRACT_ADDRESS ?? "")) {
     throw new Error("Invalid deployer contract address");
   }
+
+  console.log("Deployer Contract Address: ", DEPLOYER_CONTRACT_ADDRESS);
 
   if (!DEPLOYMENT_CHAIN_GAS_PRICES[chainId]) {
     throw new Error("Deployment gas price not found for chainId " + chainId);
