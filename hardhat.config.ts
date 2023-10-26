@@ -229,8 +229,8 @@ const config: HardhatUserConfig = {
       accounts: hardhatAccounts,
       chainId: 91715,
     },
-    jpmAvaxSubnetTestnet: {
-      url: process.env.JPM_AVAX_SUBNET_TESTNET_URL || "",
+    avaxSubnet0001Testnet: {
+      url: process.env.AVAX_SUBNET_0001_TESTNET_URL || "",
       accounts: hardhatAccounts,
       chainId: 88018,
     },
@@ -243,6 +243,16 @@ const config: HardhatUserConfig = {
       url: process.env.ASTAR_MAINNET_URL || "https://evm.astar.network",
       accounts: hardhatAccounts,
       chainId: 592,
+    },
+    chillizTestnet: {
+      url: process.env.CHILLIZ_TESTNET_URL || "",
+      accounts: hardhatAccounts,
+      chainId: 88882,
+    },
+    chillizMainnet: {
+      url: process.env.CHILLIZ_MAINNET_URL || "",
+      accounts: hardhatAccounts,
+      chainId: 88888,
     },
   },
   gasReporter: {
@@ -281,8 +291,26 @@ const config: HardhatUserConfig = {
       arbitrumNova: process.env.ARBITRUM_NOVA_API_KEY || "",
       astarShibuyaTestnet: process.env.ASTAR_SHIBUYA_API_KEY || "",
       astarMainnet: process.env.ASTAR_MAINNET_API_KEY || "",
+      chillizTestnet: "PLACEHOLDER_STRING",
+      chillizMainnet: "PLACEHOLDER_STRING",
     },
     customChains: [
+      {
+        network: "chillizTestnet",
+        chainId: 88882,
+        urls: {
+          apiURL: "https://spicy-explorer.chiliz.com/api",
+          browserURL: "https://spicy-explorer.chiliz.com",
+        },
+      },
+      {
+        network: "chillizMainnet",
+        chainId: 88888,
+        urls: {
+          apiURL: "https://scan.chiliz.com/api",
+          browserURL: "https://scan.chiliz.com",
+        },
+      },
       {
         network: "astarShibuyaTestnet",
         chainId: 81,

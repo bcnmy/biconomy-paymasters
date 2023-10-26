@@ -10,7 +10,6 @@ import {
   DEPLOYMENT_CHAIN_GAS_PRICES,
 } from "./utils";
 import {
-  BiconomyTokenPaymaster__factory,
   Deployer,
   Deployer__factory,
   VerifyingSingletonPaymaster__factory,
@@ -19,9 +18,14 @@ import { EntryPoint__factory } from "@account-abstraction/contracts";
 import { isAddress } from "ethers/lib/utils";
 
 const provider = ethers.provider;
-let entryPointAddress = "0x29D4cFA9869C4fb4a78a6F7f32468f5e0b78da4e";
-// process.env.ENTRY_POINT_ADDRESS ||
-// "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
+
+// Custom Entrypoint
+// const entryPointAddress = "0x00000061FEfce24A79343c27127435286BB7A4E1";
+
+// Standard Entrypoint
+const entryPointAddress =
+  process.env.ENTRY_POINT_ADDRESS ||
+  "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
 
 const DEPLOYMENT_MODE = (process.env.DEPLOYMENT_MODE || "dev") as
   | "dev"

@@ -40,9 +40,10 @@ contract SimulationTest is Test {
         vm.startPrank(0x58006a3BC89Dfc5c60E9433EF7c8dF6023c6805d);
 
         VerifyingSingletonPaymaster v = VerifyingSingletonPaymaster(
-            0x0000064E9C653e373AF18ef27F70bE83dF5476B7
+            0x2E97907F2dDf3436b7828E28083f147B9d283F94
         );
 
+        console2.log(v.verifyingSigner());
         console2.log(v.getBalance(0x58006a3BC89Dfc5c60E9433EF7c8dF6023c6805d));
 
         v.depositFor{value: 1 ether}(

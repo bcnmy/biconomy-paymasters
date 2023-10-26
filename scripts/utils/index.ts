@@ -134,6 +134,7 @@ export const DEV_DEPLOYMENT_SALTS = {
   ORACLE_AGGREGATOR: "DEVX_CHAINLINK_ORACLE_AGGREGATOR_V0_27062023_bBee55b", // 0x0000065b8abb967271817555f23945eedf08015c
   TOKEN_PAYMASTER: "DEVX_TOKEN_PAYMASTER_V0_08072023_h5AFKLa", // 0x0000023d6c240ae3c9610d519510004d2616c9ec
   // V1.1.0
+  // SINGELTON_PAYMASTER: "DEVX_SINGLETON_PAYMASTER_V1_03082023_0Af0vtw_fix_", // 0x2E97907F2dDf3436b7828E28083f147B9d283F94
   SINGELTON_PAYMASTER: "DEVX_SINGLETON_PAYMASTER_V1_03082023_0Af0vtw", // 0x0000064e9c653e373af18ef27f70be83df5476b7
 };
 
@@ -217,6 +218,10 @@ export const paymasterStakeConfigDevx: Record<number, PaymasterStakeConfig> = {
     unstakeDelayInSec: 60 * 60 * 24, // 1 Day
     stakeInWei: parseEther("0.1"),
   },
+  88882: {
+    unstakeDelayInSec: 60 * 60 * 24, // 1 Day
+    stakeInWei: parseEther("0.1"),
+  },
 
   // Mainnets
   137: {
@@ -274,6 +279,10 @@ export const paymasterStakeConfigDevx: Record<number, PaymasterStakeConfig> = {
   592: {
     unstakeDelayInSec: 60 * 60 * 24, // 1 Day
     stakeInWei: parseEther("0.1"), // 1 GLMR = $0.18
+  },
+  88888: {
+    unstakeDelayInSec: 60 * 60 * 24, // 1 Day
+    stakeInWei: parseEther("0.1"),
   },
 };
 
@@ -340,6 +349,10 @@ export const paymasterStakeConfigProd: Record<number, PaymasterStakeConfig> = {
     unstakeDelayInSec: 60 * 60 * 24, // 1 Day
     stakeInWei: parseEther("0.1"),
   },
+  88882: {
+    unstakeDelayInSec: 60 * 60 * 24, // 1 Day
+    stakeInWei: parseEther("0.1"),
+  },
 
   // Mainnets
   137: {
@@ -398,6 +411,10 @@ export const paymasterStakeConfigProd: Record<number, PaymasterStakeConfig> = {
     unstakeDelayInSec: 60 * 60 * 24, // 1 Day
     stakeInWei: parseEther("556"), // 1 GLMR = $0.18
   },
+  88888: {
+    unstakeDelayInSec: 60 * 60 * 24, // 1 Day
+    stakeInWei: parseEther("3000"), // 1 CHZ = $0.05
+  },
 };
 
 export const DEPLOYMENT_CHAIN_GAS_PRICES: Record<
@@ -446,6 +463,9 @@ export const DEPLOYMENT_CHAIN_GAS_PRICES: Record<
     // gasPrice: parseUnits("15", "gwei"),
   },
   88018: {},
+  88882: {
+    gasPrice: parseUnits("10", "gwei"),
+  },
 
   // Mainnets
   137: { maxPriorityFeePerGas: parseUnits("50", "gwei") },
@@ -464,6 +484,9 @@ export const DEPLOYMENT_CHAIN_GAS_PRICES: Record<
   5000: { gasPrice: parseUnits("1", "gwei") },
   1284: { gasPrice: parseUnits("200", "gwei") },
   592: { gasPrice: parseUnits("2", "gwei") },
+  88888: {
+    gasPrice: parseUnits("10", "gwei"),
+  },
 };
 
 // Marked for removal
