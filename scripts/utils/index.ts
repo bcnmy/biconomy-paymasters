@@ -278,7 +278,7 @@ export const paymasterStakeConfigDevx: Record<number, PaymasterStakeConfig> = {
   },
   592: {
     unstakeDelayInSec: 60 * 60 * 24, // 1 Day
-    stakeInWei: parseEther("0.1"), // 1 GLMR = $0.18
+    stakeInWei: parseEther("0.1"), // 1 ASTR = $0.05
   },
   88888: {
     unstakeDelayInSec: 60 * 60 * 24, // 1 Day
@@ -409,7 +409,7 @@ export const paymasterStakeConfigProd: Record<number, PaymasterStakeConfig> = {
   },
   592: {
     unstakeDelayInSec: 60 * 60 * 24, // 1 Day
-    stakeInWei: parseEther("556"), // 1 GLMR = $0.18
+    stakeInWei: parseEther("3000"), // 1 ASTR = $0.05
   },
   88888: {
     unstakeDelayInSec: 60 * 60 * 24, // 1 Day
@@ -457,7 +457,7 @@ export const DEPLOYMENT_CHAIN_GAS_PRICES: Record<
     gasPrice: parseUnits("0.1", "gwei"),
   },
   81: {
-    // gasPrice: parseUnits("5", "gwei"),
+    gasPrice: parseUnits("800", "gwei"),
   },
   7116: {
     // gasPrice: parseUnits("15", "gwei"),
@@ -483,7 +483,10 @@ export const DEPLOYMENT_CHAIN_GAS_PRICES: Record<
   204: { gasPrice: parseUnits("0.1", "gwei") },
   5000: { gasPrice: parseUnits("1", "gwei") },
   1284: { gasPrice: parseUnits("200", "gwei") },
-  592: { gasPrice: parseUnits("2", "gwei") },
+  592: {
+    maxPriorityFeePerGas: parseUnits("2", "gwei"),
+    maxFeePerGas: parseUnits("1000", "gwei"),
+  },
   88888: {
     gasPrice: parseUnits("10", "gwei"),
   },

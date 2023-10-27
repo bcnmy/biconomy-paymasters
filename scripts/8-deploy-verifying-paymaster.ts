@@ -20,12 +20,12 @@ import { isAddress } from "ethers/lib/utils";
 const provider = ethers.provider;
 
 // Custom Entrypoint
-// const entryPointAddress = "0x00000061FEfce24A79343c27127435286BB7A4E1";
+const entryPointAddress = "0x00000061FEfce24A79343c27127435286BB7A4E1";
 
 // Standard Entrypoint
-const entryPointAddress =
-  process.env.ENTRY_POINT_ADDRESS ||
-  "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
+// const entryPointAddress =
+//   process.env.ENTRY_POINT_ADDRESS ||
+//   "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
 
 const DEPLOYMENT_MODE = (process.env.DEPLOYMENT_MODE || "dev") as
   | "dev"
@@ -173,6 +173,8 @@ async function deployVerifyingPaymasterContract(
       console.log("Paymaster Transfer Ownership Transaction Hash: ", hash);
       await wait();
     }
+
+    return computedAddress;
   } catch (err) {
     console.log(err);
   }
