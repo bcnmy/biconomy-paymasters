@@ -1,8 +1,12 @@
 hardhat.config.ts
 scripts
 test
+out
 artifacts
+artifacts-filtered
 typechain
+typechain-types
+typings
 cache
 coverage
 .env
@@ -12,8 +16,14 @@ coverage
 .eslint*
 .prettierrc
 .prettierignore
+.github/
 walletUtils.*
 coverage.json
 arguments.js
 typings/
 account-abstraction
+DerivedPriceFeedFlat.sol
+lib/forge-std/
+.husky/pre-commit
+.gitmodules
+.gas-snapshot

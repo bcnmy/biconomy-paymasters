@@ -3,14 +3,18 @@ node_modules
 .secret
 coverage
 coverage.json
-typechain
 out/
 cache/
+types/
+dist/
 forge-cache/
 typechain-types
+typechain
+typings
 
 #Hardhat files
 cache
 artifacts
+artifacts-filtered
 account-abstraction
 
