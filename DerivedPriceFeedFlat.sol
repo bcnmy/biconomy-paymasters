@@ -49,9 +49,9 @@ error OracleAddressCannotBeZero();
 
 contract DerivedPriceFeed {
     // price is native-per-dollar
-    AggregatorV3Interface internal nativeOracle;
+    AggregatorV3Interface public immutable nativeOracle;
     // price is tokens-per-dollar
-    AggregatorV3Interface internal tokenOracle;
+    AggregatorV3Interface public immutable tokenOracle;
 
     string internal DESCRIPTION;
 
