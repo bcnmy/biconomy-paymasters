@@ -11,10 +11,11 @@ import {
   VerifyingSingletonPaymasterV2,
   VerifyingSingletonPaymasterV2__factory,
 } from "../../typechain-types";
-import { fillAndSign } from "../../account-abstraction/test/UserOp";
-import { UserOperation } from "../../account-abstraction/test/UserOperation";
-import { createAccount, simulationResultCatch } from "../../account-abstraction/test/testutils";
-import { EntryPoint, EntryPoint__factory, SimpleAccount, TestToken, TestToken__factory } from "../../account-abstraction/typechain";
+import { fillAndSign } from "../utils/userOp";
+import { UserOperation } from "../../lib/account-abstraction/test/UserOperation";
+import { createAccount, simulationResultCatch } from "../../lib/account-abstraction/test/testutils";
+import { EntryPoint, EntryPoint__factory, SimpleAccount, TestToken, TestToken__factory } from "../../lib/account-abstraction/typechain";
+import { EcdsaOwnershipRegistryModule, EcdsaOwnershipRegistryModule__factory } from "@biconomy-devx/account-contracts-v2/dist/types";
 
 export const AddressZero = ethers.constants.AddressZero;
 import { arrayify, hexConcat, parseEther } from "ethers/lib/utils";
@@ -43,6 +44,7 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
 
   let verifyingSingletonPaymaster: VerifyingSingletonPaymasterV2;
   let smartWalletImp: BiconomyAccountImplementation;
+  let ecdsaModule: EcdsaOwnershipRegistryModule;
   let walletFactory: BiconomyAccountFactory;
   const abi = ethers.utils.defaultAbiCoder;
 
@@ -59,6 +61,8 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
     const offchainSignerAddress = await offchainSigner.getAddress();
     const walletOwnerAddress = await walletOwner.getAddress();
 
+    ecdsaModule = await new EcdsaOwnershipRegistryModule__factory(deployer).deploy();
+
     verifyingSingletonPaymaster =
       await new VerifyingSingletonPaymasterV2__factory(deployer).deploy(
         await deployer.getAddress(),
@@ -72,13 +76,25 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
     );
 
     walletFactory = await new BiconomyAccountFactory__factory(deployer).deploy(
-      smartWalletImp.address
+      smartWalletImp.address,
+      walletOwnerAddress
     );
 
-    await walletFactory.deployCounterFactualAccount(walletOwnerAddress, 0);
+    await walletFactory.connect(deployer).addStake(entryPoint.address, 86400, { value: parseEther("2") })
+
+    const ecdsaOwnershipSetupData =
+    ecdsaModule.interface.encodeFunctionData(
+      "initForSmartAccount",
+      [walletOwnerAddress]
+    );
+
+    const smartAccountDeploymentIndex = 0;
+
+
+    await walletFactory.deployCounterFactualAccount(ecdsaModule.address, ecdsaOwnershipSetupData, smartAccountDeploymentIndex
+      );
     const expected = await walletFactory.getAddressForCounterFactualAccount(
-      walletOwnerAddress,
-      0
+      ecdsaModule.address, ecdsaOwnershipSetupData, smartAccountDeploymentIndex
     );
 
     walletAddress = expected;
@@ -157,7 +173,7 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
         expect(res.validAfter).to.equal(ethers.BigNumber.from(MOCK_VALID_AFTER));
         expect(res.priceMarkup).to.equal(dynamicMarkup);
         expect(res.signature).to.equal("0x" + "00".repeat(65));
-      });
+    });
 
     it("Should Fail when there is no deposit for paymaster id", async () => {
       const paymasterId = await depositorSigner.getAddress();
@@ -220,6 +236,14 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
         entryPoint,
         "nonce"
       );
+
+      const signatureWithModuleAddress = ethers.utils.defaultAbiCoder.encode(
+        ["bytes", "address"],
+        [userOp.signature, ecdsaModule.address]
+      );
+      userOp.signature = signatureWithModuleAddress
+
+
       await entryPoint.handleOps([userOp], await offchainSigner.getAddress());
       await expect(
         entryPoint.handleOps([userOp], await offchainSigner.getAddress())
