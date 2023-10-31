@@ -22,8 +22,8 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 import {MockToken} from "../contracts/test/helpers/MockToken.sol";
 import {MockPriceFeed} from "../contracts/test/helpers/MockPriceFeed.sol";
-import {BiconomyAccountImplementation} from "../contracts/test/wallets/BiconomyAccountImpl.sol";
-import {BiconomyAccountFactory} from "../contracts/test/wallets/BiconomyAccountFactory.sol";
+import {BiconomyAccountImplementation} from "../contracts/test/accounts/BiconomyAccountImpl.sol";
+import {BiconomyAccountFactory} from "../contracts/test/accounts/BiconomyAccountFactory.sol";
 import {FeedInterface} from "../contracts/token/oracles/FeedInterface.sol";
 
 error SetupIncomplete();
@@ -40,10 +40,13 @@ contract TokenPaymasterTest is Test {
     address internal bob; // verifyingSigner
     address internal charlie; // wallet owner
     address payable beneficiary;
+    address payable factoryStakeManager;
+    address basicImplementationAddress;
     address internal unauthorized;
 
     uint256 internal keyUser;
     uint256 internal keyVerifyingSigner;
+
 
     ChainlinkOracleAggregator public _oa1;
     BiconomyTokenPaymaster public _btpm;
@@ -82,7 +85,9 @@ contract TokenPaymasterTest is Test {
         console2.log(priceToLog);
 
         smartAccount = new BiconomyAccountImplementation(_ep);
-        smartAccountFactory = new BiconomyAccountFactory(address(smartAccount), users[4]);
+        basicImplementationAddress = address(smartAccount);
+        factoryStakeManager = users[4];
+        smartAccountFactory = new BiconomyAccountFactory(basicImplementationAddress, factoryStakeManager);
 
         address accountAddress = smartAccountFactory.deployCounterFactualAccount(charlie, 0);
         console2.log(" smart account address ", accountAddress);
