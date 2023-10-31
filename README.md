@@ -28,12 +28,14 @@ git submodule update --init (This command will initialize and fetch the submodul
 
 git submodule update --remote (This will update the submodules to the latest commit in their respective repositories.)
 
+you can also alternatively run forge install (or forge install <repo_url>)
+
 If you encounter any issues during the submodule update process, you can try deleting the submodules directory and then running the git submodule update --init command again.
 
 #### If you face below error, make sure typechain artifacts are generated in account-abstraction folder. ####
 Error: Cannot find module '../typechain'
 
-cd account-abstraction
+cd lib/account-abstraction
 yarn
 npx hardhat compile
 
@@ -70,13 +72,13 @@ To try out Etherscan verification, you first need to deploy a contract to an Eth
 In this project, copy the .env.example file to a file named .env, and then edit it to fill in the details. Enter your Etherscan API key, your Ropsten node URL (eg from Alchemy), and the private key of the account which will send the deployment transaction. With a valid .env file in place, first deploy your contract:
 
 ```shell
-hardhat run --network ropsten scripts/deploy.ts
+hardhat run --network polygon_mumbai scripts/deploy.ts
 ```
 
 Then, copy the deployment address and paste it in to replace `DEPLOYED_CONTRACT_ADDRESS` in this command:
 
 ```shell
-npx hardhat verify --network ropsten DEPLOYED_CONTRACT_ADDRESS "Hello, Hardhat!"
+npx hardhat verify --network polygon_mumbai DEPLOYED_CONTRACT_ADDRESS "Hello, Hardhat!"
 ```
 
 # Performance optimizations

@@ -1,6 +1,9 @@
-[submodule "account-abstraction"]
-	path = account-abstraction
+[submodule "lib/account-abstraction"]
+	path = lib/account-abstraction
 	url = https://github.com/eth-infinitism/account-abstraction
 [submodule "lib/forge-std"]
 	path = lib/forge-std
 	url = https://github.com/foundry-rs/forge-std
+[submodule "lib/scw-contracts"]
+	path = lib/scw-contracts
+	url = https://github.com/bcnmy/scw-contracts

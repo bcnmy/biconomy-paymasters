@@ -2,7 +2,7 @@ import { providers, BigNumberish, utils, BigNumber } from "ethers";
 import axios, { AxiosInstance } from "axios";
 import { ethers, config } from "hardhat";
 import type { HttpNetworkConfig } from "hardhat/types";
-import { UserOperation } from "../../../account-abstraction/test/UserOperation";
+import { UserOperation } from "../../../lib/account-abstraction/test/UserOperation";
 import { hexValue } from "ethers/lib/utils";
 
 export type Snapshot = {
