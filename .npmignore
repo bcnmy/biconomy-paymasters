@@ -22,6 +22,7 @@ coverage.json
 arguments.js
 typings/
 account-abstraction
+scw-contracts
 DerivedPriceFeedFlat.sol
 lib/forge-std/
 .husky/pre-commit

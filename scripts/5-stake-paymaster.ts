@@ -3,7 +3,7 @@ import { DEPLOYMENT_SALTS, isContract } from "./utils";
 import { Deployer, Deployer__factory } from "../typechain-types";
 import { TokenPaymaster__factory } from "@account-abstraction/contracts";
 import { BigNumber } from "ethers";
-import { EntryPoint__factory } from "../account-abstraction/typechain";
+import { EntryPoint__factory } from "../lib/account-abstraction/typechain";
 import { formatEther, parseEther } from "ethers/lib/utils";
 
 const provider = ethers.provider;

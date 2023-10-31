@@ -22,13 +22,15 @@ import {
   MockToken,
   MockChainlinkOracleAggregator,
 } from "../../../typechain-types";
+import { EcdsaOwnershipRegistryModule, EcdsaOwnershipRegistryModule__factory } from "@biconomy-devx/account-contracts-v2/dist/types";
 
-import { fillAndSign } from "../../../account-abstraction/test/UserOp";
+// Review: Could import from scw-contracts submodules to be consistent
+import { fillAndSign } from "../../utils/userOp";
 import {
   EntryPoint,
   EntryPoint__factory,
   TestToken,
-} from "../../../account-abstraction/typechain";
+} from "../../../lib/account-abstraction/typechain";
 
 export const AddressZero = ethers.constants.AddressZero;
 import { arrayify, parseEther } from "ethers/lib/utils";
@@ -74,7 +76,7 @@ export const encodeERC20Approval = (
   spender: string,
   amount: BigNumber
 ) => {
-  return account.interface.encodeFunctionData("executeCall", [
+  return account.interface.encodeFunctionData("execute_ncC", [
     token.address,
     0,
     token.interface.encodeFunctionData("approve", [spender, amount]),
@@ -94,7 +96,9 @@ describe("Biconomy Token Paymaster (With Bundler)", function () {
   let oracleAggregator: ChainlinkOracleAggregator;
   let staleOracleAggregator: MockChainlinkOracleAggregator;
 
+  // Could also use published package or added submodule (for Account Implementation and Factory)
   let smartWalletImp: BiconomyAccountImplementation;
+  let ecdsaModule: EcdsaOwnershipRegistryModule;
   let walletFactory: BiconomyAccountFactory;
 
   let environment: BundlerTestEnvironment;
@@ -126,6 +130,8 @@ describe("Biconomy Token Paymaster (With Bundler)", function () {
     staleOracleAggregator = await new MockChainlinkOracleAggregator__factory(
       deployer
     ).deploy(walletOwnerAddress);
+
+    ecdsaModule = await new EcdsaOwnershipRegistryModule__factory(deployer).deploy();
 
     const MockToken = await ethers.getContractFactory("MockToken");
     token = await MockToken.deploy();
@@ -188,14 +194,24 @@ describe("Biconomy Token Paymaster (With Bundler)", function () {
     ).deploy(entryPoint.address);
 
     walletFactory = await new BiconomyAccountFactory__factory(deployer).deploy(
-      smartWalletImp.address
+      smartWalletImp.address,
+      walletOwnerAddress
     );
 
-    await walletFactory.deployCounterFactualAccount(walletOwnerAddress, 0);
+    await walletFactory.connect(deployer).addStake(entryPoint.address, 86400, { value: parseEther("2") })
+
+    const ecdsaOwnershipSetupData =
+    ecdsaModule.interface.encodeFunctionData(
+      "initForSmartAccount",
+      [walletOwnerAddress]
+    );
+
+    const smartAccountDeploymentIndex = 0;
+
+    await walletFactory.deployCounterFactualAccount(ecdsaModule.address, ecdsaOwnershipSetupData, smartAccountDeploymentIndex);
 
     const expected = await walletFactory.getAddressForCounterFactualAccount(
-      walletOwnerAddress,
-      0
+      ecdsaModule.address, ecdsaOwnershipSetupData, smartAccountDeploymentIndex
     );
 
     await token.mint(walletOwnerAddress, ethers.utils.parseEther("1000000"));
@@ -203,10 +219,6 @@ describe("Biconomy Token Paymaster (With Bundler)", function () {
     walletAddress = expected;
 
     paymasterAddress = sampleTokenPaymaster.address;
-
-    await sampleTokenPaymaster
-      .connect(deployer)
-      .addStake(1, { value: parseEther("2") });
 
     await entryPoint.depositTo(paymasterAddress, { value: parseEther("2") });
 
@@ -242,9 +254,16 @@ describe("Biconomy Token Paymaster (With Bundler)", function () {
       const AccountFactory = await ethers.getContractFactory(
         "SmartAccountFactory"
       );
+      const ecdsaOwnershipSetupData = ecdsaModule.interface.encodeFunctionData(
+        "initForSmartAccount",
+        [owner]
+      );
+  
+      const smartAccountDeploymentIndex = 0;
+  
       const deploymentData = AccountFactory.interface.encodeFunctionData(
-        "deployCounterFactualAccount",
-        [owner, 0]
+          "deployCounterFactualAccount",
+          [ecdsaModule.address, ecdsaOwnershipSetupData, smartAccountDeploymentIndex]
       );
 
       const userOp1 = await fillAndSign(
@@ -294,6 +313,13 @@ describe("Biconomy Token Paymaster (With Bundler)", function () {
         entryPoint,
         "nonce"
       );
+
+      const signatureWithModuleAddress = ethers.utils.defaultAbiCoder.encode(
+        ["bytes", "address"],
+        [userOp.signature, ecdsaModule.address]
+      );
+
+      userOp.signature = signatureWithModuleAddress
 
       const { result: userOpHash } = await environment.sendUserOperation(
         userOp,
@@ -347,9 +373,16 @@ describe("Biconomy Token Paymaster (With Bundler)", function () {
       const AccountFactory = await ethers.getContractFactory(
         "SmartAccountFactory"
       );
+      const ecdsaOwnershipSetupData = ecdsaModule.interface.encodeFunctionData(
+        "initForSmartAccount",
+        [owner]
+      );
+  
+      const smartAccountDeploymentIndex = 0;
+  
       const deploymentData = AccountFactory.interface.encodeFunctionData(
-        "deployCounterFactualAccount",
-        [owner, 0]
+          "deployCounterFactualAccount",
+          [ecdsaModule.address, ecdsaOwnershipSetupData, smartAccountDeploymentIndex]
       );
 
       const userOp1 = await fillAndSign(
@@ -400,6 +433,13 @@ describe("Biconomy Token Paymaster (With Bundler)", function () {
         "nonce"
       );
 
+      const signatureWithModuleAddress = ethers.utils.defaultAbiCoder.encode(
+        ["bytes", "address"],
+        [userOp.signature, ecdsaModule.address]
+      );
+
+      userOp.signature = signatureWithModuleAddress
+
       const { result: userOpHash } = await environment.sendUserOperation(
         userOp,
         entryPoint.address
@@ -448,9 +488,16 @@ describe("Biconomy Token Paymaster (With Bundler)", function () {
       const AccountFactory = await ethers.getContractFactory(
         "SmartAccountFactory"
       );
+      const ecdsaOwnershipSetupData = ecdsaModule.interface.encodeFunctionData(
+        "initForSmartAccount",
+        [owner]
+      );
+  
+      const smartAccountDeploymentIndex = 0;
+  
       const deploymentData = AccountFactory.interface.encodeFunctionData(
-        "deployCounterFactualAccount",
-        [owner, 0]
+          "deployCounterFactualAccount",
+          [ecdsaModule.address, ecdsaOwnershipSetupData, smartAccountDeploymentIndex]
       );
 
       const userOp1 = await fillAndSign(
@@ -500,6 +547,13 @@ describe("Biconomy Token Paymaster (With Bundler)", function () {
         entryPoint,
         "nonce"
       );
+
+      const signatureWithModuleAddress = ethers.utils.defaultAbiCoder.encode(
+        ["bytes", "address"],
+        [userOp.signature, ecdsaModule.address]
+      );
+
+      userOp.signature = signatureWithModuleAddress
 
       const { result: userOpHash } = await environment.sendUserOperation(
         userOp,
