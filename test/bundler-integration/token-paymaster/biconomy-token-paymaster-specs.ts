@@ -24,7 +24,7 @@ import {
   EntryPoint,
   EntryPoint__factory,
   TestToken,
-} from "../../../account-abstraction/typechain";
+} from "../../../lib/account-abstraction/typechain";
 import { EcdsaOwnershipRegistryModule, EcdsaOwnershipRegistryModule__factory } from "@biconomy-devx/account-contracts-v2/dist/types";
 
 export const AddressZero = ethers.constants.AddressZero;

@@ -20,10 +20,10 @@ import {
 } from "../../typechain-types";
 
 
-import { fillAndSign } from "../../account-abstraction/test/UserOp";
-import { UserOperation } from "../../account-abstraction/test/UserOperation";
-import { createAccount, simulationResultCatch } from "../../account-abstraction/test/testutils";
-import { EntryPoint, EntryPoint__factory, SimpleAccount, TestToken, TestToken__factory } from "../../account-abstraction/typechain";
+import { fillAndSign } from "../../lib/account-abstraction/test/UserOp";
+import { UserOperation } from "../../lib/account-abstraction/test/UserOperation";
+import { createAccount, simulationResultCatch } from "../../lib/account-abstraction/test/testutils";
+import { EntryPoint, EntryPoint__factory, SimpleAccount, TestToken, TestToken__factory } from "../../lib/account-abstraction/typechain";
 
 export const AddressZero = ethers.constants.AddressZero;
 import { arrayify, hexConcat, parseEther } from "ethers/lib/utils";

@@ -30,7 +30,7 @@ import {
   EntryPoint,
   EntryPoint__factory,
   TestToken,
-} from "../../../account-abstraction/typechain";
+} from "../../../lib/account-abstraction/typechain";
 
 export const AddressZero = ethers.constants.AddressZero;
 import { arrayify, parseEther } from "ethers/lib/utils";
