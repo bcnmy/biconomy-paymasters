@@ -33,7 +33,7 @@ interface IVerifyingSingletonPaymaster {
         address paymasterId
     ) external view returns (uint256 balance);
 
-    function setSigner(address _newVerifyingSigner) external;
+    function setSigner(address _newVerifyingSigner) external payable;
 
-    function setUnaccountedEPGasOverhead(uint256 value) external;
+    function setUnaccountedEPGasOverhead(uint256 value) external payable;
 }

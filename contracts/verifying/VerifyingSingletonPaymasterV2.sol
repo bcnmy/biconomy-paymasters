@@ -112,7 +112,9 @@ contract VerifyingSingletonPaymasterV2 is
      * @notice If _newVerifyingSigner is set to zero address, it will revert with an error.
      * After setting the new signer address, it will emit an event VerifyingSignerChanged.
      */
-    function setSigner(address _newVerifyingSigner) external payable onlyOwner {
+    function setSigner(
+        address _newVerifyingSigner
+    ) external payable override onlyOwner {
         if (_newVerifyingSigner == address(0))
             revert VerifyingSignerCannotBeZero();
         address oldSigner = verifyingSigner;
@@ -122,13 +124,15 @@ contract VerifyingSingletonPaymasterV2 is
         emit VerifyingSignerChanged(oldSigner, _newVerifyingSigner, msg.sender);
     }
 
-    function setUnaccountedEPGasOverhead(uint256 value) external onlyOwner {
+    function setUnaccountedEPGasOverhead(
+        uint256 value
+    ) external payable onlyOwner {
         uint256 oldValue = unaccountedEPGasOverhead;
         unaccountedEPGasOverhead = value;
         emit EPGasOverheadChanged(oldValue, value);
     }
 
-    function setFixedPriceMarkup(uint32 _markup) external onlyOwner {
+    function setFixedPriceMarkup(uint32 _markup) external payable onlyOwner {
         require(_markup <= PRICE_DENOMINATOR * 2, "markup too high");
         uint32 oldValue = fixedPriceMarkup;
         fixedPriceMarkup = _markup;
