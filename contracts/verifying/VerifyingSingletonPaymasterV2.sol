@@ -8,18 +8,19 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.
 import {UserOperation, UserOperationLib} from "@account-abstraction/contracts/interfaces/UserOperation.sol";
 import "../BasePaymaster.sol";
 import {VerifyingPaymasterErrors} from "../common/Errors.sol";
+import {IVerifyingSingletonPaymaster} from "../interfaces/paymasters/IVerifyingSingletonPaymaster.sol";
 
 contract VerifyingSingletonPaymasterV2 is
     BasePaymaster,
     ReentrancyGuard,
-    VerifyingPaymasterErrors
+    VerifyingPaymasterErrors,
+    IVerifyingSingletonPaymaster
 {
     using ECDSA for bytes32;
     using UserOperationLib for UserOperation;
 
     uint32 private constant PRICE_DENOMINATOR = 1e6;
 
-    // Review if we only wanna encode until signature and have signature offset
     // paymasterAndData: concat of [paymasterAddress(address), abi.encode(paymasterId, validUntil, validAfter, priceMarkup): makes up 32*4 bytes, signature]
     uint256 private constant VALID_PND_OFFSET = 20;
 
@@ -27,40 +28,14 @@ contract VerifyingSingletonPaymasterV2 is
 
     // Gas used in EntryPoint._handlePostOp() method (including this#postOp() call)
     uint256 private unaccountedEPGasOverhead;
+
     mapping(address => uint256) public paymasterIdBalances;
 
     address public verifyingSigner;
 
     uint32 public fixedPriceMarkup; // immutable? constant? 1.1e6
 
-    event EPGasOverheadChanged(
-        uint256 indexed _oldValue,
-        uint256 indexed _newValue
-    );
-
-    event FixedPriceMarkupChanged(
-        uint32 indexed _oldValue,
-        uint32 indexed _newValue
-    );
-
-    event VerifyingSignerChanged(
-        address indexed _oldSigner,
-        address indexed _newSigner,
-        address indexed _actor
-    );
-    event GasDeposited(address indexed _paymasterId, uint256 indexed _value);
-    event GasWithdrawn(
-        address indexed _paymasterId,
-        address indexed _to,
-        uint256 indexed _value
-    );
-    event GasBalanceDeducted(
-        address indexed _paymasterId,
-        uint256 indexed _charge
-    );
-    event FeeCollected(uint256 indexed _premium);
-
-    // Review if fixed markup is needed in constructor (can init with value or make constant)
+    // Review if fixed markup is needed in constructor (can init with value or make constant(and remove setter))
     constructor(
         address _owner,
         IEntryPoint _entryPoint,
@@ -235,8 +210,6 @@ contract VerifyingSingletonPaymasterV2 is
      * @return context A context string returned by the entry point after successful validation.
      * @return validationData An integer returned by the entry point after successful validation.
      */
-    // Review : could add dynamic price markup as part of paymasterAndData
-    // Then this min(dynamicMarkup, fixedPriceMarkup) could be used
     function _validatePaymasterUserOp(
         UserOperation calldata userOp,
         bytes32 userOpHash,
