@@ -196,10 +196,7 @@ describe("Biconomy Token Paymaster", function () {
       .addStake(86400, { value: parseEther("2") });
     console.log("paymaster staked"); */
 
-    await entryPoint.depositTo(paymasterAddress, { value: parseEther("2") });
-
-    // const resultSet = await entryPoint.getDepositInfo(paymasterAddress);
-    // console.log("deposited state ", resultSet);
+    await entryPoint.depositTo(paymasterAddress, { value: parseEther("2") });    
   });
 
   describe("Token Payamster read methods and state checks", () => {

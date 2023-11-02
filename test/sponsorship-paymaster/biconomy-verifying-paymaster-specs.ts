@@ -110,9 +110,6 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
     console.log("paymaster staked");
 
     await entryPoint.depositTo(paymasterAddress, { value: parseEther("1") });
-
-    // const resultSet = await entryPoint.getDepositInfo(paymasterAddress);
-    // console.log("deposited state ", resultSet);
   });
 
   async function getUserOpWithPaymasterInfo(paymasterId: string) {

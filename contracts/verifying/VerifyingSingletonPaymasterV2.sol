@@ -248,15 +248,9 @@ contract VerifyingSingletonPaymasterV2 is
             return (context, _packValidationData(true, validUntil, validAfter));
         }
 
-        require(
-            priceMarkup <= 2e6,
-            "Verifying PM: price markup percentage too high"
-        );
+        require(priceMarkup <= 2e6, "Verifying PM:high markup %");
         // Review if below is needed (as paymaster service may pass 0 if dynamic pricing doesn't apply)
-        require(
-            priceMarkup >= 1e6,
-            "Verifying PM: price markup percentage too low"
-        );
+        require(priceMarkup >= 1e6, "Verifying PM:low markup %");
 
         // Review: may not be needed at all
         address account = userOp.getSender();
@@ -264,12 +258,12 @@ contract VerifyingSingletonPaymasterV2 is
         // Review max or min
         uint32 dynamicMarkup = maxuint32(priceMarkup, fixedPriceMarkup);
 
-        if (
-            (requiredPreFund * dynamicMarkup) / PRICE_DENOMINATOR >
-            paymasterIdBalances[paymasterId]
-        )
+        uint256 effectiveCost = (requiredPreFund * dynamicMarkup) /
+            PRICE_DENOMINATOR;
+
+        if (effectiveCost > paymasterIdBalances[paymasterId])
             revert InsufficientBalance(
-                (requiredPreFund * dynamicMarkup) / PRICE_DENOMINATOR,
+                effectiveCost,
                 paymasterIdBalances[paymasterId]
             );
 
@@ -342,22 +336,23 @@ contract VerifyingSingletonPaymasterV2 is
             unaccountedEPGasOverhead *
             effectiveGasPrice;
 
+        uint256 costIncludingPremium = (balToDeduct * dynamicMarkup) /
+            PRICE_DENOMINATOR;
+
         // deduct with premium
         paymasterIdBalances[paymasterId] =
             paymasterIdBalances[paymasterId] -
-            ((balToDeduct * dynamicMarkup) / PRICE_DENOMINATOR);
+            costIncludingPremium;
+
+        uint256 actualPremium = (balToDeduct * (dynamicMarkup - 1e6)) /
+            PRICE_DENOMINATOR;
 
         // "collect" premium
         paymasterIdBalances[owner()] =
             paymasterIdBalances[owner()] +
-            ((balToDeduct * (dynamicMarkup - 1e6)) / PRICE_DENOMINATOR);
+            actualPremium;
 
-        emit GasBalanceDeducted(
-            paymasterId,
-            (balToDeduct * dynamicMarkup) / PRICE_DENOMINATOR
-        );
-        emit FeeCollected(
-            (balToDeduct * (dynamicMarkup - 1e6)) / PRICE_DENOMINATOR
-        );
+        emit GasBalanceDeducted(paymasterId, costIncludingPremium);
+        emit FeeCollected(actualPremium);
     }
 }
