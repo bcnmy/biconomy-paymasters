@@ -112,7 +112,7 @@ contract TokenPaymasterTest is Test {
         smartAccountFactory = ISmartAccountFactory(
             deployCode(
                 "BiconomyAccountFactory.sol:BiconomyAccountFactory",
-                abi.encode(smartAccount)
+                abi.encode(smartAccount, users[4])
             )
         );
 

@@ -24,11 +24,12 @@ import {
 } from "../../typechain-types";
 
 
-
-import { fillAndSign } from "../../account-abstraction/test/UserOp";
-import { UserOperation } from "../../account-abstraction/test/UserOperation";
-import { createAccount, simulationResultCatch } from "../../account-abstraction/test/testutils";
-import { EntryPoint, EntryPoint__factory, SimpleAccount, TestToken, TestToken__factory } from "../../account-abstraction/typechain";
+// Review: Could import from scw-contracts submodules to be consistent
+import { fillAndSign } from "../utils/userOp";
+import { UserOperation } from "../../lib/account-abstraction/test/UserOperation";
+import { createAccount, simulationResultCatch } from "../../lib/account-abstraction/test/testutils";
+import { EntryPoint, EntryPoint__factory, SimpleAccount, TestToken, TestToken__factory } from "../../lib/account-abstraction/typechain";
+import { EcdsaOwnershipRegistryModule, EcdsaOwnershipRegistryModule__factory } from "@biconomy-devx/account-contracts-v2/dist/types";
 
 export const AddressZero = ethers.constants.AddressZero;
 import { arrayify, hexConcat, parseEther } from "ethers/lib/utils";
@@ -78,7 +79,7 @@ export const encodeERC20Approval = (
   spender: string,
   amount: BigNumber
 ) => {
-  return account.interface.encodeFunctionData("executeCall", [
+  return account.interface.encodeFunctionData("execute_ncC", [
     token.address,
     0,
     token.interface.encodeFunctionData("approve", [spender, amount]),
@@ -102,8 +103,9 @@ describe("Biconomy Token Paymaster", function () {
   let oracleAggregator: ChainlinkOracleAggregator;
   let staleOracleAggregator: MockChainlinkOracleAggregator;
   let staleMockPriceFeed: MockStalePriceFeed;
-
+  let ecdsaModule: EcdsaOwnershipRegistryModule;
   let smartWalletImp: BiconomyAccountImplementation;
+
   let walletFactory: BiconomyAccountFactory;
   const abi = ethers.utils.defaultAbiCoder;
 
@@ -121,6 +123,7 @@ describe("Biconomy Token Paymaster", function () {
     const walletOwnerAddress = await walletOwner.getAddress();
 
     oracleAggregator = await new ChainlinkOracleAggregator__factory(deployer).deploy(walletOwnerAddress);
+    ecdsaModule = await new EcdsaOwnershipRegistryModule__factory(deployer).deploy();
     staleOracleAggregator = await new MockChainlinkOracleAggregator__factory(deployer).deploy(walletOwnerAddress);
 
     const MockToken = await ethers.getContractFactory("MockToken");
@@ -187,14 +190,24 @@ describe("Biconomy Token Paymaster", function () {
     );
 
     walletFactory = await new BiconomyAccountFactory__factory(deployer).deploy(
-      smartWalletImp.address
+      smartWalletImp.address,
+      walletOwnerAddress
     );
 
-    await walletFactory.deployCounterFactualAccount(walletOwnerAddress, 0);
+    await walletFactory.connect(deployer).addStake(entryPoint.address, 86400, { value: parseEther("2") })
+
+    const ecdsaOwnershipSetupData =
+    ecdsaModule.interface.encodeFunctionData(
+      "initForSmartAccount",
+      [walletOwnerAddress]
+    );
+
+    const smartAccountDeploymentIndex = 0;
+
+    await walletFactory.deployCounterFactualAccount(ecdsaModule.address, ecdsaOwnershipSetupData, smartAccountDeploymentIndex);
 
     const expected = await walletFactory.getAddressForCounterFactualAccount(
-      walletOwnerAddress,
-      0
+      ecdsaModule.address, ecdsaOwnershipSetupData, smartAccountDeploymentIndex
     );
 
     console.log("mint tokens to owner address..");
@@ -208,7 +221,7 @@ describe("Biconomy Token Paymaster", function () {
 
     await sampleTokenPaymaster
       .connect(deployer)
-      .addStake(1, { value: parseEther("2") });
+      .addStake(86400, { value: parseEther("2") });
     console.log("paymaster staked");
 
     await entryPoint.depositTo(paymasterAddress, { value: parseEther("2") });
@@ -239,9 +252,16 @@ describe("Biconomy Token Paymaster", function () {
       const AccountFactory = await ethers.getContractFactory(
         "SmartAccountFactory"
       );
+      const ecdsaOwnershipSetupData = ecdsaModule.interface.encodeFunctionData(
+        "initForSmartAccount",
+        [owner]
+      );
+  
+      const smartAccountDeploymentIndex = 0;
+  
       const deploymentData = AccountFactory.interface.encodeFunctionData(
-        "deployCounterFactualAccount",
-        [owner, 0]
+          "deployCounterFactualAccount",
+          [ecdsaModule.address, ecdsaOwnershipSetupData, smartAccountDeploymentIndex]
       );
 
       const userOp1 = await fillAndSign(
@@ -288,6 +308,13 @@ describe("Biconomy Token Paymaster", function () {
         "nonce"
       );
 
+      const signatureWithModuleAddress = ethers.utils.defaultAbiCoder.encode(
+        ["bytes", "address"],
+        [userOp.signature, ecdsaModule.address]
+      );
+
+      userOp.signature = signatureWithModuleAddress
+
       const tx = await entryPoint.handleOps(
         [userOp],
         await offchainSigner.getAddress()
@@ -315,7 +342,7 @@ describe("Biconomy Token Paymaster", function () {
       ).to.be.reverted;
     });
 
-    it("succeed with exchange rate based on prcie feed in case everything goes well", async () => {
+    it("succeed with exchange rate based on price feed in case everything goes well", async () => {
       const userSCW: any = BiconomyAccountImplementation__factory.connect(walletAddress, deployer)
 
       const rate1 = await oracleAggregator.getTokenValueOfOneNativeToken(token.address);
@@ -329,9 +356,16 @@ describe("Biconomy Token Paymaster", function () {
       const AccountFactory = await ethers.getContractFactory(
         "SmartAccountFactory"
       );
+      const ecdsaOwnershipSetupData = ecdsaModule.interface.encodeFunctionData(
+        "initForSmartAccount",
+        [owner]
+      );
+  
+      const smartAccountDeploymentIndex = 0;
+  
       const deploymentData = AccountFactory.interface.encodeFunctionData(
-        "deployCounterFactualAccount",
-        [owner, 0]
+          "deployCounterFactualAccount",
+          [ecdsaModule.address, ecdsaOwnershipSetupData, smartAccountDeploymentIndex]
       );
 
       const userOp1 = await fillAndSign(
@@ -378,6 +412,13 @@ describe("Biconomy Token Paymaster", function () {
         "nonce"
       );
 
+      const signatureWithModuleAddress = ethers.utils.defaultAbiCoder.encode(
+        ["bytes", "address"],
+        [userOp.signature, ecdsaModule.address]
+      );
+
+      userOp.signature = signatureWithModuleAddress
+
       const tx = await entryPoint.handleOps(
         [userOp],
         await offchainSigner.getAddress()
@@ -416,10 +457,18 @@ describe("Biconomy Token Paymaster", function () {
       const AccountFactory = await ethers.getContractFactory(
         "SmartAccountFactory"
       );
-      const deploymentData = AccountFactory.interface.encodeFunctionData(
-        "deployCounterFactualAccount",
-        [owner, 0]
+      const ecdsaOwnershipSetupData = ecdsaModule.interface.encodeFunctionData(
+        "initForSmartAccount",
+        [owner]
       );
+  
+      const smartAccountDeploymentIndex = 0;
+  
+      const deploymentData = AccountFactory.interface.encodeFunctionData(
+          "deployCounterFactualAccount",
+          [ecdsaModule.address, ecdsaOwnershipSetupData, smartAccountDeploymentIndex]
+      );
+  
 
       const userOp1 = await fillAndSign(
         {
@@ -464,6 +513,13 @@ describe("Biconomy Token Paymaster", function () {
         entryPoint,
         "nonce"
       );
+
+      const signatureWithModuleAddress = ethers.utils.defaultAbiCoder.encode(
+        ["bytes", "address"],
+        [userOp.signature, ecdsaModule.address]
+      );
+
+      userOp.signature = signatureWithModuleAddress
 
       const tx = await entryPoint.handleOps(
         [userOp],

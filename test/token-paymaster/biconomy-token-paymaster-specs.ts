@@ -20,11 +20,12 @@ import {
 } from "../../typechain-types";
 
 
-
-import { fillAndSign } from "../../account-abstraction/test/UserOp";
-import { UserOperation } from "../../account-abstraction/test/UserOperation";
-import { createAccount, simulationResultCatch } from "../../account-abstraction/test/testutils";
-import { EntryPoint, EntryPoint__factory, SimpleAccount, TestToken, TestToken__factory } from "../../account-abstraction/typechain";
+// Review: Could import from scw-contracts submodules to be consistent and without copying files
+import { fillAndSign } from "../utils/userOp";
+import { UserOperation } from "../../lib/account-abstraction/test/UserOperation";
+import { createAccount, simulationResultCatch } from "../../lib/account-abstraction/test/testutils";
+import { EntryPoint, EntryPoint__factory, SimpleAccount, TestToken, TestToken__factory } from "../../lib/account-abstraction/typechain";
+import { EcdsaOwnershipRegistryModule, EcdsaOwnershipRegistryModule__factory } from "@biconomy-devx/account-contracts-v2/dist/types";
 
 export const AddressZero = ethers.constants.AddressZero;
 import { arrayify, hexConcat, parseEther } from "ethers/lib/utils";
@@ -74,7 +75,7 @@ export const encodeERC20Approval = (
   spender: string,
   amount: BigNumber
 ) => {
-  return account.interface.encodeFunctionData("executeCall", [
+  return account.interface.encodeFunctionData("execute_ncC", [
     token.address,
     0,
     token.interface.encodeFunctionData("approve", [spender, amount]),
@@ -97,7 +98,9 @@ describe("Biconomy Token Paymaster", function () {
   let mockPriceFeed: MockPriceFeed;
   let oracleAggregator: ChainlinkOracleAggregator;
 
+  // Note: Could also use published package or added submodule (for Account Implementation and Factory)
   let smartWalletImp: BiconomyAccountImplementation;
+  let ecdsaModule: EcdsaOwnershipRegistryModule;
   let walletFactory: BiconomyAccountFactory;
   const abi = ethers.utils.defaultAbiCoder;
 
@@ -115,6 +118,8 @@ describe("Biconomy Token Paymaster", function () {
     const walletOwnerAddress = await walletOwner.getAddress();
 
     oracleAggregator = await new ChainlinkOracleAggregator__factory(deployer).deploy(walletOwnerAddress);
+
+    ecdsaModule = await new EcdsaOwnershipRegistryModule__factory(deployer).deploy();
 
     const MockToken = await ethers.getContractFactory("MockToken");
     token = await MockToken.deploy();
@@ -159,15 +164,25 @@ describe("Biconomy Token Paymaster", function () {
       entryPoint.address
     );
 
-    walletFactory = await new BiconomyAccountFactory__factory(deployer).deploy(
-      smartWalletImp.address
+    const ecdsaOwnershipSetupData =
+    ecdsaModule.interface.encodeFunctionData(
+      "initForSmartAccount",
+      [walletOwnerAddress]
     );
 
-    await walletFactory.deployCounterFactualAccount(walletOwnerAddress, 0);
+    const smartAccountDeploymentIndex = 0;
+
+    walletFactory = await new BiconomyAccountFactory__factory(deployer).deploy(
+      smartWalletImp.address,
+      walletOwnerAddress
+    );
+
+    await walletFactory.connect(deployer).addStake(entryPoint.address, 86400, { value: parseEther("2") })
+
+    await walletFactory.deployCounterFactualAccount(ecdsaModule.address, ecdsaOwnershipSetupData, smartAccountDeploymentIndex);
 
     const expected = await walletFactory.getAddressForCounterFactualAccount(
-      walletOwnerAddress,
-      0
+      ecdsaModule.address, ecdsaOwnershipSetupData, smartAccountDeploymentIndex
     );
 
     console.log("mint tokens to owner address..");
@@ -245,9 +260,17 @@ describe("Biconomy Token Paymaster", function () {
       const AccountFactory = await ethers.getContractFactory(
         "SmartAccountFactory"
       );
+
+      const ecdsaOwnershipSetupData = ecdsaModule.interface.encodeFunctionData(
+      "initForSmartAccount",
+      [owner]
+      );
+
+      const smartAccountDeploymentIndex = 0;
+
       const deploymentData = AccountFactory.interface.encodeFunctionData(
         "deployCounterFactualAccount",
-        [owner, 0]
+        [ecdsaModule.address, ecdsaOwnershipSetupData, smartAccountDeploymentIndex]
       );
 
       const userOp1 = await fillAndSign(
@@ -293,6 +316,13 @@ describe("Biconomy Token Paymaster", function () {
         entryPoint,
         "nonce"
       );
+
+      const signatureWithModuleAddress = ethers.utils.defaultAbiCoder.encode(
+        ["bytes", "address"],
+        [userOp.signature, ecdsaModule.address]
+      );
+
+      userOp.signature = signatureWithModuleAddress
 
       const requiredPrefund = ethers.BigNumber.from(userOp.callGasLimit)
         .add(ethers.BigNumber.from(userOp.verificationGasLimit).mul(3))
@@ -385,6 +415,13 @@ describe("Biconomy Token Paymaster", function () {
         "nonce"
       );
 
+      const signatureWithModuleAddress = ethers.utils.defaultAbiCoder.encode(
+        ["bytes", "address"],
+        [userOp.signature, ecdsaModule.address]
+      );
+
+      userOp.signature = signatureWithModuleAddress
+
       await expect(entryPoint.callStatic.simulateValidation(userOp))
       .to.be.revertedWithCustomError(entryPoint, "FailedOp")
       .withArgs(0, "AA33 reverted: BTPM: invalid signature length in paymasterAndData");
@@ -412,6 +449,13 @@ describe("Biconomy Token Paymaster", function () {
         entryPoint,
         "nonce"
       );
+
+      const signatureWithModuleAddress = ethers.utils.defaultAbiCoder.encode(
+        ["bytes", "address"],
+        [userOp.signature, ecdsaModule.address]
+      );
+
+      userOp.signature = signatureWithModuleAddress
 
       await expect(entryPoint.callStatic.simulateValidation(userOp))
       .to.be.revertedWith("AA93 invalid paymasterAndData")
@@ -442,6 +486,13 @@ describe("Biconomy Token Paymaster", function () {
         entryPoint,
         "nonce"
       );
+
+      const signatureWithModuleAddress = ethers.utils.defaultAbiCoder.encode(
+        ["bytes", "address"],
+        [userOp.signature, ecdsaModule.address]
+      );
+
+      userOp.signature = signatureWithModuleAddress
 
       await expect(entryPoint.callStatic.simulateValidation(userOp))
       .to.be.revertedWithCustomError(entryPoint, "FailedOp")
@@ -475,6 +526,13 @@ describe("Biconomy Token Paymaster", function () {
         entryPoint,
         "nonce"
       );
+
+      const signatureWithModuleAddress = ethers.utils.defaultAbiCoder.encode(
+        ["bytes", "address"],
+        [userOp.signature, ecdsaModule.address]
+      );
+
+      userOp.signature = signatureWithModuleAddress
 
       await expect(entryPoint.callStatic.simulateValidation(userOp))
       .to.be.revertedWithCustomError(entryPoint, "FailedOp")
@@ -510,6 +568,13 @@ describe("Biconomy Token Paymaster", function () {
         entryPoint,
         "nonce"
       );
+
+      const signatureWithModuleAddress = ethers.utils.defaultAbiCoder.encode(
+        ["bytes", "address"],
+        [wrongUserOp.signature, ecdsaModule.address]
+      );
+
+      wrongUserOp.signature = signatureWithModuleAddress
 
       const ret = await entryPoint.callStatic.simulateValidation(wrongUserOp).catch(simulationResultCatch);
       expect(ret.returnInfo.sigFailed).to.be.true;
@@ -573,6 +638,13 @@ describe("Biconomy Token Paymaster", function () {
         entryPoint,
         "nonce"
       );
+
+    const signatureWithModuleAddress = ethers.utils.defaultAbiCoder.encode(
+        ["bytes", "address"],
+        [userOp.signature, ecdsaModule.address]
+      );
+
+    userOp.signature = signatureWithModuleAddress
 
     await entryPoint.handleOps(
         [userOp],
@@ -643,6 +715,13 @@ describe("Biconomy Token Paymaster", function () {
       );
 
     const initBalance = await token.balanceOf(paymasterAddress);
+
+    const signatureWithModuleAddress = ethers.utils.defaultAbiCoder.encode(
+      ["bytes", "address"],
+      [userOp.signature, ecdsaModule.address]
+    );
+
+    userOp.signature = signatureWithModuleAddress
 
     await expect(entryPoint.estimateGas.handleOps([userOp], await offchainSigner.getAddress()))
     .to.to.be.revertedWithCustomError(entryPoint, "FailedOp")
