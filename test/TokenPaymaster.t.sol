@@ -17,13 +17,10 @@ import {IEntryPoint} from "@account-abstraction/contracts/interfaces/IEntryPoint
 import {EntryPoint} from "@account-abstraction/contracts/core/EntryPoint.sol";
 import {UserOperation} from "@account-abstraction/contracts/interfaces/UserOperation.sol";
 import {IStakeManager} from "@account-abstraction/contracts/interfaces/IStakeManager.sol";
-// import {SmartAccount} from "@biconomy/account-contracts/contracts/smart-contract-wallet/SmartAccount.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 import {MockToken} from "../contracts/test/helpers/MockToken.sol";
 import {MockPriceFeed} from "../contracts/test/helpers/MockPriceFeed.sol";
-// import {BiconomyAccountImplementation} from "../contracts/test/wallets/BiconomyAccountImpl.sol";
-// import {BiconomyAccountFactory} from "../contracts/test/wallets/BiconomyAccountFactory.sol";
 import {FeedInterface} from "../contracts/token/oracles/FeedInterface.sol";
 
 error SetupIncomplete();
