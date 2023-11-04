@@ -29,29 +29,25 @@ contract VerifyingSingletonPaymasterV2 is
     // Gas used in EntryPoint._handlePostOp() method (including this#postOp() call)
     uint256 private unaccountedEPGasOverhead;
 
+    uint32 private fixedPriceMarkup;
+
     mapping(address => uint256) public paymasterIdBalances;
 
     address public verifyingSigner;
 
-    uint32 public fixedPriceMarkup; // immutable? constant? 1.1e6
-
-    // Review if fixed markup is needed in constructor (can init with value or make constant(and remove setter))
     constructor(
         address _owner,
         IEntryPoint _entryPoint,
-        address _verifyingSigner,
-        uint32 _fixedPriceMarkup
+        address _verifyingSigner
     ) payable BasePaymaster(_owner, _entryPoint) {
         if (address(_entryPoint) == address(0)) revert EntryPointCannotBeZero();
-        // Review // maybe <= 1300000
-        require(_fixedPriceMarkup <= PRICE_DENOMINATOR * 2, "markup too high");
         if (_verifyingSigner == address(0))
             revert VerifyingSignerCannotBeZero();
         assembly {
             sstore(verifyingSigner.slot, _verifyingSigner)
         }
         unaccountedEPGasOverhead = 12000;
-        fixedPriceMarkup = _fixedPriceMarkup;
+        fixedPriceMarkup = 1100000; // 10%
     }
 
     /**
@@ -82,7 +78,7 @@ contract VerifyingSingletonPaymasterV2 is
      @dev Override the default implementation.
      */
     function deposit() public payable virtual override {
-        revert("user DepositFor instead");
+        revert("Use depositFor() instead");
     }
 
     /**
@@ -98,9 +94,7 @@ contract VerifyingSingletonPaymasterV2 is
         uint256 currentBalance = paymasterIdBalances[msg.sender];
         if (amount > currentBalance)
             revert InsufficientBalance(amount, currentBalance);
-        paymasterIdBalances[msg.sender] =
-            paymasterIdBalances[msg.sender] -
-            amount;
+        paymasterIdBalances[msg.sender] = currentBalance - amount;
         entryPoint.withdrawTo(withdrawAddress, amount);
         emit GasWithdrawn(msg.sender, withdrawAddress, amount);
     }
@@ -133,7 +127,7 @@ contract VerifyingSingletonPaymasterV2 is
     }
 
     function setFixedPriceMarkup(uint32 _markup) external payable onlyOwner {
-        require(_markup <= PRICE_DENOMINATOR * 2, "markup too high");
+        require(_markup <= PRICE_DENOMINATOR * 2, "Markup too high");
         uint32 oldValue = fixedPriceMarkup;
         fixedPriceMarkup = _markup;
         emit FixedPriceMarkupChanged(oldValue, _markup);
@@ -159,8 +153,8 @@ contract VerifyingSingletonPaymasterV2 is
                 abi.encode(
                     userOp.getSender(),
                     userOp.nonce,
-                    keccak256(userOp.initCode),
-                    keccak256(userOp.callData),
+                    userOp.initCode,
+                    userOp.callData,
                     userOp.callGasLimit,
                     userOp.verificationGasLimit,
                     userOp.preVerificationGas,
@@ -188,21 +182,40 @@ contract VerifyingSingletonPaymasterV2 is
         return minuint256(maxFeePerGas, maxPriorityFeePerGas + block.basefee);
     }
 
-    // Review below helpers
-    function minuint256(uint256 a, uint256 b) internal pure returns (uint256) {
-        return a < b ? a : b;
+    function minuint256(
+        uint256 a,
+        uint256 b
+    ) internal pure returns (uint256 result) {
+        assembly {
+            result := xor(b, mul(xor(b, a), gt(a, b)))
+        }
     }
 
-    function maxuint256(uint256 a, uint256 b) internal pure returns (uint256) {
-        return a > b ? a : b;
+    function maxuint256(
+        uint256 a,
+        uint256 b
+    ) internal pure returns (uint256 result) {
+        assembly {
+            result := xor(a, mul(xor(a, b), gt(b, a)))
+        }
     }
 
-    function minuint32(uint32 a, uint32 b) internal pure returns (uint32) {
-        return a < b ? a : b;
+    function minuint32(
+        uint32 a,
+        uint32 b
+    ) internal pure returns (uint32 result) {
+        assembly {
+            result := xor(b, mul(xor(b, a), gt(a, b)))
+        }
     }
 
-    function maxuint32(uint32 a, uint32 b) internal pure returns (uint32) {
-        return a > b ? a : b;
+    function maxuint32(
+        uint32 a,
+        uint32 b
+    ) internal pure returns (uint32 result) {
+        assembly {
+            result := xor(a, mul(xor(a, b), gt(b, a)))
+        }
     }
 
     /**
@@ -219,7 +232,6 @@ contract VerifyingSingletonPaymasterV2 is
         bytes32 userOpHash,
         uint256 requiredPreFund
     ) internal override returns (bytes memory context, uint256 validationData) {
-        // review: in this method try to resolve stack too deep (though via-ir is good enough)
         (
             address paymasterId,
             uint48 validUntil,
@@ -235,8 +247,6 @@ contract VerifyingSingletonPaymasterV2 is
             validAfter,
             priceMarkup
         );
-        context = "";
-        // Review: var can be removed
         uint256 sigLength = signature.length;
         // we only "require" it here so that the revert reason on invalid signature will be of "VerifyingPaymaster", and not "ECDSA"
         if (sigLength != 65) revert InvalidPaymasterSignatureLength(sigLength);
@@ -249,14 +259,9 @@ contract VerifyingSingletonPaymasterV2 is
         }
 
         require(priceMarkup <= 2e6, "Verifying PM:high markup %");
-        // Review if below is needed (as paymaster service may pass 0 if dynamic pricing doesn't apply)
-        require(priceMarkup >= 1e6, "Verifying PM:low markup %");
 
-        // Review: may not be needed at all
-        address account = userOp.getSender();
-
-        // Review max or min
         uint32 dynamicMarkup = maxuint32(priceMarkup, fixedPriceMarkup);
+        require(dynamicMarkup >= 1e6, "Verifying PM:low markup %");
 
         uint256 effectiveCost = (requiredPreFund * dynamicMarkup) /
             PRICE_DENOMINATOR;
@@ -268,12 +273,10 @@ contract VerifyingSingletonPaymasterV2 is
             );
 
         context = abi.encode(
-            account,
             paymasterId,
             priceMarkup,
             userOp.maxFeePerGas,
-            userOp.maxPriorityFeePerGas,
-            userOpHash
+            userOp.maxPriorityFeePerGas
         );
 
         return (context, _packValidationData(false, validUntil, validAfter));
@@ -311,25 +314,18 @@ contract VerifyingSingletonPaymasterV2 is
         bytes calldata context,
         uint256 actualGasCost
     ) internal virtual override {
-        // Review what is needed in context
         (
-            address account,
             address paymasterId,
             uint32 priceMarkup,
             uint256 maxFeePerGas,
-            uint256 maxPriorityFeePerGas,
-            bytes32 userOpHash
-        ) = abi.decode(
-                context,
-                (address, address, uint32, uint256, uint256, bytes32)
-            );
+            uint256 maxPriorityFeePerGas
+        ) = abi.decode(context, (address, uint32, uint256, uint256));
 
         uint256 effectiveGasPrice = getGasPrice(
             maxFeePerGas,
             maxPriorityFeePerGas
         );
 
-        // Review max or min
         uint32 dynamicMarkup = maxuint32(priceMarkup, fixedPriceMarkup);
 
         uint256 balToDeduct = actualGasCost +
@@ -339,20 +335,20 @@ contract VerifyingSingletonPaymasterV2 is
         uint256 costIncludingPremium = (balToDeduct * dynamicMarkup) /
             PRICE_DENOMINATOR;
 
+        // Cache storage reads
+        uint256 paymasterBalance = paymasterIdBalances[paymasterId];
+        uint256 ownerBalance = paymasterIdBalances[owner()];
+
         // deduct with premium
         paymasterIdBalances[paymasterId] =
-            paymasterIdBalances[paymasterId] -
+            paymasterBalance -
             costIncludingPremium;
 
-        uint256 actualPremium = (balToDeduct * (dynamicMarkup - 1e6)) /
-            PRICE_DENOMINATOR;
-
+        uint256 actualPremium = costIncludingPremium - balToDeduct;
         // "collect" premium
-        paymasterIdBalances[owner()] =
-            paymasterIdBalances[owner()] +
-            actualPremium;
+        paymasterIdBalances[owner()] = ownerBalance + actualPremium;
 
         emit GasBalanceDeducted(paymasterId, costIncludingPremium);
-        emit FeeCollected(actualPremium);
+        emit PremiumCollected(paymasterId, actualPremium);
     }
 }

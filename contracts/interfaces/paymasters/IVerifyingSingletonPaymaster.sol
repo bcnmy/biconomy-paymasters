@@ -27,7 +27,10 @@ interface IVerifyingSingletonPaymaster {
         address indexed _paymasterId,
         uint256 indexed _charge
     );
-    event FeeCollected(uint256 indexed _premium);
+    event PremiumCollected(
+        address indexed _paymasterId,
+        uint256 indexed _premium
+    );
 
     /**
      * @dev Returns the current balance of the paymasterId(aka fundingId)

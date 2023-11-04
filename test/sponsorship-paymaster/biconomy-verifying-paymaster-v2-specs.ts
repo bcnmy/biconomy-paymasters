@@ -67,8 +67,7 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
       await new VerifyingSingletonPaymasterV2__factory(deployer).deploy(
         await deployer.getAddress(),
         entryPoint.address,
-        offchainSignerAddress,
-        1100000 // fixed markup
+        offchainSignerAddress
       );
 
     smartWalletImp = await new BiconomyAccountImplementation__factory(deployer).deploy(

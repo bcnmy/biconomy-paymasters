@@ -99,7 +99,7 @@ contract VerifyingSingletonPaymaster is
      @dev Override the default implementation.
      */
     function deposit() public payable virtual override {
-        revert("user DepositFor instead");
+        revert("use depositFor() instead");
     }
 
     /**
