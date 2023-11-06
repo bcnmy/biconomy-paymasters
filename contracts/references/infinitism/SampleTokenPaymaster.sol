@@ -13,6 +13,8 @@ import "./OracleHelper.sol";
 
 // OG GSN same correlation https://github.com/opengsn/gsn/blob/master/packages/paymasters/contracts/TokenPaymaster.sol
 
+// TODO: Update with latest contract changes and make required modifications / variations
+
 // TODO: note https://github.com/pimlicolabs/erc20-paymaster-contracts/issues/10
 // TODO: set a hard limit on how much gas a single user op may cost (postOp to fix the price)
 /// @title Sample ERC-20 Token Paymaster for ERC-4337

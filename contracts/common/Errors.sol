@@ -21,6 +21,11 @@ contract VerifyingPaymasterErrors {
     error VerifyingSignerCannotBeZero();
 
     /**
+     * @notice Throws when the fee collector address provided is address(0)
+     */
+    error FeeCollectorCannotBeZero();
+
+    /**
      * @notice Throws when the paymaster address provided is address(0)
      */
     error PaymasterIdCannotBeZero();
