@@ -8,6 +8,7 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.
 import {UserOperation, UserOperationLib} from "@account-abstraction/contracts/interfaces/UserOperation.sol";
 import "../BasePaymaster.sol";
 import {VerifyingPaymasterErrors} from "../common/Errors.sol";
+import {MathLib} from "../libs/MathLib.sol";
 import {IVerifyingSingletonPaymaster} from "../interfaces/paymasters/IVerifyingSingletonPaymaster.sol";
 
 contract VerifyingSingletonPaymasterV2 is
@@ -215,43 +216,11 @@ contract VerifyingSingletonPaymasterV2 is
             //legacy mode (for networks that don't support basefee opcode)
             return maxFeePerGas;
         }
-        return minuint256(maxFeePerGas, maxPriorityFeePerGas + block.basefee);
-    }
-
-    function minuint256(
-        uint256 a,
-        uint256 b
-    ) internal pure returns (uint256 result) {
-        assembly {
-            result := xor(b, mul(xor(b, a), gt(a, b)))
-        }
-    }
-
-    function maxuint256(
-        uint256 a,
-        uint256 b
-    ) internal pure returns (uint256 result) {
-        assembly {
-            result := xor(a, mul(xor(a, b), gt(b, a)))
-        }
-    }
-
-    function minuint32(
-        uint32 a,
-        uint32 b
-    ) internal pure returns (uint32 result) {
-        assembly {
-            result := xor(b, mul(xor(b, a), gt(a, b)))
-        }
-    }
-
-    function maxuint32(
-        uint32 a,
-        uint32 b
-    ) internal pure returns (uint32 result) {
-        assembly {
-            result := xor(a, mul(xor(a, b), gt(b, a)))
-        }
+        return
+            MathLib.minuint256(
+                maxFeePerGas,
+                maxPriorityFeePerGas + block.basefee
+            );
     }
 
     /**
@@ -265,7 +234,7 @@ contract VerifyingSingletonPaymasterV2 is
      */
     function _validatePaymasterUserOp(
         UserOperation calldata userOp,
-        bytes32 userOpHash,
+        bytes32 /*userOpHash*/,
         uint256 requiredPreFund
     ) internal override returns (bytes memory context, uint256 validationData) {
         (
@@ -296,7 +265,7 @@ contract VerifyingSingletonPaymasterV2 is
 
         require(priceMarkup <= 2e6, "Verifying PM:high markup %");
 
-        uint32 dynamicMarkup = maxuint32(priceMarkup, fixedPriceMarkup);
+        uint32 dynamicMarkup = MathLib.maxuint32(priceMarkup, fixedPriceMarkup);
         require(dynamicMarkup >= 1e6, "Verifying PM:low markup %");
 
         uint256 effectiveCost = (requiredPreFund * dynamicMarkup) /
@@ -310,7 +279,7 @@ contract VerifyingSingletonPaymasterV2 is
 
         context = abi.encode(
             paymasterId,
-            priceMarkup,
+            dynamicMarkup,
             userOp.maxFeePerGas,
             userOp.maxPriorityFeePerGas
         );
@@ -352,7 +321,7 @@ contract VerifyingSingletonPaymasterV2 is
     ) internal virtual override {
         (
             address paymasterId,
-            uint32 priceMarkup,
+            uint32 dynamicMarkup,
             uint256 maxFeePerGas,
             uint256 maxPriorityFeePerGas
         ) = abi.decode(context, (address, uint32, uint256, uint256));
@@ -362,8 +331,6 @@ contract VerifyingSingletonPaymasterV2 is
             maxPriorityFeePerGas
         );
 
-        uint32 dynamicMarkup = maxuint32(priceMarkup, fixedPriceMarkup);
-
         uint256 balToDeduct = actualGasCost +
             unaccountedEPGasOverhead *
             effectiveGasPrice;
@@ -371,18 +338,16 @@ contract VerifyingSingletonPaymasterV2 is
         uint256 costIncludingPremium = (balToDeduct * dynamicMarkup) /
             PRICE_DENOMINATOR;
 
-        // Cache storage reads
-        uint256 paymasterBalance = paymasterIdBalances[paymasterId];
-        uint256 feeCollectorBalance = paymasterIdBalances[feeCollector];
-
         // deduct with premium
         paymasterIdBalances[paymasterId] =
-            paymasterBalance -
+            paymasterIdBalances[paymasterId] -
             costIncludingPremium;
 
         uint256 actualPremium = costIncludingPremium - balToDeduct;
         // "collect" premium
-        paymasterIdBalances[feeCollector] = feeCollectorBalance + actualPremium;
+        paymasterIdBalances[feeCollector] =
+            paymasterIdBalances[feeCollector] +
+            actualPremium;
 
         emit GasBalanceDeducted(paymasterId, costIncludingPremium);
         emit PremiumCollected(paymasterId, actualPremium);
