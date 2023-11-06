@@ -339,15 +339,11 @@ contract VerifyingSingletonPaymasterV2 is
             PRICE_DENOMINATOR;
 
         // deduct with premium
-        paymasterIdBalances[paymasterId] =
-            paymasterIdBalances[paymasterId] -
-            costIncludingPremium;
+        paymasterIdBalances[paymasterId] -= costIncludingPremium;
 
         uint256 actualPremium = costIncludingPremium - balToDeduct;
         // "collect" premium
-        paymasterIdBalances[feeCollector] =
-            paymasterIdBalances[feeCollector] +
-            actualPremium;
+        paymasterIdBalances[feeCollector] += actualPremium;
 
         emit GasBalanceDeducted(paymasterId, costIncludingPremium);
         emit PremiumCollected(paymasterId, actualPremium);
