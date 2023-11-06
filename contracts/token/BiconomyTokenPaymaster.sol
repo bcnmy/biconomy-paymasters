@@ -194,7 +194,6 @@ contract BiconomyTokenPaymaster is
     function setUnaccountedEPGasOverhead(
         uint256 _newOverheadCost
     ) external payable onlyOwner {
-        // review if this could be high value in case of arbitrum
         if (_newOverheadCost > 200000) revert CannotBeUnrealisticValue();
         uint256 oldValue = UNACCOUNTED_COST;
         assembly ("memory-safe") {

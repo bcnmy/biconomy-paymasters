@@ -35,16 +35,21 @@ contract VerifyingSingletonPaymasterV2 is
 
     address public verifyingSigner;
 
+    address public feeCollector;
+
     constructor(
         address _owner,
         IEntryPoint _entryPoint,
-        address _verifyingSigner
+        address _verifyingSigner,
+        address _feeCollector
     ) payable BasePaymaster(_owner, _entryPoint) {
         if (address(_entryPoint) == address(0)) revert EntryPointCannotBeZero();
         if (_verifyingSigner == address(0))
             revert VerifyingSignerCannotBeZero();
+        if (_feeCollector == address(0)) revert FeeCollectorCannotBeZero();
         assembly {
             sstore(verifyingSigner.slot, _verifyingSigner)
+            sstore(feeCollector.slot, _feeCollector)
         }
         unaccountedEPGasOverhead = 12000;
         fixedPriceMarkup = 1100000; // 10%
@@ -118,14 +123,45 @@ contract VerifyingSingletonPaymasterV2 is
         emit VerifyingSignerChanged(oldSigner, _newVerifyingSigner, msg.sender);
     }
 
+    /**
+     * @dev Set a new fee collector address.
+     * Can only be called by the owner of the contract.
+     * @param _newFeeCollector The new address to be set as the fee collector.
+     * @notice If _newFeeCollector is set to zero address, it will revert with an error.
+     * After setting the new fee collector address, it will emit an event FeeCollectorChanged.
+     */
+    function setFeeCollector(
+        address _newFeeCollector
+    ) external payable onlyOwner {
+        if (_newFeeCollector == address(0)) revert FeeCollectorCannotBeZero();
+        address oldFeeCollector = feeCollector;
+        assembly {
+            sstore(feeCollector.slot, _newFeeCollector)
+        }
+        emit FeeCollectorChanged(oldFeeCollector, _newFeeCollector, msg.sender);
+    }
+
+    /**
+     * @dev Set a new unaccountedEPGasOverhead value.
+     * @param value The new value to be set as the unaccountedEPGasOverhead.
+     * @notice only to be called by the owner of the contract.
+     */
     function setUnaccountedEPGasOverhead(
         uint256 value
     ) external payable onlyOwner {
+        require(value <= 200000, "Gas overhead too high");
         uint256 oldValue = unaccountedEPGasOverhead;
         unaccountedEPGasOverhead = value;
         emit EPGasOverheadChanged(oldValue, value);
     }
 
+    /**
+     * @dev Set a new fixedPriceMarkup value.
+     * @param _markup The new value to be set as the fixedPriceMarkup.
+     * @notice only to be called by the owner of the contract.
+     * @notice The markup is in percentage, so 1100000 is 10%.
+     * @notice The markup can not be higher than 100%
+     */
     function setFixedPriceMarkup(uint32 _markup) external payable onlyOwner {
         require(_markup <= PRICE_DENOMINATOR * 2, "Markup too high");
         uint32 oldValue = fixedPriceMarkup;
@@ -337,7 +373,7 @@ contract VerifyingSingletonPaymasterV2 is
 
         // Cache storage reads
         uint256 paymasterBalance = paymasterIdBalances[paymasterId];
-        uint256 ownerBalance = paymasterIdBalances[owner()];
+        uint256 feeCollectorBalance = paymasterIdBalances[feeCollector];
 
         // deduct with premium
         paymasterIdBalances[paymasterId] =
@@ -346,7 +382,7 @@ contract VerifyingSingletonPaymasterV2 is
 
         uint256 actualPremium = costIncludingPremium - balToDeduct;
         // "collect" premium
-        paymasterIdBalances[owner()] = ownerBalance + actualPremium;
+        paymasterIdBalances[feeCollector] = feeCollectorBalance + actualPremium;
 
         emit GasBalanceDeducted(paymasterId, costIncludingPremium);
         emit PremiumCollected(paymasterId, actualPremium);

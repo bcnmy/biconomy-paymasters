@@ -40,7 +40,7 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
   let walletAddress: string, paymasterAddress: string;
   let ethersSigner;
 
-  let offchainSigner: Signer, deployer: Signer;
+  let offchainSigner: Signer, deployer: Signer, feeCollector: Signer;
 
   let verifyingSingletonPaymaster: VerifyingSingletonPaymasterV2;
   let smartWalletImp: BiconomyAccountImplementation;
@@ -56,10 +56,12 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
     deployer = ethersSigner[0];
     offchainSigner = ethersSigner[1];
     depositorSigner = ethersSigner[2];
+    feeCollector = ethersSigner[3];
     walletOwner = deployer; // ethersSigner[3];
 
     const offchainSignerAddress = await offchainSigner.getAddress();
     const walletOwnerAddress = await walletOwner.getAddress();
+    const feeCollectorAddress = await feeCollector.getAddress();
 
     ecdsaModule = await new EcdsaOwnershipRegistryModule__factory(deployer).deploy();
 
@@ -67,7 +69,8 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
       await new VerifyingSingletonPaymasterV2__factory(deployer).deploy(
         await deployer.getAddress(),
         entryPoint.address,
-        offchainSignerAddress
+        offchainSignerAddress,
+        feeCollectorAddress
       );
 
     smartWalletImp = await new BiconomyAccountImplementation__factory(deployer).deploy(
@@ -178,7 +181,7 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
     });
 
     it("succeed with valid signature", async () => {  
-      const feeCollectorBalanceBefore = await verifyingSingletonPaymaster.getBalance(await verifyingSingletonPaymaster.owner())
+      const feeCollectorBalanceBefore = await verifyingSingletonPaymaster.getBalance(await feeCollector.getAddress());
       expect(feeCollectorBalanceBefore).to.be.equal(BigNumber.from(0));
       const signer = await verifyingSingletonPaymaster.verifyingSigner();
       const offchainSignerAddress = await offchainSigner.getAddress();
@@ -236,11 +239,12 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
 
 
       await entryPoint.handleOps([userOp], await offchainSigner.getAddress());
+      // gas used VPM V2  162081
       await expect(
         entryPoint.handleOps([userOp], await offchainSigner.getAddress())
       ).to.be.reverted;
 
-      const feeCollectorBalanceAfter = await verifyingSingletonPaymaster.getBalance(await verifyingSingletonPaymaster.owner())
+      const feeCollectorBalanceAfter = await verifyingSingletonPaymaster.getBalance(await feeCollector.getAddress())
       expect(feeCollectorBalanceAfter).to.be.greaterThan(BigNumber.from(0));
     });
   });

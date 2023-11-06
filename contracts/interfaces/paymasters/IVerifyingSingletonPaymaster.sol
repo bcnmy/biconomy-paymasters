@@ -17,6 +17,12 @@ interface IVerifyingSingletonPaymaster {
         address indexed _newSigner,
         address indexed _actor
     );
+
+    event FeeCollectorChanged(
+        address indexed _oldFeeCollector,
+        address indexed _newFeeCollector,
+        address indexed _actor
+    );
     event GasDeposited(address indexed _paymasterId, uint256 indexed _value);
     event GasWithdrawn(
         address indexed _paymasterId,

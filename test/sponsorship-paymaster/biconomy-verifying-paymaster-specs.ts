@@ -220,6 +220,7 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
       userOp.signature = signatureWithModuleAddress
 
       await entryPoint.handleOps([userOp], await offchainSigner.getAddress());
+      // gas used VPM V1 134369
       await expect(
         entryPoint.handleOps([userOp], await offchainSigner.getAddress())
       ).to.be.reverted;
