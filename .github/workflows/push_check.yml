@@ -32,10 +32,7 @@ jobs:
         run: yarn install --frozen-lockfile && yarn build
 
       - name: Run Forge build
-        run: |
-          forge --version
-          forge build --sizes
-        id: forge-build
+        run: yarn build:foundry
         
 
       - name: Generate account-abstraction Typechain typings
@@ -46,5 +43,5 @@ jobs:
 
       - name: Run Forge tests
         run: |
-          forge test -vvv
+          yarn test:foundry
         id: forge-test
