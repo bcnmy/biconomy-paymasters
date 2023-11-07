@@ -108,10 +108,5 @@
     "solc": "^0.8.15",
     "solidity-bytes-utils": "^0.8.0",
     "source-map-support": "^0.5.19"
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": ""
-    }
   }
 }
