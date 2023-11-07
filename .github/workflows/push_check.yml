@@ -64,17 +64,9 @@ jobs:
           forge build --sizes
         id: forge-build
         
-      - name: Go to account-abstraction directory
-        run: cd lib/account-abstraction
 
-      - name: Install typechain dependencies
-        run: yarn install
-
-      - name: Generate Typechain typings
-        run: npx hardhat typechain
-
-      - name: Return to project root
-        run: cd ../..
+      - name: Generate account-abstraction Typechain typings
+        run: yarn prepare-typechain
 
       - name: Run Hardhat Tests
         run: yarn test

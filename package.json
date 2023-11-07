@@ -10,11 +10,17 @@
     "build:foundry": "forge build --via-ir",
     "test:foundry": "forge test --via-ir",
     "test:bundler": "./scripts/bundler-tests.sh",
-    "lint": "prettier --write 'contracts/**/*.sol'",
+    "lint:ts": "npx eslint 'test/**/*.ts' 'scripts/**/*.ts'",
+    "lint:ts-fix": "npx eslint 'test/**/*.ts' 'scripts/**/*.ts' --fix",
+    "lint:sol": "npx solhint 'contracts/**/*.sol'",
+    "lint:sol-fix": "npx prettier 'contracts/**/*.sol' --write && npx solhint 'contracts/**/*.sol' --fix",
+    "lint": "npm run lint:ts && npm run lint:sol",
+    "lint:fix": "npm run lint:ts-fix && npm run lint:sol-fix",
     "postinstall": "husky install",
     "prepack": "pinst --disable && ./scripts/prepack-contracts.sh",
     "postpack": "pinst --enable && ./scripts/postpack-contracts.sh",
     "coverage": "COVERAGE=1 DISABLE_VIA_IR=true hardhat coverage",
+    "prepare-typechain": "cd lib/account-abstraction && yarn install && npx hardhat typechain",
     "prepare": "husky install"
   },
   "repository": {
