@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity >=0.8.0;
 
-import {stdStorage, StdStorage, Test} from "forge-std/Test.sol";
+import {stdStorage, StdStorage, Test} from "lib/forge-std/src/Test.sol";
 import {Utilities} from "./utils/Utilities.sol";
-import {console2} from "forge-std/console2.sol";
-import {Vm} from "forge-std/Vm.sol";
+import {console2} from "lib/forge-std/src/console2.sol";
+import {Vm} from "lib/forge-std/src/Vm.sol";
 
 import {ChainlinkOracleAggregator} from "../contracts/token/oracles/ChainlinkOracleAggregator.sol";
 import {IOracleAggregator} from "../contracts/token/oracles/IOracleAggregator.sol";
