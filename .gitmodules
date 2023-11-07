@@ -7,3 +7,6 @@
 [submodule "lib/scw-contracts"]
 	path = lib/scw-contracts
 	url = https://github.com/bcnmy/scw-contracts
+[submodule "lib/openzeppelin-contracts"]
+	path = lib/openzeppelin-contracts
+	url = https://github.com/openzeppelin/openzeppelin-contracts
