@@ -63,6 +63,11 @@ jobs:
           forge --version
           forge build --sizes
         id: forge-build
+        
+      - name: Generate Typechain Typings
+        run: |
+          cd lib/account-abstraction
+          npx hardhat typechain
 
       - name: Run Hardhat Tests
         run: yarn test
