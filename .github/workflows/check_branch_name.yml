@@ -5,7 +5,7 @@ on:
 jobs:
   check-branch-name:
     runs-on: ubuntu-latest
-    if: github.event.ref_type == 'branch' && !contains(['refs/heads/main', 'refs/heads/develop'], github.ref)
+    if: github.event.ref_type == 'branch' && !contains(github.ref, 'refs/heads/main') && !contains(github.ref, 'refs/heads/develop')
     steps:
       - name: Check Branch Name
         run: |
