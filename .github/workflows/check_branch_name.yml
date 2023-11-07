@@ -1,0 +1,18 @@
+name: Check Branch Name
+on:
+  create:
+
+jobs:
+  check-branch-name:
+    runs-on: ubuntu-latest
+    if: github.event.ref_type == 'branch' && !contains(['refs/heads/main', 'refs/heads/develop'], github.ref)
+    steps:
+      - name: Check Branch Name
+        run: |
+          BRANCH_PREFIX_REGEX="^(features/|fixes/|releases/).+"
+          BRANCH_NAME=${GITHUB_REF#refs/heads/}
+          if [[ ! $BRANCH_NAME =~ $BRANCH_PREFIX_REGEX ]]; then
+            echo "Invalid branch name: $BRANCH_NAME"
+            echo "Branch name must start with 'features/', 'fixes/', or 'releases/'."
+            exit 1
+          fi
