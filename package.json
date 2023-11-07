@@ -102,7 +102,6 @@
     "dotenv": "^16.0.3",
     "eth-gas-reporter": "^0.2.24",
     "ethereumjs-util": "^7.1.0",
-    "ethereumjs-wallet": "^1.0.1",
     "ganache": "^7.1.0",
     "ganache-cli": "^6.12.2",
     "solc": "^0.8.15",
