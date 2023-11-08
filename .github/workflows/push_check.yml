@@ -18,6 +18,9 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: 'yarn'
 
+      - name: Create a fake .secret file
+        run: echo "primary twist rack vendor diagram image used route theme frown either will" > .secret
+  
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
