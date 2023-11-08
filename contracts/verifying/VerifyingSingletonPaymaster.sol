@@ -182,6 +182,31 @@ contract VerifyingSingletonPaymaster is
     }
 
     /**
+     * @dev Executes the paymaster's payment conditions
+     * @param context payment conditions signed by the paymaster in `validatePaymasterUserOp`
+     * @param actualGasCost amount to be paid to the entry point in wei
+     */
+    function _postOp(
+        PostOpMode /** mode */,
+        bytes calldata context,
+        uint256 actualGasCost
+    ) internal virtual override {
+        PaymasterContext memory data = context._decodePaymasterContext();
+        address extractedPaymasterId = data.paymasterId;
+        uint256 effectiveGasPrice = getGasPrice(
+            data.maxFeePerGas,
+            data.maxPriorityFeePerGas
+        );
+        uint256 balToDeduct = actualGasCost +
+            unaccountedEPGasOverhead *
+            effectiveGasPrice;
+        paymasterIdBalances[extractedPaymasterId] =
+            paymasterIdBalances[extractedPaymasterId] -
+            balToDeduct;
+        emit GasBalanceDeducted(extractedPaymasterId, balToDeduct);
+    }
+
+        /**
      * @dev Verify that an external signer signed the paymaster data of a user operation.
      * The paymaster data is expected to be the paymaster and a signature over the entire request parameters.
      * @param userOp The UserOperation struct that represents the current user operation.
@@ -194,7 +219,7 @@ contract VerifyingSingletonPaymaster is
         UserOperation calldata userOp,
         bytes32 /*userOpHash*/,
         uint256 requiredPreFund
-    ) internal override returns (bytes memory context, uint256 validationData) {
+    ) internal override view returns (bytes memory context, uint256 validationData) {
         PaymasterData memory paymasterData = userOp._decodePaymasterData();
         bytes32 hash = getHash(
             userOp,
@@ -237,31 +262,6 @@ contract VerifyingSingletonPaymaster is
                 paymasterData.validAfter
             )
         );
-    }
-
-    /**
-     * @dev Executes the paymaster's payment conditions
-     * @param context payment conditions signed by the paymaster in `validatePaymasterUserOp`
-     * @param actualGasCost amount to be paid to the entry point in wei
-     */
-    function _postOp(
-        PostOpMode /** mode */,
-        bytes calldata context,
-        uint256 actualGasCost
-    ) internal virtual override {
-        PaymasterContext memory data = context._decodePaymasterContext();
-        address extractedPaymasterId = data.paymasterId;
-        uint256 effectiveGasPrice = getGasPrice(
-            data.maxFeePerGas,
-            data.maxPriorityFeePerGas
-        );
-        uint256 balToDeduct = actualGasCost +
-            unaccountedEPGasOverhead *
-            effectiveGasPrice;
-        paymasterIdBalances[extractedPaymasterId] =
-            paymasterIdBalances[extractedPaymasterId] -
-            balToDeduct;
-        emit GasBalanceDeducted(extractedPaymasterId, balToDeduct);
     }
 
     function getGasPrice(
