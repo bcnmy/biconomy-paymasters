@@ -1,11 +1,10 @@
-import { ethers, run, network } from "hardhat";
+import { ethers, run } from "hardhat";
 import { arbGoerliConfigInfoProd } from "./configs";
-import { Token, TokenConfig } from "./utils/Types";
+import { TokenConfig } from "./utils/Types";
 import {
   deployContract,
   DEPLOYMENT_SALTS,
   encodeParam,
-  getDeployerInstance,
   isContract,
 } from "./utils";
 import {
@@ -19,11 +18,9 @@ import {
 
 const tokenConfig: TokenConfig = arbGoerliConfigInfoProd;
 
-const provider = ethers.provider;
 const entryPointAddress =
   process.env.ENTRY_POINT_ADDRESS ||
   "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
-const owner = process.env.PAYMASTER_OWNER_ADDRESS_DEV || "";
 const verifyingSigner = process.env.PAYMASTER_SIGNER_ADDRESS_DEV || "";
 const DEPLOYER_CONTRACT_ADDRESS_DEV =
   process.env.DEPLOYER_CONTRACT_ADDRESS_DEV || "";
@@ -245,7 +242,6 @@ async function setTokenOracle(
   );
 
   // Find the function ABI based on the provided function name
-  // @ts-ignore
   const functionAbi =
     PriceFeedContract.interface.functions[
       priceFeedFunctionName as keyof typeof PriceFeedContract.functions

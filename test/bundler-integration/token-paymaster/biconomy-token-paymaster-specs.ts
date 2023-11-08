@@ -94,7 +94,7 @@ describe("Biconomy Token Paymaster (with Bundler)", function () {
   let walletOwner: Signer;
   let token: MockToken;
   let walletAddress: string, paymasterAddress: string;
-  let ethersSigner: any;
+  let ethersSigner: Signer;
 
   let offchainSigner: Signer, deployer: Signer;
 
@@ -104,7 +104,6 @@ describe("Biconomy Token Paymaster (with Bundler)", function () {
   let smartWalletImp: BiconomyAccountImplementation;
   let ecdsaModule: EcdsaOwnershipRegistryModule;
   let walletFactory: BiconomyAccountFactory;
-  const abi = ethers.utils.defaultAbiCoder;
 
   let environment: BundlerTestEnvironment;
 

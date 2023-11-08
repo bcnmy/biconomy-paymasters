@@ -1,4 +1,4 @@
-import { ethers, run, network } from "hardhat";
+import { ethers, run } from "hardhat";
 import {
   deployContract,
   DEPLOYMENT_SALTS,
@@ -11,7 +11,6 @@ const provider = ethers.provider;
 const entryPointAddress =
   process.env.ENTRY_POINT_ADDRESS ||
   "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
-const owner = process.env.PAYMASTER_OWNER_ADDRESS_PROD || "";
 const verifyingSigner = process.env.PAYMASTER_SIGNER_ADDRESS_PROD || "";
 const DEPLOYER_CONTRACT_ADDRESS =
   process.env.DEPLOYER_CONTRACT_ADDRESS_PROD || "";
@@ -106,9 +105,6 @@ async function getPredeployedDeployerContractInstance(): Promise<Deployer> {
 }
 
 async function main() {
-  let tx, receipt;
-  const provider = ethers.provider;
-
   const accounts = await ethers.getSigners();
   const earlyOwner = await accounts[0].getAddress();
 

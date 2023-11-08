@@ -25,35 +25,24 @@ import {
 
 // Review: Could import from scw-contracts submodules to be consistent
 import { fillAndSign } from "../utils/userOp";
-import { UserOperation } from "../../lib/account-abstraction/test/UserOperation";
-import {
-  createAccount,
-  simulationResultCatch,
-} from "../../lib/account-abstraction/test/testutils";
 import {
   EntryPoint,
   EntryPoint__factory,
-  SimpleAccount,
   TestToken,
-  TestToken__factory,
 } from "../../lib/account-abstraction/typechain";
 import {
   EcdsaOwnershipRegistryModule,
   EcdsaOwnershipRegistryModule__factory,
 } from "@biconomy-devx/account-contracts-v2/dist/types";
-import { arrayify, hexConcat, parseEther } from "ethers/lib/utils";
+import { arrayify, parseEther } from "ethers/lib/utils";
 import { BigNumber, BigNumberish, Contract, Signer } from "ethers";
-import { SignerWithAddress } from "hardhat-deploy-ethers/signers";
 
 export const AddressZero = ethers.constants.AddressZero;
 
 const MOCK_VALID_UNTIL = "0x00000000deadbeef";
 const MOCK_VALID_AFTER = "0x0000000000001234";
-const MOCK_SIG = "0x1234";
-const MOCK_ERC20_ADDR = "0x" + "01".repeat(20);
 const DEFAULT_FEE_MARKUP = 1100000;
 // Assume TOKEN decimals is 18, then 1 ETH = 1000 TOKENS
-// const MOCK_FX = ethers.constants.WeiPerEther.mul(1000);
 
 const MOCK_FX: BigNumberish = "977100"; // matic to usdc approx
 console.log("MOCK FX ", MOCK_FX); // 1000000000000000000000
