@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: LGPL-3.0-only
-pragma solidity 0.8.17;
+pragma solidity ^0.8.20;
 
 contract BasePaymasterErrors {
     /**
@@ -19,6 +19,11 @@ contract VerifyingPaymasterErrors {
      * @notice Throws when the verifiying signer address provided is address(0)
      */
     error VerifyingSignerCannotBeZero();
+
+    /**
+     * @notice Throws when the fee collector address provided is address(0)
+     */
+    error FeeCollectorCannotBeZero();
 
     /**
      * @notice Throws when the paymaster address provided is address(0)
