@@ -201,14 +201,12 @@ describe("Biconomy Token Paymaster (with Bundler)", function () {
 
   after(async function () {
     const chainId = (await ethers.provider.getNetwork()).chainId;
-    if (chainId !== BundlerTestEnvironment.BUNDLER_ENVIRONMENT_CHAIN_ID) {
-      this.skip();
+    if (chainId === BundlerTestEnvironment.BUNDLER_ENVIRONMENT_CHAIN_ID) {  
+      await Promise.all([
+        environment.revert(environment.defaultSnapshot!),
+        environment.resetBundler(),
+      ]);
     }
-
-    await Promise.all([
-      environment.revert(environment.defaultSnapshot!),
-      environment.resetBundler(),
-    ]);
   });
 
   describe("Token Payamster functionality: positive test", () => {
