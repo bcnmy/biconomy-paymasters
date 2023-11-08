@@ -1,51 +1,42 @@
 name: Test workflow
 on: push
-jobs:
-  setup_dependencies:
-    name: Setup Dependencies
-    runs-on: ubuntu-latest
-    outputs:
-      cache-key: ${{ steps.cache-dependencies.outputs.cache-key }}
 
+jobs:
+  setup:
+    name: Setup & Build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18.x]
     steps:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Cache node_modules
-        uses: actions/cache@v2
-        id: cache-dependencies
+      - name: Set Node.js version
+        uses: actions/setup-node@v3
         with:
-          path: |
-            **/node_modules
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          node-version: ${{ matrix.node-version }}
+          cache: 'yarn'
 
       - name: Install dependencies
-        if: steps.cache-dependencies.outputs.cache-hit != 'true'
         run: yarn install --frozen-lockfile
+
+      - name: Build
+        run: yarn build
 
   lint:
     name: Lint sources
     runs-on: ubuntu-latest
-    needs: setup_dependencies
-    strategy:
-      matrix:
-        node-version: [18.x]
-
+    needs: setup
     steps:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Set Node.js
+      - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
-
-      - name: Cache node_modules
-        uses: actions/cache@v2
-        with:
-          path: |
-            **/node_modules
-          key: ${{ needs.setup_dependencies.outputs.cache-key }}
+          cache: 'yarn'
 
       - name: Lint sources
         run: yarn lint:sol
@@ -53,26 +44,16 @@ jobs:
   unit_test:
     name: Unit tests
     runs-on: ubuntu-latest
-    needs: setup_dependencies
-    strategy:
-      matrix:
-        node-version: [18.x]
-
+    needs: setup
     steps:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Set Node.js
+      - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
-
-      - name: Cache node_modules
-        uses: actions/cache@v2
-        with:
-          path: |
-            **/node_modules
-          key: ${{ needs.setup_dependencies.outputs.cache-key }}
+          cache: 'yarn'
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
@@ -82,8 +63,5 @@ jobs:
       - name: Install foundry dependencies
         run: forge install
 
-      - name: Build Typechain and Foundry
-        run: yarn build
-
-      - name: Run Forge and Hardhat Tests
+      - name: Run tests
         run: yarn test
