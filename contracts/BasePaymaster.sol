@@ -68,13 +68,6 @@ abstract contract BasePaymaster is IPaymaster, Ownable {
     }
 
     /**
-     * return current paymaster's deposit on the entryPoint.
-     */
-    function getDeposit() public view returns (uint256) {
-        return entryPoint.balanceOf(address(this));
-    }
-
-    /**
      * unlock the stake, in order to withdraw it.
      * The paymaster can't serve requests once unlocked, until it calls addStake again
      */
@@ -89,6 +82,13 @@ abstract contract BasePaymaster is IPaymaster, Ownable {
      */
     function withdrawStake(address payable withdrawAddress) external onlyOwner {
         entryPoint.withdrawStake(withdrawAddress);
+    }
+
+    /**
+     * return current paymaster's deposit on the entryPoint.
+     */
+    function getDeposit() public view returns (uint256) {
+        return entryPoint.balanceOf(address(this));
     }
 
     /// validate the call is made from a valid entrypoint

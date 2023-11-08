@@ -30,7 +30,7 @@
     "no-unused-import": "error",
     "one-contract-per-file": "warn",
     "not-rely-on-time": "off",
-    "reason-string": "error",
+    "reason-string": "warn",
     "no-inline-assembly": "off",
     "avoid-low-level-calls": "off",
     "custom-errors": "off",

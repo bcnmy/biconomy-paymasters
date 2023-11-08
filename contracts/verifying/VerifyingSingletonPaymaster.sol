@@ -241,7 +241,6 @@ contract VerifyingSingletonPaymaster is
 
     /**
      * @dev Executes the paymaster's payment conditions
-     * @param mode tells whether the op succeeded, reverted, or if the op succeeded but cause the postOp to revert
      * @param context payment conditions signed by the paymaster in `validatePaymasterUserOp`
      * @param actualGasCost amount to be paid to the entry point in wei
      */

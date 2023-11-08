@@ -23,7 +23,7 @@ contract PriceOracle is IPriceOracle {
         (token);
         (
             ,
-            /* uint80 roundID */ int256 _price /*uint startedAt*/ /*uint timeStamp*/ /*uint80 answeredInRound*/,
+            /* uint80 roundID */ int256 _price /*uint256 startedAt*/ /*uint256 timeStamp*/ /*uint80 answeredInRound*/,
             ,
             ,
 

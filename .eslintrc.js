@@ -39,6 +39,8 @@ module.exports = {
         allow: [".*__factory"],
       },
     ],
+
+    "node/no-unsupported-features/es-syntax": "off"
     // "@typescript-eslint/no-explicit-any": "error",
     // quotes: ["error", "double"],
     // "no-unused-vars": "error",

@@ -309,8 +309,6 @@ describe("Biconomy Token Paymaster", function () {
         {
           sender: walletAddress,
           verificationGasLimit: 200000,
-          // initCode: hexConcat([walletFactory.address, deploymentData]),
-          // nonce: 0,
           callData: encodeERC20Approval(
             userSCW,
             token,
@@ -428,8 +426,6 @@ describe("Biconomy Token Paymaster", function () {
         {
           sender: walletAddress,
           verificationGasLimit: 200000,
-          // initCode: hexConcat([walletFactory.address, deploymentData]),
-          // nonce: 0,
           callData: encodeERC20Approval(
             userSCW,
             token,
@@ -542,8 +538,6 @@ describe("Biconomy Token Paymaster", function () {
         {
           sender: walletAddress,
           verificationGasLimit: 200000,
-          // initCode: hexConcat([walletFactory.address, deploymentData]),
-          // nonce: 0,
           callData: encodeERC20Approval(
             userSCW,
             token,

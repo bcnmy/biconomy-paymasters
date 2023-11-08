@@ -10,18 +10,6 @@ library SafeTransferLib {
     /*                       CUSTOM ERRORS                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    /// @dev The ETH transfer has failed.
-    error ETHTransferFailed();
-
-    /// @dev The ERC20 `transferFrom` has failed.
-    error TransferFromFailed();
-
-    /// @dev The ERC20 `transfer` has failed.
-    error TransferFailed();
-
-    /// @dev The ERC20 `approve` has failed.
-    error ApproveFailed();
-
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -34,6 +22,18 @@ library SafeTransferLib {
     /// storage reads and writes, but low enough to prevent griefing.
     /// Multiply by a small constant (e.g. 2), if needed.
     uint256 internal constant _GAS_STIPEND_NO_GRIEF = 100000;
+
+    /// @dev The ETH transfer has failed.
+    error ETHTransferFailed();
+
+    /// @dev The ERC20 `transferFrom` has failed.
+    error TransferFromFailed();
+
+    /// @dev The ERC20 `transfer` has failed.
+    error TransferFailed();
+
+    /// @dev The ERC20 `approve` has failed.
+    error ApproveFailed();
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      ERC20 OPERATIONS                      */

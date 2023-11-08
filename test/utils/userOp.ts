@@ -5,16 +5,10 @@ import {
   hexDataSlice,
   hexValue,
   keccak256,
-  hexZeroPad,
 } from "ethers/lib/utils";
 import { BigNumber, Contract, Signer, Wallet } from "ethers";
 import { ethers } from "hardhat";
-import {
-  AddressZero,
-  callDataCost,
-  HashZero,
-  rethrow,
-} from "../utils/testUtils";
+import { AddressZero, callDataCost, rethrow } from "../utils/testUtils";
 import {
   ecsign,
   toRpcSig,

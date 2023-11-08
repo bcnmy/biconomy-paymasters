@@ -85,7 +85,7 @@ contract Uniswap3 {
 
     // do not used on-chain, gas inefficient!
     function getEstimatedETHforDAI(
-        uint daiAmount
+        uint256 daiAmount
     ) external payable returns (uint256) {
         address tokenIn = WETH9;
         address tokenOut = multiDaiKovan;
