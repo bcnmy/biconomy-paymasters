@@ -6,7 +6,8 @@
   "scripts": {
     "test": "yarn hardhat test",
     "clean": "yarn hardhat clean && forge clean",
-    "build": "yarn clean && yarn hardhat compile && yarn hardhat typechain && yarn prepare-typechain",
+    "build": "yarn hardhat compile && yarn hardhat typechain && yarn prepare-typechain && yarn build:foundry",
+    "clean:build": "yarn clean && yarn build",
     "build:foundry": "forge build --via-ir",
     "test:foundry": "forge test --via-ir",
     "test:bundler": "./scripts/bundler-tests.sh",
