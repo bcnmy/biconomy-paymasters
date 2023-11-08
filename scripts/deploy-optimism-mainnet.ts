@@ -472,10 +472,6 @@ async function main() {
     console.log(
       "==================tokenPaymasterInstance======================="
     );
-
-    // tx = await tokenPaymasterInstance.transferOwnership(owner)
-    // receipt = await tx.wait()
-    // console.log("tokenPaymasterInstance ownership transferred to %s", owner);
   }
 }
 
