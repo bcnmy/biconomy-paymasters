@@ -88,7 +88,7 @@ async function deployChainlinkOracleAggregatorContract(
       });
     } catch (err) {
       console.log("issue with the verification ", oracleAggregatorComputedAddr);
-      // console.log(err);
+
       return oracleAggregatorComputedAddr;
     }
   } else {
@@ -150,7 +150,7 @@ async function deployTokenPaymasterContract(
       });
     } catch (err) {
       console.log("issue with the verification ", tokenPaymasterComputedAddr);
-      // console.log(err);
+
       return tokenPaymasterComputedAddr;
     }
   } else {
@@ -220,7 +220,7 @@ async function deployDerivedPriceFeed(
         "issue with the verification ",
         derivedPriceFeedBComputedAddr
       );
-      // console.log(err);
+
       return derivedPriceFeedBComputedAddr;
     }
   } else {
