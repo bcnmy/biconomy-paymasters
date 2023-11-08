@@ -1,0 +1,38 @@
+name: Test workflow
+on: push
+jobs:
+  unit_test:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18.x]
+
+    steps:
+      - name: Checkout
+        uses: "actions/checkout@main"
+
+      - name: Set Node.js
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Create a fake .secret file
+        run: echo "primary twist rack vendor diagram image used route theme frown either will" > .secret
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Install foundry dependencies
+        run: forge install
+
+      - name: Install hardhat dependencies
+        run: yarn install --frozen-lockfile
+        
+      - name: Build Typechain and Foundry
+        run: yarn build
+
+      - name: Run Forge and Hardhat Tests
+        run: yarn test
