@@ -11,6 +11,7 @@ forge-cache/
 typechain-types
 typechain
 typings
+yarn-error.log
 
 #Hardhat files
 cache
