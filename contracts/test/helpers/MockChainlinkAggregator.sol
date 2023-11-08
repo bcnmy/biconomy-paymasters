@@ -109,7 +109,7 @@ contract MockChainlinkOracleAggregator is Ownable, IOracleAggregator {
         (bool success, bytes memory ret) = tokensInfo[token]
             .callAddress
             .staticcall(tokensInfo[token].callData);
-        console.log("price feed reverted here? success = %s ", success);
+            
         require(success, "ChainlinkOracleAggregator:: query failed");
         if (tokensInfo[token].dataSigned) {
             tokenPriceUnadjusted = uint256(abi.decode(ret, (int256)));

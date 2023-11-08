@@ -48,11 +48,8 @@ const MOCK_VALID_AFTER = "0x0000000000001234";
 const MOCK_SIG = "0x1234";
 const MOCK_ERC20_ADDR = "0x" + "01".repeat(20);
 const DEFAULT_FEE_MARKUP = 1100000;
-// Assume TOKEN decimals is 18, then 1 ETH = 1000 TOKENS
-// const MOCK_FX = ethers.constants.WeiPerEther.mul(1000);
 
 const MOCK_FX: BigNumberish = "977100"; // matic to usdc approx
-console.log("MOCK FX ", MOCK_FX); // 1000000000000000000000
 
 export async function deployEntryPoint(
   provider = ethers.provider
@@ -146,7 +143,6 @@ describe("Biconomy Token Paymaster", function () {
     const MockToken = await ethers.getContractFactory("MockToken");
     token = await MockToken.deploy();
     await token.deployed();
-    console.log("Test token deployed at: ", token.address);
 
     const usdcMaticPriceFeedMock = await new MockPriceFeed__factory(
       deployer
@@ -167,12 +163,6 @@ describe("Biconomy Token Paymaster", function () {
       priceFeedTxUsdc.data,
       true
     );
-
-    const priceResult = await oracleAggregator.getTokenValueOfOneNativeToken(
-      token.address
-    );
-    console.log("priceResult");
-    console.log(priceResult);
 
     sampleTokenPaymaster = await new BiconomyTokenPaymaster__factory(
       deployer
@@ -208,24 +198,13 @@ describe("Biconomy Token Paymaster", function () {
       smartAccountDeploymentIndex
     );
 
-    console.log("mint tokens to owner address..");
     await token.mint(walletOwnerAddress, ethers.utils.parseEther("1000000"));
 
     walletAddress = expected;
-    console.log(" wallet address ", walletAddress);
 
     paymasterAddress = sampleTokenPaymaster.address;
-    console.log("Paymaster address is ", paymasterAddress);
-
-    /* await sampleTokenPaymaster
-      .connect(deployer)
-      .addStake(86400, { value: parseEther("2") });
-    console.log("paymaster staked"); */
 
     await entryPoint.depositTo(paymasterAddress, { value: parseEther("2") });
-
-    // const resultSet = await entryPoint.getDepositInfo(paymasterAddress);
-    // console.log("deposited state ", resultSet);
   });
 
   describe("Token Payamster read methods and state checks", () => {
@@ -262,13 +241,6 @@ describe("Biconomy Token Paymaster", function () {
       const verifyingSigner = await sampleTokenPaymaster.verifyingSigner();
 
       const feeReceiver = await sampleTokenPaymaster.feeReceiver();
-
-      console.log(
-        "current values from contracts",
-        owner,
-        verifyingSigner,
-        feeReceiver
-      );
 
       expect(owner).to.be.equal(await walletOwner.getAddress());
       expect(verifyingSigner).to.be.equal(await offchainSigner.getAddress());
@@ -369,59 +341,16 @@ describe("Biconomy Token Paymaster", function () {
         .add(userOp.preVerificationGas)
         .mul(userOp.maxFeePerGas);
 
-      console.log("required prefund ", requiredPrefund.toString());
-
-      const initBalance = await token.balanceOf(paymasterAddress);
-      console.log("fee receiver token balance before ", initBalance.toString());
-
-      const preTokenBalanceForAccount = await token.balanceOf(walletAddress);
-      console.log(
-        "smart account erc20 balance before",
-        preTokenBalanceForAccount.toString()
-      );
 
       const tx = await entryPoint.handleOps(
         [userOp],
         await offchainSigner.getAddress()
       );
-      const receipt = await tx.wait();
-      console.log(
-        "fees paid in native ",
-        receipt.effectiveGasPrice.mul(receipt.gasUsed).toString()
-      );
-
-      console.log("gas used ");
-      console.log(receipt.gasUsed.toNumber());
-
-      const postBalance = await token.balanceOf(paymasterAddress);
-      console.log("fee receiver token balance after ", postBalance.toString());
-
-      const postTokenBalanceForAccount = await token.balanceOf(walletAddress);
-      console.log(
-        "smart account erc20 balance after",
-        postTokenBalanceForAccount.toString()
-      );
-
-      console.log(
-        "required prefund in token terms ",
-        requiredPrefund
-          .mul(MOCK_FX)
-          .div(ethers.constants.WeiPerEther)
-          .toString()
-      );
-
-      const code = await ethers.provider.getCode(walletAddress);
-      console.log(code);
+      
+      await tx.wait();
 
       const ev = await getUserOpEvent(entryPoint);
       expect(ev.args.success).to.be.true;
-
-      /* expect(postBalance.sub(initBalance)).to.be.greaterThan(
-        ethers.constants.Zero
-      );
-      expect(postBalance.sub(initBalance)).to.be.lessThanOrEqual(
-        requiredPrefund.mul(MOCK_FX).div(ethers.constants.WeiPerEther)
-      ); */
 
       await expect(
         entryPoint.handleOps([userOp], await offchainSigner.getAddress())

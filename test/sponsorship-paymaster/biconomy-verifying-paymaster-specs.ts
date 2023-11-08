@@ -118,20 +118,14 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
     );
 
     walletAddress = expected;
-    console.log(" wallet address ", walletAddress);
 
     paymasterAddress = verifyingSingletonPaymaster.address;
-    console.log("Paymaster address is ", paymasterAddress);
 
     await verifyingSingletonPaymaster
       .connect(deployer)
       .addStake(86400, { value: parseEther("2") });
-    console.log("paymaster staked");
 
     await entryPoint.depositTo(paymasterAddress, { value: parseEther("1") });
-
-    // const resultSet = await entryPoint.getDepositInfo(paymasterAddress);
-    // console.log("deposited state ", resultSet);
   });
 
   async function getUserOpWithPaymasterInfo(paymasterId: string) {
@@ -170,7 +164,6 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
   describe("#validatePaymasterUserOp", () => {
     it("Should Fail when there is no deposit for paymaster id", async () => {
       const paymasterId = await depositorSigner.getAddress();
-      console.log("paymaster Id ", paymasterId);
       const userOp = await getUserOpWithPaymasterInfo(paymasterId);
 
       const signatureWithModuleAddress = ethers.utils.defaultAbiCoder.encode(
@@ -180,7 +173,6 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
 
       userOp.signature = signatureWithModuleAddress;
 
-      console.log("entrypoint ", entryPoint.address);
       await expect(
         entryPoint.callStatic.simulateValidation(userOp)
         // ).to.be.revertedWith("FailedOp");

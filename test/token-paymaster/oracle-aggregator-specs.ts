@@ -42,10 +42,8 @@ export const AddressZero = ethers.constants.AddressZero;
 const MOCK_VALID_UNTIL = "0x00000000deadbeef";
 const MOCK_VALID_AFTER = "0x0000000000001234";
 const DEFAULT_FEE_MARKUP = 1100000;
-// Assume TOKEN decimals is 18, then 1 ETH = 1000 TOKENS
 
 const MOCK_FX: BigNumberish = "977100"; // matic to usdc approx
-console.log("MOCK FX ", MOCK_FX); // 1000000000000000000000
 
 export async function deployEntryPoint(
   provider = ethers.provider
@@ -141,8 +139,8 @@ describe("Biconomy Token Paymaster", function () {
 
     const MockToken = await ethers.getContractFactory("MockToken");
     token = await MockToken.deploy();
+    
     await token.deployed();
-    console.log("Test token deployed at: ", token.address);
 
     const usdcMaticPriceFeedMock = await new MockPriceFeed__factory(
       deployer
@@ -184,12 +182,6 @@ describe("Biconomy Token Paymaster", function () {
       true
     );
 
-    const priceResult = await oracleAggregator.getTokenValueOfOneNativeToken(
-      token.address
-    );
-    console.log("priceResult");
-    console.log(priceResult);
-
     sampleTokenPaymaster = await new BiconomyTokenPaymaster__factory(
       deployer
     ).deploy(
@@ -230,24 +222,17 @@ describe("Biconomy Token Paymaster", function () {
       smartAccountDeploymentIndex
     );
 
-    console.log("mint tokens to owner address..");
     await token.mint(walletOwnerAddress, ethers.utils.parseEther("1000000"));
 
     walletAddress = expected;
-    console.log(" wallet address ", walletAddress);
 
     paymasterAddress = sampleTokenPaymaster.address;
-    console.log("Paymaster address is ", paymasterAddress);
 
     await sampleTokenPaymaster
       .connect(deployer)
       .addStake(86400, { value: parseEther("2") });
-    console.log("paymaster staked");
 
     await entryPoint.depositTo(paymasterAddress, { value: parseEther("2") });
-
-    // const resultSet = await entryPoint.getDepositInfo(paymasterAddress);
-    // console.log("deposited state ", resultSet);
   });
 
   describe("Oracle Aggregator returning unexpected values / using stale feed", () => {
@@ -255,7 +240,6 @@ describe("Biconomy Token Paymaster", function () {
       const rate1 = await oracleAggregator.getTokenValueOfOneNativeToken(
         token.address
       );
-      console.log(rate1);
 
       await expect(
         staleOracleAggregator.getTokenValueOfOneNativeToken(token.address)
@@ -353,7 +337,6 @@ describe("Biconomy Token Paymaster", function () {
         await offchainSigner.getAddress()
       );
       const receipt = await tx.wait();
-      // console.log(receipt.logs);
 
       const ev = await getUserOpEvent(entryPoint);
       expect(ev.args.success).to.be.true;
@@ -366,7 +349,6 @@ describe("Biconomy Token Paymaster", function () {
         "TokenPaymasterOperation",
         receipt.logs[3].data
       );
-      console.log(eventLogs);
 
       // Confirming that it's using backup (external) exchange rate in case oracle aggregator / price feed is stale / anything goes wrong
       expect(eventLogs.exchangeRate.toString()).to.be.equal(MOCK_FX);
@@ -385,7 +367,6 @@ describe("Biconomy Token Paymaster", function () {
       const rate1 = await oracleAggregator.getTokenValueOfOneNativeToken(
         token.address
       );
-      console.log(rate1);
 
       await token
         .connect(deployer)
@@ -470,7 +451,6 @@ describe("Biconomy Token Paymaster", function () {
         await offchainSigner.getAddress()
       );
       const receipt = await tx.wait();
-      // console.log(receipt.logs);
 
       const ev = await getUserOpEvent(entryPoint);
       expect(ev.args.success).to.be.true;
@@ -483,7 +463,6 @@ describe("Biconomy Token Paymaster", function () {
         "TokenPaymasterOperation",
         receipt.logs[3].data
       );
-      console.log(eventLogs);
 
       // Confirming that it's using backup (external) exchange rate in case oracle aggregator / price feed is stale / anything goes wrong
       expect(eventLogs.exchangeRate).to.be.equal(rate1);
@@ -582,7 +561,6 @@ describe("Biconomy Token Paymaster", function () {
         await offchainSigner.getAddress()
       );
       const receipt = await tx.wait();
-      // console.log(receipt.logs);
 
       const ev = await getUserOpEvent(entryPoint);
       expect(ev.args.success).to.be.true;
@@ -595,7 +573,6 @@ describe("Biconomy Token Paymaster", function () {
         "TokenPaymasterOperation",
         receipt.logs[3].data
       );
-      console.log(eventLogs);
 
       // Confirming that it's using backup (external) exchange rate in case oracle aggregator / price feed is stale / anything goes wrong
       expect(eventLogs.exchangeRate).to.be.equal(MOCK_FX);
