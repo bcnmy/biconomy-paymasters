@@ -8,7 +8,7 @@ import {
 import { Deployer, Deployer__factory } from "../typechain-types";
 
 const provider = ethers.provider;
-let entryPointAddress =
+const entryPointAddress =
   process.env.ENTRY_POINT_ADDRESS ||
   "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
 const owner = process.env.PAYMASTER_OWNER_ADDRESS_PROD || "";
@@ -17,38 +17,41 @@ const DEPLOYER_CONTRACT_ADDRESS =
   process.env.DEPLOYER_CONTRACT_ADDRESS_PROD || "";
 
 function delay(ms: number) {
-    return new Promise<void>((resolve) => {
-      setTimeout(() => {
-        resolve();
-      }, ms);
-    });
+  return new Promise<void>((resolve) => {
+    setTimeout(() => {
+      resolve();
+    }, ms);
+  });
 }
 
-async function deployVerifyingPaymasterContract(deployerInstance: Deployer, earlyOwnerAddress: string): Promise<string | undefined> {
+async function deployVerifyingPaymasterContract(
+  deployerInstance: Deployer,
+  earlyOwnerAddress: string
+): Promise<string | undefined> {
   try {
     const salt = ethers.utils.keccak256(
       ethers.utils.toUtf8Bytes(DEPLOYMENT_SALTS.SINGELTON_PAYMASTER)
     );
 
     const BiconomyVerifyingPaymaster = await ethers.getContractFactory(
-        "VerifyingSingletonPaymaster"
-      );
+      "VerifyingSingletonPaymaster"
+    );
     const verifyingPaymasterBytecode = `${
-        BiconomyVerifyingPaymaster.bytecode
+      BiconomyVerifyingPaymaster.bytecode
     }${encodeParam("address", earlyOwnerAddress).slice(2)}${encodeParam(
-        "address",
-        entryPointAddress
-      ).slice(2)}${encodeParam(
-        "address", verifyingSigner).slice(2)}`;
+      "address",
+      entryPointAddress
+    ).slice(2)}${encodeParam("address", verifyingSigner).slice(2)}`;
 
-    const verifyingPaymasterComputedAddr =
-      await deployerInstance.addressOf(salt);
+    const verifyingPaymasterComputedAddr = await deployerInstance.addressOf(
+      salt
+    );
     console.log(
       "Verifying paymaster Computed Address: ",
       verifyingPaymasterComputedAddr
     );
     const isContractDeployed = await isContract(
-        verifyingPaymasterComputedAddr,
+      verifyingPaymasterComputedAddr,
       provider
     );
     if (!isContractDeployed) {
@@ -59,10 +62,14 @@ async function deployVerifyingPaymasterContract(deployerInstance: Deployer, earl
         verifyingPaymasterBytecode,
         deployerInstance
       );
-      await delay(5000)
+      await delay(5000);
       await run(`verify:verify`, {
         address: verifyingPaymasterComputedAddr,
-        constructorArguments: [earlyOwnerAddress, entryPointAddress, verifyingSigner],
+        constructorArguments: [
+          earlyOwnerAddress,
+          entryPointAddress,
+          verifyingSigner,
+        ],
       });
     } else {
       console.log(
@@ -70,7 +77,7 @@ async function deployVerifyingPaymasterContract(deployerInstance: Deployer, earl
         verifyingPaymasterComputedAddr
       );
     }
-    return verifyingPaymasterComputedAddr
+    return verifyingPaymasterComputedAddr;
   } catch (err) {
     console.log(err);
   }
@@ -111,8 +118,14 @@ async function main() {
   console.log("=========================================");
 
   // Deploy Verifying paymaster
-  const verifyingPaymasterAddress = await deployVerifyingPaymasterContract(deployerInstance, earlyOwner);
-  console.log("==================verifyingPaymasterAddress=======================", verifyingPaymasterAddress);  
+  const verifyingPaymasterAddress = await deployVerifyingPaymasterContract(
+    deployerInstance,
+    earlyOwner
+  );
+  console.log(
+    "==================verifyingPaymasterAddress=======================",
+    verifyingPaymasterAddress
+  );
 }
 
 main().catch((error) => {

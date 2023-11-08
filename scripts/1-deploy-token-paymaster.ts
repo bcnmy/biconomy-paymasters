@@ -8,7 +8,7 @@ import {
 import { Deployer, Deployer__factory } from "../typechain-types";
 
 const provider = ethers.provider;
-let entryPointAddress =
+const entryPointAddress =
   process.env.ENTRY_POINT_ADDRESS ||
   "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
 const owner = process.env.PAYMASTER_OWNER_ADDRESS_PROD || "";
@@ -17,38 +17,39 @@ const DEPLOYER_CONTRACT_ADDRESS =
   process.env.DEPLOYER_CONTRACT_ADDRESS_PROD || "";
 
 function delay(ms: number) {
-    return new Promise<void>((resolve) => {
-      setTimeout(() => {
-        resolve();
-      }, ms);
-    });
+  return new Promise<void>((resolve) => {
+    setTimeout(() => {
+      resolve();
+    }, ms);
+  });
 }
 
-async function deployTokenPaymasterContract(deployerInstance: Deployer, earlyOwnerAddress: string): Promise<string | undefined> {
+async function deployTokenPaymasterContract(
+  deployerInstance: Deployer,
+  earlyOwnerAddress: string
+): Promise<string | undefined> {
   try {
     const salt = ethers.utils.keccak256(
       ethers.utils.toUtf8Bytes(DEPLOYMENT_SALTS.TOKEN_PAYMASTER)
     );
 
     const BiconomyTokenPaymaster = await ethers.getContractFactory(
-        "BiconomyTokenPaymaster"
-      );
+      "BiconomyTokenPaymaster"
+    );
     const tokenPaymasterBytecode = `${
-        BiconomyTokenPaymaster.bytecode
+      BiconomyTokenPaymaster.bytecode
     }${encodeParam("address", earlyOwnerAddress).slice(2)}${encodeParam(
-        "address",
-        entryPointAddress
-      ).slice(2)}${encodeParam(
-        "address", verifyingSigner).slice(2)}`;
+      "address",
+      entryPointAddress
+    ).slice(2)}${encodeParam("address", verifyingSigner).slice(2)}`;
 
-    const tokenPaymasterComputedAddr =
-      await deployerInstance.addressOf(salt);
+    const tokenPaymasterComputedAddr = await deployerInstance.addressOf(salt);
     console.log(
       "Token paymaster Computed Address: ",
       tokenPaymasterComputedAddr
     );
     const isContractDeployed = await isContract(
-        tokenPaymasterComputedAddr,
+      tokenPaymasterComputedAddr,
       provider
     );
     if (!isContractDeployed) {
@@ -59,10 +60,14 @@ async function deployTokenPaymasterContract(deployerInstance: Deployer, earlyOwn
         tokenPaymasterBytecode,
         deployerInstance
       );
-      await delay(5000)
+      await delay(5000);
       await run(`verify:verify`, {
         address: tokenPaymasterComputedAddr,
-        constructorArguments: [earlyOwnerAddress, entryPointAddress, verifyingSigner],
+        constructorArguments: [
+          earlyOwnerAddress,
+          entryPointAddress,
+          verifyingSigner,
+        ],
       });
     } else {
       console.log(
@@ -70,7 +75,7 @@ async function deployTokenPaymasterContract(deployerInstance: Deployer, earlyOwn
         tokenPaymasterComputedAddr
       );
     }
-    return tokenPaymasterComputedAddr
+    return tokenPaymasterComputedAddr;
   } catch (err) {
     console.log(err);
   }
@@ -111,8 +116,14 @@ async function main() {
   console.log("=========================================");
 
   // Deploy Token paymaster
-  const tokenPaymasterAddress = await deployTokenPaymasterContract(deployerInstance, earlyOwner);
-  console.log("==================tokenPaymasterAddress=======================", tokenPaymasterAddress);  
+  const tokenPaymasterAddress = await deployTokenPaymasterContract(
+    deployerInstance,
+    earlyOwner
+  );
+  console.log(
+    "==================tokenPaymasterAddress=======================",
+    tokenPaymasterAddress
+  );
 }
 
 main().catch((error) => {

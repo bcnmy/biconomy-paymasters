@@ -86,6 +86,29 @@ contract VerifyingSingletonPaymaster is
     }
 
     /**
+     * @dev Set a new verifying signer address.
+     * Can only be called by the owner of the contract.
+     * @param _newVerifyingSigner The new address to be set as the verifying signer.
+     * @notice If _newVerifyingSigner is set to zero address, it will revert with an error.
+     * After setting the new signer address, it will emit an event VerifyingSignerChanged.
+     */
+    function setSigner(address _newVerifyingSigner) external payable onlyOwner {
+        if (_newVerifyingSigner == address(0))
+            revert VerifyingSignerCannotBeZero();
+        address oldSigner = verifyingSigner;
+        assembly {
+            sstore(verifyingSigner.slot, _newVerifyingSigner)
+        }
+        emit VerifyingSignerChanged(oldSigner, _newVerifyingSigner, msg.sender);
+    }
+
+    function setUnaccountedEPGasOverhead(uint256 value) external onlyOwner {
+        uint256 oldValue = unaccountedEPGasOverhead;
+        unaccountedEPGasOverhead = value;
+        emit EPGasOverheadChanged(oldValue, value);
+    }
+
+    /**
      * @dev get the current deposit for paymasterId (Dapp Depositor address)
      * @param paymasterId dapp identifier
      */
@@ -93,13 +116,6 @@ contract VerifyingSingletonPaymaster is
         address paymasterId
     ) external view returns (uint256 balance) {
         balance = paymasterIdBalances[paymasterId];
-    }
-
-    /**
-     @dev Override the default implementation.
-     */
-    function deposit() public payable virtual override {
-        revert("user DepositFor instead");
     }
 
     /**
@@ -123,26 +139,10 @@ contract VerifyingSingletonPaymaster is
     }
 
     /**
-     * @dev Set a new verifying signer address.
-     * Can only be called by the owner of the contract.
-     * @param _newVerifyingSigner The new address to be set as the verifying signer.
-     * @notice If _newVerifyingSigner is set to zero address, it will revert with an error.
-     * After setting the new signer address, it will emit an event VerifyingSignerChanged.
+     @dev Override the default implementation.
      */
-    function setSigner(address _newVerifyingSigner) external payable onlyOwner {
-        if (_newVerifyingSigner == address(0))
-            revert VerifyingSignerCannotBeZero();
-        address oldSigner = verifyingSigner;
-        assembly {
-            sstore(verifyingSigner.slot, _newVerifyingSigner)
-        }
-        emit VerifyingSignerChanged(oldSigner, _newVerifyingSigner, msg.sender);
-    }
-
-    function setUnaccountedEPGasOverhead(uint256 value) external onlyOwner {
-        uint256 oldValue = unaccountedEPGasOverhead;
-        unaccountedEPGasOverhead = value;
-        emit EPGasOverheadChanged(oldValue, value);
+    function deposit() public payable virtual override {
+        revert("user DepositFor instead");
     }
 
     /**
@@ -203,7 +203,7 @@ contract VerifyingSingletonPaymaster is
             paymasterData.validAfter
         );
         uint256 sigLength = paymasterData.signatureLength;
-        // we only "require" it here so that the revert reason on invalid signature will be of "VerifyingPaymaster", and not "ECDSA"
+        // "require" is here so for the revert reason on invalid signature will be of "VerifyingPaymaster", and not "ECDSA"
         if (sigLength != 65) revert InvalidPaymasterSignatureLength(sigLength);
         //don't revert on signature failure: return SIG_VALIDATION_FAILED
         if (
@@ -239,21 +239,6 @@ contract VerifyingSingletonPaymaster is
         );
     }
 
-    function getGasPrice(
-        uint256 maxFeePerGas,
-        uint256 maxPriorityFeePerGas
-    ) internal view returns (uint256) {
-        if (maxFeePerGas == maxPriorityFeePerGas) {
-            //legacy mode (for networks that don't support basefee opcode)
-            return maxFeePerGas;
-        }
-        return min(maxFeePerGas, maxPriorityFeePerGas + block.basefee);
-    }
-
-    function min(uint256 a, uint256 b) internal pure returns (uint256) {
-        return a < b ? a : b;
-    }
-
     /**
      * @dev Executes the paymaster's payment conditions
      * @param mode tells whether the op succeeded, reverted, or if the op succeeded but cause the postOp to revert
@@ -261,7 +246,7 @@ contract VerifyingSingletonPaymaster is
      * @param actualGasCost amount to be paid to the entry point in wei
      */
     function _postOp(
-        PostOpMode mode,
+        PostOpMode /** mode */,
         bytes calldata context,
         uint256 actualGasCost
     ) internal virtual override {
@@ -278,5 +263,20 @@ contract VerifyingSingletonPaymaster is
             paymasterIdBalances[extractedPaymasterId] -
             balToDeduct;
         emit GasBalanceDeducted(extractedPaymasterId, balToDeduct);
+    }
+
+    function getGasPrice(
+        uint256 maxFeePerGas,
+        uint256 maxPriorityFeePerGas
+    ) internal view returns (uint256) {
+        if (maxFeePerGas == maxPriorityFeePerGas) {
+            //legacy mode (for networks that don't support basefee opcode)
+            return maxFeePerGas;
+        }
+        return min(maxFeePerGas, maxPriorityFeePerGas + block.basefee);
+    }
+
+    function min(uint256 a, uint256 b) internal pure returns (uint256) {
+        return a < b ? a : b;
     }
 }
