@@ -19,7 +19,7 @@ Biconomy Paymasters are smart contracts that abstract away the complexity of gas
 
 - ERC20 Token Paymaster helps users pay for their transactions using ERC20 tokens.
 - Users initiate a transaction using an ERC20 token.
-- Paymaster validates the transaction and forwards it to the network while handling necessary fee conversions. 
+- Paymaster validates the transaction and forwards it to the network while handling necessary fee conversions.
 - This flow ensures ease of use and convenience for users.
 
 ### Sponsorship Paymaster ![Sponsorship Paymaster](./assets/readme/sponsorship-paymaster.png)
@@ -31,12 +31,14 @@ Biconomy Paymasters are smart contracts that abstract away the complexity of gas
 
 ## Getting Started 🏁
 
-To set up and use the Biconomy Paymasters, you'll need to have Node.js, Yarn, Hardhat, and Foundry installed. 
+To set up and use the Biconomy Paymasters, you'll need to have Node.js, Yarn, Hardhat, and Foundry installed.
 
-### Prerequisites 📋 
+### Prerequisites 📋
+
 Make sure you have Node.js and Yarn installed. You will also need to install Foundry for smart contract development with Solidity.
 
 ### Installation 📦
+
 Clone the repository and install the dependencies with `yarn`:
 
 ```bash
@@ -48,6 +50,7 @@ yarn install
 ### Building the Project 🏗️
 
 Compile your smart contracts and generate typechain artifacts:
+
 ```bash
 yarn build
 ```
@@ -59,6 +62,7 @@ After building, run your tests to ensure everything is working correctly:
 ```bash
 yarn test
 ```
+
 This will run both Hardhat and Foundry tests as specified in your `package.json` scripts.
 
 ## Documentation 📚
@@ -70,7 +74,9 @@ For more detailed information about Paymasters and how to integrate them into yo
 For instructions on how to set up Foundryfollow the instructions provided in the [Foundry Book](https://book.getfoundry.sh/getting-started/installation.html).
 
 ## Contributing 🤝
+
 We welcome contributions from the community. Please take a look at the [guidelines for contributions](./CONTRIBUTING.md).
 
 ## License 📜
+
 This project is licensed under the MIT License. See the [`LICENSE`](./LICENSE.md) file for more information.
