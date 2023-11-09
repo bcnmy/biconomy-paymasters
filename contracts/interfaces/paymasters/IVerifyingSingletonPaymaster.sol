@@ -31,7 +31,8 @@ interface IVerifyingSingletonPaymaster {
     );
     event GasBalanceDeducted(
         address indexed _paymasterId,
-        uint256 indexed _charge
+        uint256 indexed _charge,
+        bytes32 indexed userOpHash
     );
     event PremiumCollected(
         address indexed _paymasterId,

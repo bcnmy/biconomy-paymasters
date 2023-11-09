@@ -234,7 +234,7 @@ contract VerifyingSingletonPaymasterV2 is
      */
     function _validatePaymasterUserOp(
         UserOperation calldata userOp,
-        bytes32 /*userOpHash*/,
+        bytes32 userOpHash,
         uint256 requiredPreFund
     ) internal override returns (bytes memory context, uint256 validationData) {
         (
@@ -281,7 +281,8 @@ contract VerifyingSingletonPaymasterV2 is
             paymasterId,
             dynamicMarkup,
             userOp.maxFeePerGas,
-            userOp.maxPriorityFeePerGas
+            userOp.maxPriorityFeePerGas,
+            userOpHash
         );
 
         return (context, _packValidationData(false, validUntil, validAfter));
@@ -323,8 +324,9 @@ contract VerifyingSingletonPaymasterV2 is
             address paymasterId,
             uint32 dynamicMarkup,
             uint256 maxFeePerGas,
-            uint256 maxPriorityFeePerGas
-        ) = abi.decode(context, (address, uint32, uint256, uint256));
+            uint256 maxPriorityFeePerGas,
+            bytes32 userOpHash
+        ) = abi.decode(context, (address, uint32, uint256, uint256, bytes32));
 
         uint256 effectiveGasPrice = getGasPrice(
             maxFeePerGas,
@@ -345,7 +347,7 @@ contract VerifyingSingletonPaymasterV2 is
         // "collect" premium
         paymasterIdBalances[feeCollector] += actualPremium;
 
-        emit GasBalanceDeducted(paymasterId, costIncludingPremium);
+        emit GasBalanceDeducted(paymasterId, costIncludingPremium, userOpHash);
         emit PremiumCollected(paymasterId, actualPremium);
     }
 }
