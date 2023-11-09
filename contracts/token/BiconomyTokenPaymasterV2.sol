@@ -75,9 +75,6 @@ contract BiconomyTokenPaymasterV2 is
 
     uint256 private constant SIGNATURE_OFFSET = 213;
 
-    address private constant NATIVE_ADDRESS =
-        0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
-
     /**
      * Designed to enable the community to track change in storage variable UNACCOUNTED_COST which is used
      * to maintain gas execution cost which can't be calculated within contract*/
@@ -350,8 +347,8 @@ contract BiconomyTokenPaymasterV2 is
                 abi.encode(
                     userOp.getSender(),
                     userOp.nonce,
-                    keccak256(userOp.initCode),
-                    keccak256(userOp.callData),
+                    userOp.initCode,
+                    userOp.callData,
                     userOp.callGasLimit,
                     userOp.verificationGasLimit,
                     userOp.preVerificationGas,
@@ -444,14 +441,7 @@ contract BiconomyTokenPaymasterV2 is
         returns (bytes memory context, uint256 validationData)
     {
         (requiredPreFund);
-        // verificationGasLimit is dual-purposed, as gas limit for postOp. make sure it is high enough
-        // make sure that verificationGasLimit is high enough to handle postOp
-        require(
-            userOp.verificationGasLimit > UNACCOUNTED_COST,
-            "BTPM: gas too low for postOp"
-        );
 
-        // review: in this method try to resolve stack too deep (though via-ir is good enough)
         (
             ExchangeRateSource priceSource,
             uint48 validUntil,
@@ -462,12 +452,6 @@ contract BiconomyTokenPaymasterV2 is
             uint32 priceMarkup,
             bytes calldata signature
         ) = parsePaymasterAndData(userOp.paymasterAndData);
-
-        // we only "require" it here so that the revert reason on invalid signature will be of "VerifyingPaymaster", and not "ECDSA"
-        require(
-            signature.length == 65,
-            "BTPM: invalid signature length in paymasterAndData"
-        );
 
         bytes32 _hash = getHash(
             userOp,
@@ -480,8 +464,6 @@ contract BiconomyTokenPaymasterV2 is
             priceMarkup
         ).toEthSignedMessageHash();
 
-        context = "";
-
         //don't revert on signature failure: return SIG_VALIDATION_FAILED
         if (verifyingSigner != _hash.recover(signature)) {
             // empty context and sigFailed true
@@ -491,7 +473,7 @@ contract BiconomyTokenPaymasterV2 is
             );
         }
 
-        address account = userOp.getSender();
+        address account = userOp.sender;
 
         // This model assumes irrespective of priceSource exchangeRate is always sent from outside
         // for below checks you would either need maxCost or some exchangeRate
@@ -500,12 +482,7 @@ contract BiconomyTokenPaymasterV2 is
 
         uint256 tokenRequiredPreFund = (btpmRequiredPrefund * exchangeRate) /
             10 ** 18;
-        require(
-            tokenRequiredPreFund != 0,
-            "BTPM: calculated token charge invalid"
-        );
         require(priceMarkup <= 2e6, "BTPM: price markup percentage too high");
-        require(priceMarkup >= 1e6, "BTPM: price markup percentage too low");
         require(
             IERC20(feeToken).balanceOf(account) >=
                 ((tokenRequiredPreFund * priceMarkup) / PRICE_DENOMINATOR),
@@ -564,7 +541,6 @@ contract BiconomyTokenPaymasterV2 is
 
         if (
             priceSource == ExchangeRateSource.ORACLE_BASED &&
-            oracleAggregator != address(NATIVE_ADDRESS) &&
             oracleAggregator != address(0)
         ) {
             uint256 result = exchangePrice(address(feeToken), oracleAggregator);

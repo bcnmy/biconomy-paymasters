@@ -10,13 +10,13 @@ import {
   BiconomyAccountImplementation__factory,
   BiconomyAccountFactory,
   BiconomyAccountFactory__factory,
-  BiconomyTokenPaymaster,
-  BiconomyTokenPaymaster__factory,
   ChainlinkOracleAggregator,
   ChainlinkOracleAggregator__factory,
   MockPriceFeed,
   MockPriceFeed__factory,
   MockToken,
+  BiconomyTokenPaymasterV2,
+  BiconomyTokenPaymasterV2__factory,
 } from "../../typechain-types";
 
 
@@ -94,7 +94,7 @@ describe("Biconomy Token Paymaster", function () {
 
   let offchainSigner: Signer, deployer: Signer;
 
-  let sampleTokenPaymaster: BiconomyTokenPaymaster;
+  let sampleTokenPaymaster: BiconomyTokenPaymasterV2;
   let mockPriceFeed: MockPriceFeed;
   let oracleAggregator: ChainlinkOracleAggregator;
 
@@ -151,7 +151,7 @@ describe("Biconomy Token Paymaster", function () {
     console.log("priceResult");
     console.log(priceResult);
 
-    sampleTokenPaymaster = await new BiconomyTokenPaymaster__factory(
+    sampleTokenPaymaster = await new BiconomyTokenPaymasterV2__factory(
       deployer
     ).deploy(
       walletOwnerAddress,
@@ -342,7 +342,7 @@ describe("Biconomy Token Paymaster", function () {
       );
       const receipt = await tx.wait();
       const gasUsed = receipt.gasUsed.toNumber();
-      console.log('gas used token paymaster V1 ', gasUsed);
+      console.log('gas used token paymaster V2 ', gasUsed);
       console.log(
         "fees paid in native ",
         receipt.effectiveGasPrice.mul(receipt.gasUsed).toString()
@@ -422,7 +422,7 @@ describe("Biconomy Token Paymaster", function () {
 
       await expect(entryPoint.callStatic.simulateValidation(userOp))
       .to.be.revertedWithCustomError(entryPoint, "FailedOp")
-      .withArgs(0, "AA33 reverted: BTPM: invalid signature length in paymasterAndData");
+      .withArgs(0, "AA33 reverted: ECDSA: invalid signature length");
     });
 
     it("should revert (from EntryPoint) on invalid paymaster and data length", async ()  => {
