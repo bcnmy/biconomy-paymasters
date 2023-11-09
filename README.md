@@ -15,14 +15,18 @@ Biconomy Paymasters are smart contracts that abstract away the complexity of gas
 - ERC 4337 Account Abstraction compliant.
 - Multi-token support for gas payments.
 
-### ERC20 Token Paymaster ![ERC20 Token Paymaster](./assets/readme/token-paymaster.png)
+### ERC20 Token Paymaster 
+
+![ERC20 Token Paymaster](./assets/readme/erc20-token-gas-payment-flow.png)
 
 - ERC20 Token Paymaster helps users pay for their transactions using ERC20 tokens.
 - Users initiate a transaction using an ERC20 token.
 - Paymaster validates the transaction and forwards it to the network while handling necessary fee conversions.
 - This flow ensures ease of use and convenience for users.
 
-### Sponsorship Paymaster ![Sponsorship Paymaster](./assets/readme/sponsorship-paymaster.png)
+### Sponsorship Paymaster 
+
+![Sponsorship Paymaster](./assets/readme/paymaster-off-chain-request-processing-flow.png)
 
 - Sponsorship Paymaster covers transaction fees for users.
 - The process starts with the user initiating a transaction.
@@ -80,3 +84,4 @@ We welcome contributions from the community. Please take a look at the [guidelin
 ## License 📜
 
 This project is licensed under the MIT License. See the [`LICENSE`](./LICENSE.md) file for more information.
+
