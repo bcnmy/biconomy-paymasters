@@ -79,8 +79,12 @@ contract ChainlinkOracleAggregator is Ownable, IOracleAggregator {
         address token
     ) external view virtual returns (uint256 exchangeRate) {
         // we'd actually want eth / token
+
+        // pack decimals in one storage slot together
+
         uint256 tokenPrice = _getTokenPrice(token);
         uint8 _tokenOracleDecimals = tokensInfo[token].decimals;
+        // 10 ^ (a + b) instead
         exchangeRate =
             ((10 ** _tokenOracleDecimals) *
                 (10 ** IERC20Metadata(token).decimals())) /
@@ -91,6 +95,8 @@ contract ChainlinkOracleAggregator is Ownable, IOracleAggregator {
         address token
     ) internal view returns (uint256 tokenPrice) {
         // Note // If the callData is for latestAnswer, it could be for latestRoundData and then validateRound and extract price then
+
+        // can save by unifying method to call
         (bool success, bytes memory ret) = tokensInfo[token]
             .callAddress
             .staticcall(tokensInfo[token].callData);
