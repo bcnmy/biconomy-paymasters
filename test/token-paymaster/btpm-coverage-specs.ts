@@ -43,11 +43,8 @@ export const AddressZero = ethers.constants.AddressZero;
 
 const MOCK_VALID_UNTIL = "0x00000000deadbeef";
 const MOCK_VALID_AFTER = "0x0000000000001234";
-// Assume TOKEN decimals is 18, then 1 ETH = 1000 TOKENS
-// const MOCK_FX = ethers.constants.WeiPerEther.mul(1000);
 
 const MOCK_FX: BigNumberish = "977100"; // matic to usdc approx
-console.log("MOCK FX ", MOCK_FX); // 1000000000000000000000
 
 export async function deployEntryPoint(
   provider = ethers.provider
@@ -149,7 +146,6 @@ describe("Biconomy Token Paymaster", function () {
     const MockToken = await ethers.getContractFactory("MockToken");
     token = await MockToken.deploy();
     await token.deployed();
-    console.log("Test token deployed at: ", token.address);
 
     const usdcMaticPriceFeedMock = await new MockPriceFeed__factory(
       deployer
@@ -174,8 +170,6 @@ describe("Biconomy Token Paymaster", function () {
     const priceResult = await oracleAggregator.getTokenValueOfOneNativeToken(
       token.address
     );
-    console.log("priceResult");
-    console.log(priceResult);
 
     sampleTokenPaymaster = await new BiconomyTokenPaymaster__factory(
       deployer
@@ -217,24 +211,19 @@ describe("Biconomy Token Paymaster", function () {
       smartAccountDeploymentIndex
     );
 
-    console.log("mint tokens to owner address..");
     await token.mint(walletOwnerAddress, ethers.utils.parseEther("1000000"));
 
     walletAddress = expected;
-    console.log(" wallet address ", walletAddress);
 
     paymasterAddress = sampleTokenPaymaster.address;
-    console.log("Paymaster address is ", paymasterAddress);
 
     await sampleTokenPaymaster
       .connect(deployer)
       .addStake(1, { value: parseEther("2") });
-    console.log("paymaster staked");
 
     await entryPoint.depositTo(paymasterAddress, { value: parseEther("2") });
 
     const resultSet = await entryPoint.getDepositInfo(paymasterAddress);
-    console.log("deposited state ", resultSet);
   });
 
   describe("Token Payamster Staking + Gas deposits / withdraw", () => {
@@ -242,14 +231,11 @@ describe("Biconomy Token Paymaster", function () {
       await sampleTokenPaymaster
         .connect(deployer)
         .addStake(1, { value: parseEther("2") });
-
-      console.log("paymaster staked");
     });
   });
 
   describe("Pull: ether / tokens recovery", () => {
     it("only owner should be able to pull tokens, withdraw gas", async () => {
-      // paymaster can receive eth
       await deployer.sendTransaction({
         to: paymasterAddress,
         value: parseEther("1"),
@@ -262,16 +248,10 @@ describe("Biconomy Token Paymaster", function () {
       const etherBalanceBefore = await ethers.provider.getBalance(
         withdrawAddress
       );
-      console.log("balance before ", etherBalanceBefore.toString());
 
       const tokenBalanceBefore = await token.balanceOf(withdrawAddress);
-      console.log("token balance before ", tokenBalanceBefore.toString());
 
       const currentGasDeposited = await sampleTokenPaymaster.deposit();
-      console.log(
-        "current gas in Entry Point ",
-        currentGasDeposited.toString()
-      );
 
       await sampleTokenPaymaster.transferOwnership(
         await ethersSigner[6].getAddress()
@@ -282,10 +262,6 @@ describe("Biconomy Token Paymaster", function () {
         .withdrawTo(withdrawAddress, ethers.utils.parseEther("0.2"));
 
       const gasasDepositedAfter = await sampleTokenPaymaster.deposit();
-      console.log(
-        "current gas in Entry Point ",
-        gasasDepositedAfter.toString()
-      );
 
       await expect(
         sampleTokenPaymaster
@@ -296,14 +272,12 @@ describe("Biconomy Token Paymaster", function () {
       const etherBalanceAfter = await ethers.provider.getBalance(
         withdrawAddress
       );
-      console.log("balance after ", etherBalanceBefore.toString());
 
       expect(
         etherBalanceBefore.add(ethers.utils.parseEther("0.2"))
       ).to.be.equal(etherBalanceAfter);
 
       const collectedTokens = await token.balanceOf(paymasterAddress);
-      console.log("collected tokens ", collectedTokens);
 
       await expect(
         sampleTokenPaymaster
@@ -329,7 +303,6 @@ describe("Biconomy Token Paymaster", function () {
         .withdrawERC20(token.address, withdrawAddress, collectedTokens);
 
       const tokenBalanceAfter = await token.balanceOf(withdrawAddress);
-      console.log("token balance after ", tokenBalanceAfter.toString());
 
       expect(tokenBalanceBefore.add(collectedTokens)).to.be.equal(
         tokenBalanceAfter

@@ -212,7 +212,6 @@ export async function fillUserOp(
         const salt = hexDataSlice(initCallData, 0, 32);
         op1.sender = Create2Factory.getDeployedAddress(ctr, salt);
       } else {
-        // console.log('\t== not our deployer. our=', Create2Factory.contractAddress, 'got', initAddr)
         if (provider == null) throw new Error("no entrypoint/provider");
         op1.sender = await entryPoint!.callStatic
           .getSenderAddress(op1.initCode!)
@@ -273,7 +272,6 @@ export async function fillUserOp(
       gasEstimated = 3_000_000;
     }
 
-    // console.log('estim', op1.sender,'len=', op1.callData!.length, 'res=', gasEstimated)
     // estimateGas assumes direct call from entryPoint. add wrapper cost.
     op1.callGasLimit = gasEstimated; // .add(55000)
   }

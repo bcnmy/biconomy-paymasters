@@ -19,6 +19,7 @@
     "lint:sol": "yarn solhint 'contracts/**/*.sol'",
     "lint:sol-fix": "yarn prettier 'contracts/**/*.sol' --write && yarn solhint 'contracts/**/*.sol' --fix",
     "lint:fix": "yarn lint:ts-fix && yarn lint:sol-fix",
+    "secret": "echo -e '\u001b[31m⚠️ WARNING: This script is intended for development use only. The generated .secret file is NOT SAFE for production environments.\u001b[0m' && echo 'primary twist rack vendor diagram image used route theme frown either will' > .abc",
     "postinstall": "husky install",
     "prepack": "pinst --disable && ./scripts/prepack-contracts.sh",
     "postpack": "pinst --enable && ./scripts/postpack-contracts.sh",
