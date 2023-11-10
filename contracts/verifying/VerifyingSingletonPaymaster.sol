@@ -146,13 +146,6 @@ contract VerifyingSingletonPaymaster is
     }
 
     /**
-     @dev Override the default implementation.
-     */
-    function deposit() public payable virtual override {
-        revert("user DepositFor instead");
-    }
-
-    /**
      * @dev This method is called by the off-chain service, to sign the request.
      * It is called on-chain from the validatePaymasterUserOp, to validate the signature.
      * @notice That this signature covers all fields of the UserOperation, except the "paymasterAndData",

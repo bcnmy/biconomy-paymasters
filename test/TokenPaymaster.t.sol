@@ -232,7 +232,7 @@ contract TokenPaymasterTest is Test {
     function testCall() external {
         vm.deal(address(smartAccount), 1e18);
         (UserOperation memory op, uint256 prefund) = fillUserOp(
-            address(smartAccount),
+            smartAccount,
             keyUser,
             address(counter),
             0,
@@ -254,7 +254,7 @@ contract TokenPaymasterTest is Test {
             usdc.balanceOf(address(_btpm))
         );
         (UserOperation memory op, uint256 prefund) = fillUserOp(
-            address(smartAccount),
+            smartAccount,
             keyUser,
             address(usdc),
             0,
@@ -305,7 +305,7 @@ contract TokenPaymasterTest is Test {
             usdc.balanceOf(address(_btpm))
         );
         (UserOperation memory op, uint256 prefund) = fillUserOp(
-            address(smartAccount),
+            smartAccount,
             keyUser,
             address(usdc),
             0,
@@ -356,7 +356,7 @@ contract TokenPaymasterTest is Test {
             usdc.balanceOf(address(_btpm))
         );
         (UserOperation memory op, uint256 prefund) = fillUserOp(
-            address(smartAccount),
+            smartAccount,
             keyUser,
             address(usdc),
             0,
@@ -380,7 +380,7 @@ contract TokenPaymasterTest is Test {
             usdc.balanceOf(address(_btpm))
         );
         (UserOperation memory op, uint256 prefund) = fillUserOp(
-            address(smartAccount),
+            smartAccount,
             keyUser,
             address(usdc),
             0,
@@ -411,7 +411,7 @@ contract TokenPaymasterTest is Test {
             usdc.balanceOf(address(_btpm))
         );
         (UserOperation memory op, uint256 prefund) = fillUserOp(
-            address(smartAccount),
+            smartAccount,
             keyUser,
             address(usdc),
             0,
@@ -465,7 +465,7 @@ contract TokenPaymasterTest is Test {
             usdc.balanceOf(address(_btpm))
         );
         (UserOperation memory op, uint256 prefund) = fillUserOp(
-            address(smartAccount),
+            smartAccount,
             keyUser,
             address(usdc),
             0,
@@ -518,7 +518,7 @@ contract TokenPaymasterTest is Test {
             usdc.balanceOf(address(_btpm))
         );
         (UserOperation memory op, uint256 prefund) = fillUserOp(
-            address(smartAccount),
+            smartAccount,
             keyUser,
             address(usdc),
             0,

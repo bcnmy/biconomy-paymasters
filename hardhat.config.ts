@@ -7,6 +7,7 @@ import "@typechain/hardhat";
 import "hardhat-gas-reporter";
 import "solidity-coverage";
 import "@nomiclabs/hardhat-etherscan";
+import "@nomicfoundation/hardhat-foundry";
 
 const walletUtils = require("./walletUtils");
 

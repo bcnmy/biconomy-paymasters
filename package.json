@@ -6,7 +6,7 @@
   "scripts": {
     "test": "yarn test:hardhat && yarn test:foundry",
     "clean": "yarn hardhat clean && forge clean",
-    "build": "yarn hardhat compile && yarn hardhat typechain && yarn prepare-typechain && yarn build:foundry",
+    "build": "yarn hardhat compile && yarn hardhat typechain && yarn prepare-typechain && yarn prepare-sa && yarn build:foundry",
     "clean:build": "yarn clean && yarn build",
     "build:foundry": "forge build --via-ir",
     "build:hardhat": "yarn hardhat compile",
@@ -25,6 +25,7 @@
     "postpack": "pinst --enable && ./scripts/postpack-contracts.sh",
     "coverage": "COVERAGE=1 DISABLE_VIA_IR=true hardhat coverage",
     "prepare-typechain": "cd lib/account-abstraction && yarn install && yarn hardhat typechain",
+    "prepare-sa": "cd lib/scw-contracts && git checkout develop && cd ../..",
     "prepare": "husky install"
   },
   "repository": {
@@ -45,7 +46,7 @@
   "devDependencies": {
     "@chainlink/contracts": "^0.6.0",
     "@nomicfoundation/hardhat-chai-matchers": "^1.0.6",
-    "@nomicfoundation/hardhat-foundry": "^1.0.0",
+    "@nomicfoundation/hardhat-foundry": "^1.1.1",
     "@nomicfoundation/hardhat-network-helpers": "^1.0.8",
     "@nomicfoundation/hardhat-toolbox": "^2.0.2",
     "@nomiclabs/hardhat-ethers": "^2.2.3",
@@ -88,7 +89,7 @@
   },
   "dependencies": {
     "@account-abstraction/contracts": "^0.6.0",
-    "@biconomy-devx/account-contracts-v2": "^2.0.2",
+    "@biconomy-devx/account-contracts-v2": "^2.0.3",
     "@biconomy/account-contracts": "^2.0.0",
     "@chainlink/contracts": "^0.6.0",
     "@ethersproject/abstract-signer": "^5.6.2",
