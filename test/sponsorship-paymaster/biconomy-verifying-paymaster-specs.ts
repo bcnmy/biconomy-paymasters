@@ -14,13 +14,25 @@ import {
 // Review: Could import from scw-contracts submodules to be consistent
 import { fillAndSign } from "../utils/userOp";
 import { UserOperation } from "../../lib/account-abstraction/test/UserOperation";
-import { createAccount, simulationResultCatch } from "../../lib/account-abstraction/test/testutils";
-import { EntryPoint, EntryPoint__factory, SimpleAccount, TestToken, TestToken__factory } from "../../lib/account-abstraction/typechain";
-import { EcdsaOwnershipRegistryModule, EcdsaOwnershipRegistryModule__factory } from "@biconomy-devx/account-contracts-v2/dist/types";
-
-export const AddressZero = ethers.constants.AddressZero;
+import {
+  createAccount,
+  simulationResultCatch,
+} from "../../lib/account-abstraction/test/testutils";
+import {
+  EntryPoint,
+  EntryPoint__factory,
+  SimpleAccount,
+  TestToken,
+  TestToken__factory,
+} from "../../lib/account-abstraction/typechain";
+import {
+  EcdsaOwnershipRegistryModule,
+  EcdsaOwnershipRegistryModule__factory,
+} from "@biconomy-devx/account-contracts-v2/dist/types";
 import { arrayify, hexConcat, parseEther } from "ethers/lib/utils";
 import { BigNumber, BigNumberish, Contract, Signer } from "ethers";
+
+export const AddressZero = ethers.constants.AddressZero;
 
 const MOCK_VALID_UNTIL = "0x00000000deadbeef";
 const MOCK_VALID_AFTER = "0x0000000000001234";
@@ -63,7 +75,9 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
     const offchainSignerAddress = await offchainSigner.getAddress();
     const walletOwnerAddress = await walletOwner.getAddress();
 
-    ecdsaModule = await new EcdsaOwnershipRegistryModule__factory(deployer).deploy();
+    ecdsaModule = await new EcdsaOwnershipRegistryModule__factory(
+      deployer
+    ).deploy();
 
     verifyingSingletonPaymaster =
       await new VerifyingSingletonPaymaster__factory(deployer).deploy(
@@ -72,42 +86,44 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
         offchainSignerAddress
       );
 
-    smartWalletImp = await new BiconomyAccountImplementation__factory(deployer).deploy(
-      entryPoint.address
-    );
+    smartWalletImp = await new BiconomyAccountImplementation__factory(
+      deployer
+    ).deploy(entryPoint.address);
 
     walletFactory = await new BiconomyAccountFactory__factory(deployer).deploy(
       smartWalletImp.address,
       walletOwnerAddress
     );
 
-    await walletFactory.connect(deployer).addStake(entryPoint.address, 86400, { value: parseEther("2") })
+    await walletFactory
+      .connect(deployer)
+      .addStake(entryPoint.address, 86400, { value: parseEther("2") });
 
-    const ecdsaOwnershipSetupData =
-    ecdsaModule.interface.encodeFunctionData(
+    const ecdsaOwnershipSetupData = ecdsaModule.interface.encodeFunctionData(
       "initForSmartAccount",
       [walletOwnerAddress]
     );
 
     const smartAccountDeploymentIndex = 0;
 
-
-    await walletFactory.deployCounterFactualAccount(ecdsaModule.address, ecdsaOwnershipSetupData, smartAccountDeploymentIndex
-      );
+    await walletFactory.deployCounterFactualAccount(
+      ecdsaModule.address,
+      ecdsaOwnershipSetupData,
+      smartAccountDeploymentIndex
+    );
     const expected = await walletFactory.getAddressForCounterFactualAccount(
-      ecdsaModule.address, ecdsaOwnershipSetupData, smartAccountDeploymentIndex
+      ecdsaModule.address,
+      ecdsaOwnershipSetupData,
+      smartAccountDeploymentIndex
     );
 
     walletAddress = expected;
-    console.log(" wallet address ", walletAddress);
 
     paymasterAddress = verifyingSingletonPaymaster.address;
-    console.log("Paymaster address is ", paymasterAddress);
 
     await verifyingSingletonPaymaster
       .connect(deployer)
       .addStake(86400, { value: parseEther("2") });
-    console.log("paymaster staked");
 
     await entryPoint.depositTo(paymasterAddress, { value: parseEther("1") });
   });
@@ -148,7 +164,6 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
   describe("#validatePaymasterUserOp", () => {
     it("Should Fail when there is no deposit for paymaster id", async () => {
       const paymasterId = await depositorSigner.getAddress();
-      console.log("paymaster Id ", paymasterId);
       const userOp = await getUserOpWithPaymasterInfo(paymasterId);
 
       const signatureWithModuleAddress = ethers.utils.defaultAbiCoder.encode(
@@ -156,9 +171,8 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
         [userOp.signature, ecdsaModule.address]
       );
 
-      userOp.signature = signatureWithModuleAddress
+      userOp.signature = signatureWithModuleAddress;
 
-      console.log("entrypoint ", entryPoint.address);
       await expect(
         entryPoint.callStatic.simulateValidation(userOp)
         // ).to.be.revertedWith("FailedOp");
@@ -217,7 +231,7 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
         [userOp.signature, ecdsaModule.address]
       );
 
-      userOp.signature = signatureWithModuleAddress
+      userOp.signature = signatureWithModuleAddress;
 
       await entryPoint.handleOps([userOp], await offchainSigner.getAddress());
       // gas used VPM V1 134369

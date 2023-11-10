@@ -17,7 +17,10 @@ import {
   MockPriceFeed__factory,
   MockToken,
 } from "../../../typechain-types";
-import { EcdsaOwnershipRegistryModule, EcdsaOwnershipRegistryModule__factory } from "@biconomy-devx/account-contracts-v2/dist/types";
+import {
+  EcdsaOwnershipRegistryModule,
+  EcdsaOwnershipRegistryModule__factory,
+} from "@biconomy-devx/account-contracts-v2/dist/types";
 
 // Review: Could import from scw-contracts submodules to be consistent
 import { fillAndSign } from "../../utils/userOp";
@@ -26,11 +29,11 @@ import {
   EntryPoint__factory,
   TestToken,
 } from "../../../lib/account-abstraction/typechain";
-
-export const AddressZero = ethers.constants.AddressZero;
 import { arrayify, hexConcat, parseEther } from "ethers/lib/utils";
 import { BigNumber, BigNumberish, Contract, Signer } from "ethers";
 import { BundlerTestEnvironment } from "../environment/bundlerEnvironment";
+
+export const AddressZero = ethers.constants.AddressZero;
 
 const MOCK_VALID_UNTIL = "0x00000000deadbeef";
 const MOCK_VALID_AFTER = "0x0000000000001234";
@@ -129,7 +132,9 @@ describe("Biconomy Token Paymaster (with Bundler)", function () {
       deployer
     ).deploy(walletOwnerAddress);
 
-    ecdsaModule = await new EcdsaOwnershipRegistryModule__factory(deployer).deploy();
+    ecdsaModule = await new EcdsaOwnershipRegistryModule__factory(
+      deployer
+    ).deploy();
 
     const MockToken = await ethers.getContractFactory("MockToken");
     token = await MockToken.deploy();
@@ -172,10 +177,11 @@ describe("Biconomy Token Paymaster (with Bundler)", function () {
       walletOwnerAddress
     );
 
-    await walletFactory.connect(deployer).addStake(entryPoint.address, 86400, { value: parseEther("2") })
+    await walletFactory
+      .connect(deployer)
+      .addStake(entryPoint.address, 86400, { value: parseEther("2") });
 
-    const ecdsaOwnershipSetupData =
-    ecdsaModule.interface.encodeFunctionData(
+    const ecdsaOwnershipSetupData = ecdsaModule.interface.encodeFunctionData(
       "initForSmartAccount",
       [walletOwnerAddress]
     );
@@ -183,7 +189,9 @@ describe("Biconomy Token Paymaster (with Bundler)", function () {
     const smartAccountDeploymentIndex = 0;
 
     const expected = await walletFactory.getAddressForCounterFactualAccount(
-      ecdsaModule.address, ecdsaOwnershipSetupData, smartAccountDeploymentIndex
+      ecdsaModule.address,
+      ecdsaOwnershipSetupData,
+      smartAccountDeploymentIndex
     );
 
     await token.mint(walletOwnerAddress, ethers.utils.parseEther("1000000"));
@@ -195,14 +203,13 @@ describe("Biconomy Token Paymaster (with Bundler)", function () {
     await entryPoint.depositTo(paymasterAddress, { value: parseEther("2") });
 
     await sampleTokenPaymaster.addStake(100, {
-      value: parseEther("10")
+      value: parseEther("10"),
     });
   });
 
   after(async function () {
     const chainId = (await ethers.provider.getNetwork()).chainId;
     if (chainId === BundlerTestEnvironment.BUNDLER_ENVIRONMENT_CHAIN_ID) {
-      
       await Promise.all([
         environment.revert(environment.defaultSnapshot!),
         environment.resetBundler(),
@@ -229,14 +236,17 @@ describe("Biconomy Token Paymaster (with Bundler)", function () {
         "initForSmartAccount",
         [owner]
       );
-  
+
       const smartAccountDeploymentIndex = 0;
-  
+
       const deploymentData = AccountFactory.interface.encodeFunctionData(
-          "deployCounterFactualAccount",
-          [ecdsaModule.address, ecdsaOwnershipSetupData, smartAccountDeploymentIndex]
+        "deployCounterFactualAccount",
+        [
+          ecdsaModule.address,
+          ecdsaOwnershipSetupData,
+          smartAccountDeploymentIndex,
+        ]
       );
-  
 
       const userOp1 = await fillAndSign(
         {
@@ -294,7 +304,7 @@ describe("Biconomy Token Paymaster (with Bundler)", function () {
         [userOp.signature, ecdsaModule.address]
       );
 
-      userOp.signature = signatureWithModuleAddress
+      userOp.signature = signatureWithModuleAddress;
 
       await environment.sendUserOperation(userOp, entryPoint.address);
 

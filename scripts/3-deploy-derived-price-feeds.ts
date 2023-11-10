@@ -5,4 +5,3 @@
 // If price feed is supposed to be derived then go ahead and deploy the derived feed
 
 // TODO: passing the array of symbols and chainId - based on chainId config file is fetched, only run on required symbols
-

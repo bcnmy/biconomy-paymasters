@@ -25,8 +25,30 @@ import moonbaseAlphaConfigInfoProd from "./prod/token-config-moonbase-alpha.json
 import moonbeamMainnetConfigInfoProd from "./prod/token-config-moonbeam.json";
 import optimismMainnetConfigInfoProd from "./prod/token-config-optimism-mainnet.json";
 
-
-export { mumbaiConfigInfoDev, goerliConfigInfoDev, polygonMainnetConfigInfoDev, bnbTestnetConfigInfoDev, bnbMainnetConfigInfoDev, arbGoerliConfigInfoDev, sepoliaConfigInfoDev, optimismGoerliConfigInfoDev, 
-    goerliConfigInfoProd, mumbaiConfigInfoProd, polygonMainnetConfigInfoProd, bnbTestnetConfigInfoProd, bnbMainnetConfigInfoProd, arbGoerliConfigInfoProd, sepoliaConfigInfoProd, 
-    optimismGoerliConfigInfoProd, ethMainnetConfigInfoProd, arbitrumOneConfigInfoProd, avalancheMainnetConfigInfoProd, avalancheFujiConfigInfoProd, baseGoerliConfigInfoProd, lineaTestnetConfigInfoProd,
-    moonbaseAlphaConfigInfoProd, moonbeamMainnetConfigInfoProd, optimismMainnetConfigInfoProd }
+export {
+  mumbaiConfigInfoDev,
+  goerliConfigInfoDev,
+  polygonMainnetConfigInfoDev,
+  bnbTestnetConfigInfoDev,
+  bnbMainnetConfigInfoDev,
+  arbGoerliConfigInfoDev,
+  sepoliaConfigInfoDev,
+  optimismGoerliConfigInfoDev,
+  goerliConfigInfoProd,
+  mumbaiConfigInfoProd,
+  polygonMainnetConfigInfoProd,
+  bnbTestnetConfigInfoProd,
+  bnbMainnetConfigInfoProd,
+  arbGoerliConfigInfoProd,
+  sepoliaConfigInfoProd,
+  optimismGoerliConfigInfoProd,
+  ethMainnetConfigInfoProd,
+  arbitrumOneConfigInfoProd,
+  avalancheMainnetConfigInfoProd,
+  avalancheFujiConfigInfoProd,
+  baseGoerliConfigInfoProd,
+  lineaTestnetConfigInfoProd,
+  moonbaseAlphaConfigInfoProd,
+  moonbeamMainnetConfigInfoProd,
+  optimismMainnetConfigInfoProd,
+};

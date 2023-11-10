@@ -36,9 +36,8 @@ const options = { gasLimit: 7000000 /*, gasPrice: 70000000000 */ };
 // TODO
 // remove TEST for production deployments
 
-
 // 0xD3f89753278E419c8bda1eFe1366206B3D30C44f : Deployer address
-/*export enum DEPLOYMENT_SALTS { // DEV
+/* export enum DEPLOYMENT_SALTS { // DEV
   ORACLE_AGGREGATOR = "DEVX_CHAINLINK_ORACLE_AGGREGATOR_V0_27062023_bBee55b", // 0x0000065b8abb967271817555f23945eedf08015c
   TOKEN_PAYMASTER = "DEVX_TOKEN_PAYMASTER_V0_08072023_h5AFKLa", // 0x0000023d6c240ae3c9610d519510004d2616c9ec
   PRICE_FEED_USDC = "DEVX_PRICE_FEED_USDC_V0_27062023_uiaqdyv", // 0x000005abae3deadbe1fbd12105f950efba9eaec4
@@ -51,13 +50,12 @@ const options = { gasLimit: 7000000 /*, gasPrice: 70000000000 */ };
   PRICE_FEED_1INCH = "DEVX_PRICE_FEED_1INCH_V0_27062023_XhXA3sd", // 0x00000c451fa0b0a79a36c82820f061683e26714c
   PRICE_FEED_TWT = "DEVX_PRICE_FEED_TWT_V0_27062023_92Xklvq", // 0x00000e862312c82af2301e6c433e75099665649d
   PRICE_FEED_UNI = "DEVX_PRICE_FEED_UNI_V0_27062023_PBQ6vdq" // 0x0000095cce092e83e5826cfeb0f03cfa74915b41 
-}*/
-
+} */
 
 export enum DEPLOYMENT_SALTS { // PROD
   // 0x988C135a1049Ce61730724afD342fb7C56CD2776 : Deployer address
   ORACLE_AGGREGATOR = "PROD_CHAINLINK_ORACLE_AGGREGATOR_V0_27062023_UT8R11e", // 0x00000f7748595e46527413574a9327942e744e91
-  TOKEN_PAYMASTER = "PROD_TOKEN_PAYMASTER_V0_08072023_cONP4xM", // 0x00000f7365ca6c59a2c93719ad53d567ed49c14c 
+  TOKEN_PAYMASTER = "PROD_TOKEN_PAYMASTER_V0_08072023_cONP4xM", // 0x00000f7365ca6c59a2c93719ad53d567ed49c14c
 
   // when using deployer DEV
   // ORACLE_AGGREGATOR = "DEVX_CHAINLINK_ORACLE_AGGREGATOR_V0_27062023_bBee55b", // 0x0000065b8abb967271817555f23945eedf08015c
@@ -65,10 +63,9 @@ export enum DEPLOYMENT_SALTS { // PROD
   // when using deployer DEV
   // TOKEN_PAYMASTER = "DEVX_TOKEN_PAYMASTER_V0_08072023_h5AFKLa", // 0x0000023d6c240ae3c9610d519510004d2616c9ec
 
-  
   // V1.1.0
   SINGELTON_PAYMASTER = "PROD_SINGLETON_PAYMASTER_V1_06082023_II1mWTr", // 0x00000f79b7faf42eebadba19acc07cd08af44789
-  
+
   // 0xD3f89753278E419c8bda1eFe1366206B3D30C44f : Deployer address
 
   // V1.1.0
@@ -160,11 +157,11 @@ export enum DEPLOYMENT_SALTS { // PROD
   PRICE_FEED_QI = "DEVX_PRICE_FEED_QI_V0_24072023_GQDedut", // 0x00006c81322356756cee17b157a743a794b33426
   PRICE_FEED_SPELL = "DEVX_PRICE_FEED_SPELL_V0_24072023_v0CCYNa", // 0x000015e3b3b1023570dae19c620073eb2acd1513
   PRICE_FEED_FXS = "DEVX_PRICE_FEED_FXS_V0_24072023_WCKMhk1", // 0x00002f9671412725ceb1a283f72cbb44ba3d1893
-  PRICE_FEED_SAVAX = "DEVX_PRICE_FEED_SAVAX_V0_24072023_ZjA5Bd7", // 0x000074c26fd8b4172b4648fa8b879d2a5387a92c 
+  PRICE_FEED_SAVAX = "DEVX_PRICE_FEED_SAVAX_V0_24072023_ZjA5Bd7", // 0x000074c26fd8b4172b4648fa8b879d2a5387a92c
   PRICE_FEED_MKR = "DEVX_PRICE_FEED_MKR_V0_24072023_2Chh0Sh", // 0x000075866d453c2cfccb586d200153fb606e3d6d
   PRICE_FEED_SUSD = "DEVX_PRICE_FEED_SUSD_V0_24072023_0Dv7g4m", // 0x000037cd348e5b79adee29148e6d05520b2c45d2
   PRICE_FEED_PERP = "DEVX_PRICE_FEED_PERP_V0_24072023_uh65wbb", // 0x000068aa7f8c85bf8ada5aa18099bafcd2e1df5b
-  PRICE_FEED_OP = "DEVX_PRICE_FEED_OP_V0_24072023_riqc17D", // 0x0000462be5bbda0a7b5414044c32c7e37d0d35f3 
+  PRICE_FEED_OP = "DEVX_PRICE_FEED_OP_V0_24072023_riqc17D", // 0x0000462be5bbda0a7b5414044c32c7e37d0d35f3
 }
 
 // Marked for removal
@@ -237,7 +234,7 @@ export const getDeployerInstance = async (): Promise<Deployer> => {
   //   from: metaDeployer.address,
   //   nonce: 0,
   // });
-  
+
   const provider = hardhatEthersInstance.provider;
   const [signer] = await hardhatEthersInstance.getSigners();
   const chainId = (await provider.getNetwork()).chainId;
@@ -270,10 +267,13 @@ export const deployContract = async (
   contractByteCode: string,
   deployerInstance: Deployer
 ): Promise<string> => {
-  //const { hash, wait } = await deployerInstance.deploy(salt, contractByteCode, {maxFeePerGas: 200e9, maxPriorityFeePerGas: 75e9});
+  // const { hash, wait } = await deployerInstance.deploy(salt, contractByteCode, {maxFeePerGas: 200e9, maxPriorityFeePerGas: 75e9});
   // TODO
   // Review gas price
-  const { hash, wait } = await deployerInstance.deploy(salt, contractByteCode, {maxFeePerGas: 3e9, maxPriorityFeePerGas: 2e9});
+  const { hash, wait } = await deployerInstance.deploy(salt, contractByteCode, {
+    maxFeePerGas: 3e9,
+    maxPriorityFeePerGas: 2e9,
+  });
 
   console.log(`Submitted transaction ${hash} for deployment`);
 

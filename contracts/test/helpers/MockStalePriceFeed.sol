@@ -25,7 +25,7 @@ contract MockStalePriceFeed {
         return 18;
     }
 
-    function getThePrice() public view returns (int) {
+    function getThePrice() public view returns (int256) {
         // Always using decimals 18 for derived price feeds
         revert WrongPrice();
     }
