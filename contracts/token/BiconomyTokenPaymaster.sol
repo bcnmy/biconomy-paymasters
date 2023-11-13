@@ -604,9 +604,7 @@ contract BiconomyTokenPaymaster is
                 feeReceiver,
                 charge
             );
-            (bool success,) = address(feeToken).call(
-                _data
-            );
+            (bool success, ) = address(feeToken).call(_data);
             if (!success) {
                 // In case above transferFrom failed, pay with deposit / notify at least
                 // Sender could be banned indefinitely or for certain period
