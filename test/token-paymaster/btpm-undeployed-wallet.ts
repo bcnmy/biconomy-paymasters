@@ -341,12 +341,11 @@ describe("Biconomy Token Paymaster", function () {
         .add(userOp.preVerificationGas)
         .mul(userOp.maxFeePerGas);
 
-
       const tx = await entryPoint.handleOps(
         [userOp],
         await offchainSigner.getAddress()
       );
-      
+
       await tx.wait();
 
       const ev = await getUserOpEvent(entryPoint);

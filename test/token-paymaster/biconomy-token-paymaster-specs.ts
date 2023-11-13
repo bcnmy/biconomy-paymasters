@@ -144,7 +144,6 @@ describe("Biconomy Token Paymaster", function () {
     token = await MockToken.deploy();
     await token.deployed();
 
-
     const usdcMaticPriceFeedMock = await new MockPriceFeed__factory(
       deployer
     ).deploy();
@@ -214,7 +213,6 @@ describe("Biconomy Token Paymaster", function () {
     walletAddress = expected;
 
     paymasterAddress = sampleTokenPaymaster.address;
-  
 
     await sampleTokenPaymaster
       .connect(deployer)
@@ -357,14 +355,12 @@ describe("Biconomy Token Paymaster", function () {
         .add(userOp.preVerificationGas)
         .mul(userOp.maxFeePerGas);
 
-
       const preTokenBalanceForAccount = await token.balanceOf(walletAddress);
       const tx = await entryPoint.handleOps(
         [userOp],
         await offchainSigner.getAddress()
       );
       const receipt = await tx.wait();
-
 
       const postBalance = await token.balanceOf(paymasterAddress);
 

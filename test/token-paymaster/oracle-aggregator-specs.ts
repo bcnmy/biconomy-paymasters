@@ -139,7 +139,7 @@ describe("Biconomy Token Paymaster", function () {
 
     const MockToken = await ethers.getContractFactory("MockToken");
     token = await MockToken.deploy();
-    
+
     await token.deployed();
 
     const usdcMaticPriceFeedMock = await new MockPriceFeed__factory(
