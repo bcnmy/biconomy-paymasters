@@ -25,7 +25,7 @@
     "postpack": "pinst --enable && ./scripts/postpack-contracts.sh",
     "coverage": "COVERAGE=1 DISABLE_VIA_IR=true hardhat coverage",
     "prepare-typechain": "cd lib/account-abstraction && yarn install && yarn hardhat typechain",
-    "prepare-sa": "cd lib/scw-contracts && yarn install",
+    "prepare-sa": "cd lib/scw-contracts && git checkout develop && yarn install",
     "prepare": "husky install"
   },
   "repository": {
