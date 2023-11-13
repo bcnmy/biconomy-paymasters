@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import {IEntryPoint} from "@account-abstraction/contracts/interfaces/IEntryPoint.sol";
-import {SmartAccount} from "@biconomy-devx/account-contracts-v2/contracts/smart-account/SmartAccount.sol";
+import {SmartAccount} from "lib/scw-contracts/contracts/smart-account/SmartAccount.sol";
 
 // Note: Could also use published package or added submodule.
 

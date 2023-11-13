@@ -19,9 +19,9 @@ import {UserOperation} from "@account-abstraction/contracts/interfaces/UserOpera
 import {IStakeManager} from "@account-abstraction/contracts/interfaces/IStakeManager.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
-import {SmartAccountFactory} from "@biconomy-devx/account-contracts-v2/contracts/smart-account/factory/SmartAccountFactory.sol";
-import {SmartAccount} from "@biconomy-devx/account-contracts-v2/contracts/smart-account/SmartAccount.sol";
-import {EcdsaOwnershipRegistryModule} from "@biconomy-devx/account-contracts-v2/contracts/smart-account/modules/EcdsaOwnershipRegistryModule.sol";
+import {SmartAccountFactory} from "lib/scw-contracts/contracts/smart-account/factory/SmartAccountFactory.sol";
+import {SmartAccount} from "lib/scw-contracts/contracts/smart-account/SmartAccount.sol";
+import {EcdsaOwnershipRegistryModule} from "lib/scw-contracts/contracts/smart-account/modules/EcdsaOwnershipRegistryModule.sol";
 
 
 import {MockToken} from "../contracts/test/helpers/MockToken.sol";
