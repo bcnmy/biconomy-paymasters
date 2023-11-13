@@ -206,7 +206,7 @@ contract VerifyingSingletonPaymaster is
         emit GasBalanceDeducted(extractedPaymasterId, balToDeduct);
     }
 
-        /**
+    /**
      * @dev Verify that an external signer signed the paymaster data of a user operation.
      * The paymaster data is expected to be the paymaster and a signature over the entire request parameters.
      * @param userOp The UserOperation struct that represents the current user operation.
@@ -219,7 +219,12 @@ contract VerifyingSingletonPaymaster is
         UserOperation calldata userOp,
         bytes32 /*userOpHash*/,
         uint256 requiredPreFund
-    ) internal override view returns (bytes memory context, uint256 validationData) {
+    )
+        internal
+        view
+        override
+        returns (bytes memory context, uint256 validationData)
+    {
         PaymasterData memory paymasterData = userOp._decodePaymasterData();
         bytes32 hash = getHash(
             userOp,
