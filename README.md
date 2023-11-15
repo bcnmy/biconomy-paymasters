@@ -1,12 +1,12 @@
 # Biconomy Paymasters 🌐
 
-Welcome to the `biconomy-paymasters` repository! Paymaster contracts enable seamless transaction fee handling in decentralized applications. 🛠️
+Welcome to the `biconomy-paymasters`` repository! Paymaster contracts enable seamless userOp fee handling in decentralized applications, offering innovative solutions similar to traditional web2 payment processing models. 🛠️
 
-## What is Biconomy Paymasters? 🤔
+## What are Biconomy Paymasters? 🤔
 
-Biconomy Paymasters are smart contracts that abstract away the complexity of gas fees for end-users. By utilizing these contracts, developers can offer their users gasless transactions or the ability to pay for gas in ERC20 tokens. 🚀
+Biconomy Paymasters, structured as smart contracts, streamline the management of gas fees, offering end-users the convenience of executing user operations without gas costs or the flexibility to pay fees with ERC20 tokens. 🚀
 
-- **Sponsorship Paymaster**: Allows transactions without end-users needing to pay for gas, enhancing UX.
+- **Verifying (Sponsorship) Paymaster**: Allows transactions without end-users needing to pay for gas, enhancing UX.
 - **Token Paymaster**: Provides the ability to pay for transactions with ERC20 tokens.
 
 ## Features 🌟
@@ -14,6 +14,11 @@ Biconomy Paymasters are smart contracts that abstract away the complexity of gas
 - Simplified transaction fee handling.
 - ERC 4337 Account Abstraction compliant.
 - Multi-token support for gas payments.
+- Hybrid Paymaster approach, combining gas sponsorship and token-based payments into a single, streamlined solution.
+
+## Upcoming Features (Work in Progress)
+- Fiat Paymaster (WIP): Planned feature to allow users to pay gas fees using fiat currency.
+- Deposit Paymaster (WIP): Intended to enable Dapp deposit sponsorship in various tokens.
 
 ### ERC20 Token Paymaster
 
@@ -21,17 +26,18 @@ Biconomy Paymasters are smart contracts that abstract away the complexity of gas
 
 - ERC20 Token Paymaster helps users pay for their transactions using ERC20 tokens.
 - Users initiate a transaction using an ERC20 token.
-- Paymaster validates the transaction and forwards it to the network while handling necessary fee conversions.
-- This flow ensures ease of use and convenience for users.
+- Paymaster validates the transaction and covers the userOp fees.This flow ensures ease of use and convenience for users.
 
-### Sponsorship Paymaster
+### Verifying (Sponsorship) Paymaster
 
-![Sponsorship Paymaster](./assets/readme/paymaster-off-chain-request-processing-flow.png)
+![Sponsorship Paymaster](./assets/readme/conditional-gas-sponsorship-paymaster.png)
 
-- Sponsorship Paymaster covers transaction fees for users.
-- The process starts with the user initiating a transaction.
-- Paymaster takes over and sponsors the fees, so users don't have to bear the gas costs.
-- This ensures that the transaction is confirmed on the network.
+- Users initiate the process with their userOps.
+- The operation is checked against the requirements set by the Sponsorship (Verifying) Paymaster.
+- Once verified and approved, the Paymaster sponsors the gas fees.
+- This process ensures userOps are confirmed on the network without users incurring gas costs.
+
+Note: The Paymaster's approval process is crucial, requiring a verifying party's signature to confirm sponsorship eligibility for each userOp​​.
 
 ## Getting Started 🏁
 
