@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: LGPL-3.0-only
-pragma solidity >=0.7.5 <0.9.0;
+pragma solidity 0.8.17;
 
 // solhint-disable no-inline-assembly
 
@@ -26,16 +26,6 @@ library Exec {
         }
     }
 
-    function staticcall(
-        address to,
-        bytes memory data,
-        uint256 txGas
-    ) internal view returns (bool success) {
-        assembly {
-            success := staticcall(txGas, to, add(data, 0x20), mload(data), 0, 0)
-        }
-    }
-
     function delegateCall(
         address to,
         bytes memory data,
@@ -50,6 +40,27 @@ library Exec {
                 0,
                 0
             )
+        }
+    }
+
+    function callAndRevert(
+        address to,
+        bytes memory data,
+        uint256 maxLen
+    ) internal {
+        bool success = call(to, 0, data, gasleft());
+        if (!success) {
+            revertWithData(getReturnData(maxLen));
+        }
+    }
+
+    function staticcall(
+        address to,
+        bytes memory data,
+        uint256 txGas
+    ) internal view returns (bool success) {
+        assembly {
+            success := staticcall(txGas, to, add(data, 0x20), mload(data), 0, 0)
         }
     }
 
@@ -74,17 +85,6 @@ library Exec {
     function revertWithData(bytes memory returnData) internal pure {
         assembly {
             revert(add(returnData, 32), mload(returnData))
-        }
-    }
-
-    function callAndRevert(
-        address to,
-        bytes memory data,
-        uint256 maxLen
-    ) internal {
-        bool success = call(to, 0, data, gasleft());
-        if (!success) {
-            revertWithData(getReturnData(maxLen));
         }
     }
 }

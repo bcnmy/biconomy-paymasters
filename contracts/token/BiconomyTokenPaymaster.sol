@@ -605,7 +605,7 @@ contract BiconomyTokenPaymaster is
                 feeReceiver,
                 charge
             );
-            (bool success, bytes memory returndata) = address(feeToken).call(
+            (bool success,) = address(feeToken).call(
                 _data
             );
             if (!success) {

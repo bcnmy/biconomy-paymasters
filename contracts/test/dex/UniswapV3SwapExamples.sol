@@ -12,8 +12,8 @@ contract UniswapV3SwapExamples {
         address tokenIn,
         address tokenOut,
         uint24 poolFee,
-        uint amountIn
-    ) external returns (uint amountOut) {
+        uint256 amountIn
+    ) external returns (uint256 amountOut) {
         IERC20(tokenIn).transferFrom(msg.sender, address(this), amountIn);
         IERC20(tokenIn).approve(address(router), amountIn);
 
@@ -35,8 +35,8 @@ contract UniswapV3SwapExamples {
     function swapExactInputMultiHop(
         bytes calldata path,
         address tokenIn,
-        uint amountIn
-    ) external returns (uint amountOut) {
+        uint256 amountIn
+    ) external returns (uint256 amountOut) {
         IERC20(tokenIn).transferFrom(msg.sender, address(this), amountIn);
         IERC20(tokenIn).approve(address(router), amountIn);
 
@@ -58,9 +58,9 @@ interface ISwapRouter {
         address tokenOut;
         uint24 fee;
         address recipient;
-        uint deadline;
-        uint amountIn;
-        uint amountOutMinimum;
+        uint256 deadline;
+        uint256 amountIn;
+        uint256 amountOutMinimum;
         uint160 sqrtPriceLimitX96;
     }
 
@@ -69,14 +69,14 @@ interface ISwapRouter {
     /// @return amountOut The amount of the received token
     function exactInputSingle(
         ExactInputSingleParams calldata params
-    ) external payable returns (uint amountOut);
+    ) external payable returns (uint256 amountOut);
 
     struct ExactInputParams {
         bytes path;
         address recipient;
-        uint deadline;
-        uint amountIn;
-        uint amountOutMinimum;
+        uint256 deadline;
+        uint256 amountIn;
+        uint256 amountOutMinimum;
     }
 
     /// @notice Swaps amountIn of one token for as much as possible of another along the specified path
@@ -84,35 +84,42 @@ interface ISwapRouter {
     /// @return amountOut The amount of the received token
     function exactInput(
         ExactInputParams calldata params
-    ) external payable returns (uint amountOut);
+    ) external payable returns (uint256 amountOut);
 }
 
 interface IERC20 {
-    function totalSupply() external view returns (uint);
+    function totalSupply() external view returns (uint256);
 
-    function balanceOf(address account) external view returns (uint);
+    function balanceOf(address account) external view returns (uint256);
 
-    function transfer(address recipient, uint amount) external returns (bool);
+    function transfer(
+        address recipient,
+        uint256 amount
+    ) external returns (bool);
 
     function allowance(
         address owner,
         address spender
-    ) external view returns (uint);
+    ) external view returns (uint256);
 
-    function approve(address spender, uint amount) external returns (bool);
+    function approve(address spender, uint256 amount) external returns (bool);
 
     function transferFrom(
         address sender,
         address recipient,
-        uint amount
+        uint256 amount
     ) external returns (bool);
 
-    event Transfer(address indexed from, address indexed to, uint value);
-    event Approval(address indexed owner, address indexed spender, uint value);
+    event Transfer(address indexed from, address indexed to, uint256 value);
+    event Approval(
+        address indexed owner,
+        address indexed spender,
+        uint256 value
+    );
 }
 
 interface IWETH is IERC20 {
     function deposit() external payable;
 
-    function withdraw(uint amount) external;
+    function withdraw(uint256 amount) external;
 }

@@ -86,6 +86,29 @@ contract VerifyingSingletonPaymaster is
     }
 
     /**
+     * @dev Set a new verifying signer address.
+     * Can only be called by the owner of the contract.
+     * @param _newVerifyingSigner The new address to be set as the verifying signer.
+     * @notice If _newVerifyingSigner is set to zero address, it will revert with an error.
+     * After setting the new signer address, it will emit an event VerifyingSignerChanged.
+     */
+    function setSigner(address _newVerifyingSigner) external payable onlyOwner {
+        if (_newVerifyingSigner == address(0))
+            revert VerifyingSignerCannotBeZero();
+        address oldSigner = verifyingSigner;
+        assembly {
+            sstore(verifyingSigner.slot, _newVerifyingSigner)
+        }
+        emit VerifyingSignerChanged(oldSigner, _newVerifyingSigner, msg.sender);
+    }
+
+    function setUnaccountedEPGasOverhead(uint256 value) external onlyOwner {
+        uint256 oldValue = unaccountedEPGasOverhead;
+        unaccountedEPGasOverhead = value;
+        emit EPGasOverheadChanged(oldValue, value);
+    }
+
+    /**
      * @dev get the current deposit for paymasterId (Dapp Depositor address)
      * @param paymasterId dapp identifier
      */
@@ -93,13 +116,6 @@ contract VerifyingSingletonPaymaster is
         address paymasterId
     ) external view returns (uint256 balance) {
         balance = paymasterIdBalances[paymasterId];
-    }
-
-    /**
-     @dev Override the default implementation.
-     */
-    function deposit() public payable virtual override {
-        revert("user DepositFor instead");
     }
 
     /**
@@ -123,26 +139,10 @@ contract VerifyingSingletonPaymaster is
     }
 
     /**
-     * @dev Set a new verifying signer address.
-     * Can only be called by the owner of the contract.
-     * @param _newVerifyingSigner The new address to be set as the verifying signer.
-     * @notice If _newVerifyingSigner is set to zero address, it will revert with an error.
-     * After setting the new signer address, it will emit an event VerifyingSignerChanged.
+     @dev Override the default implementation.
      */
-    function setSigner(address _newVerifyingSigner) external payable onlyOwner {
-        if (_newVerifyingSigner == address(0))
-            revert VerifyingSignerCannotBeZero();
-        address oldSigner = verifyingSigner;
-        assembly {
-            sstore(verifyingSigner.slot, _newVerifyingSigner)
-        }
-        emit VerifyingSignerChanged(oldSigner, _newVerifyingSigner, msg.sender);
-    }
-
-    function setUnaccountedEPGasOverhead(uint256 value) external onlyOwner {
-        uint256 oldValue = unaccountedEPGasOverhead;
-        unaccountedEPGasOverhead = value;
-        emit EPGasOverheadChanged(oldValue, value);
+    function deposit() public payable virtual override {
+        revert("user DepositFor instead");
     }
 
     /**
@@ -182,6 +182,31 @@ contract VerifyingSingletonPaymaster is
     }
 
     /**
+     * @dev Executes the paymaster's payment conditions
+     * @param context payment conditions signed by the paymaster in `validatePaymasterUserOp`
+     * @param actualGasCost amount to be paid to the entry point in wei
+     */
+    function _postOp(
+        PostOpMode /** mode */,
+        bytes calldata context,
+        uint256 actualGasCost
+    ) internal virtual override {
+        PaymasterContext memory data = context._decodePaymasterContext();
+        address extractedPaymasterId = data.paymasterId;
+        uint256 effectiveGasPrice = getGasPrice(
+            data.maxFeePerGas,
+            data.maxPriorityFeePerGas
+        );
+        uint256 balToDeduct = actualGasCost +
+            unaccountedEPGasOverhead *
+            effectiveGasPrice;
+        paymasterIdBalances[extractedPaymasterId] =
+            paymasterIdBalances[extractedPaymasterId] -
+            balToDeduct;
+        emit GasBalanceDeducted(extractedPaymasterId, balToDeduct);
+    }
+
+        /**
      * @dev Verify that an external signer signed the paymaster data of a user operation.
      * The paymaster data is expected to be the paymaster and a signature over the entire request parameters.
      * @param userOp The UserOperation struct that represents the current user operation.
@@ -194,7 +219,7 @@ contract VerifyingSingletonPaymaster is
         UserOperation calldata userOp,
         bytes32 /*userOpHash*/,
         uint256 requiredPreFund
-    ) internal override returns (bytes memory context, uint256 validationData) {
+    ) internal override view returns (bytes memory context, uint256 validationData) {
         PaymasterData memory paymasterData = userOp._decodePaymasterData();
         bytes32 hash = getHash(
             userOp,
@@ -203,7 +228,7 @@ contract VerifyingSingletonPaymaster is
             paymasterData.validAfter
         );
         uint256 sigLength = paymasterData.signatureLength;
-        // we only "require" it here so that the revert reason on invalid signature will be of "VerifyingPaymaster", and not "ECDSA"
+        // "require" is here so for the revert reason on invalid signature will be of "VerifyingPaymaster", and not "ECDSA"
         if (sigLength != 65) revert InvalidPaymasterSignatureLength(sigLength);
         //don't revert on signature failure: return SIG_VALIDATION_FAILED
         if (
@@ -252,31 +277,5 @@ contract VerifyingSingletonPaymaster is
 
     function min(uint256 a, uint256 b) internal pure returns (uint256) {
         return a < b ? a : b;
-    }
-
-    /**
-     * @dev Executes the paymaster's payment conditions
-     * @param mode tells whether the op succeeded, reverted, or if the op succeeded but cause the postOp to revert
-     * @param context payment conditions signed by the paymaster in `validatePaymasterUserOp`
-     * @param actualGasCost amount to be paid to the entry point in wei
-     */
-    function _postOp(
-        PostOpMode mode,
-        bytes calldata context,
-        uint256 actualGasCost
-    ) internal virtual override {
-        PaymasterContext memory data = context._decodePaymasterContext();
-        address extractedPaymasterId = data.paymasterId;
-        uint256 effectiveGasPrice = getGasPrice(
-            data.maxFeePerGas,
-            data.maxPriorityFeePerGas
-        );
-        uint256 balToDeduct = actualGasCost +
-            unaccountedEPGasOverhead *
-            effectiveGasPrice;
-        paymasterIdBalances[extractedPaymasterId] =
-            paymasterIdBalances[extractedPaymasterId] -
-            balToDeduct;
-        emit GasBalanceDeducted(extractedPaymasterId, balToDeduct);
     }
 }

@@ -60,7 +60,7 @@ contract DerivedPriceFeed {
         if (answeredInRound < roundId) revert PriceFeedStale();
     }
 
-    function getThePrice() public view returns (int) {
+    function getThePrice() public view returns (int256) {
         /**
          * Returns the latest price of price feed 1
          */
@@ -105,7 +105,7 @@ contract DerivedPriceFeed {
         );
 
         // Always using decimals 18 for derived price feeds
-        int token_native = (price2 * (10 ** 18)) / price1;
+        int256 token_native = (price2 * (10 ** 18)) / price1;
         return token_native;
     }
 }

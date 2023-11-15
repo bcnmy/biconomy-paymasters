@@ -4,6 +4,17 @@ pragma solidity 0.8.17;
 /**
  */
 interface FeedInterface {
+    event AnswerUpdated(
+        int256 indexed current,
+        uint256 indexed roundId,
+        uint256 updatedAt
+    );
+    event NewRound(
+        uint256 indexed roundId,
+        address indexed startedBy,
+        uint256 startedAt
+    );
+
     function latestAnswer() external view returns (int256);
 
     function latestTimestamp() external view returns (uint256);
@@ -25,16 +36,5 @@ interface FeedInterface {
 
     function getTimestamp(uint256 roundId) external view returns (uint256);
 
-    function getThePrice() external view returns (int);
-
-    event AnswerUpdated(
-        int256 indexed current,
-        uint256 indexed roundId,
-        uint256 updatedAt
-    );
-    event NewRound(
-        uint256 indexed roundId,
-        address indexed startedBy,
-        uint256 startedAt
-    );
+    function getThePrice() external view returns (int256);
 }
