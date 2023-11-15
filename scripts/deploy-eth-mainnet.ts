@@ -469,8 +469,6 @@ async function main() {
     console.log(
       "==================tokenPaymasterInstance======================="
     );
-
-
   }
 }
 

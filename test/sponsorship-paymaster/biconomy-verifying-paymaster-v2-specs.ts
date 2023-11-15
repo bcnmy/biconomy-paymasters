@@ -8,10 +8,9 @@ import {
   BiconomyAccountImplementation__factory,
   BiconomyAccountFactory,
   BiconomyAccountFactory__factory,
-  VerifyingSingletonPaymaster,
-  VerifyingSingletonPaymaster__factory,
+  VerifyingSingletonPaymasterV2,
+  VerifyingSingletonPaymasterV2__factory,
 } from "../../typechain-types";
-// Review: Could import from scw-contracts submodules to be consistent
 import { fillAndSign } from "../utils/userOp";
 import { UserOperation } from "../../lib/account-abstraction/test/UserOperation";
 import {
@@ -36,6 +35,7 @@ export const AddressZero = ethers.constants.AddressZero;
 
 const MOCK_VALID_UNTIL = "0x00000000deadbeef";
 const MOCK_VALID_AFTER = "0x0000000000001234";
+const dynamicMarkup = 1200000; // or 0 or 1100000
 
 export async function deployEntryPoint(
   provider = ethers.provider
@@ -49,14 +49,12 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
   let entryPointStatic: EntryPoint;
   let depositorSigner: Signer;
   let walletOwner: Signer;
-  let proxyPaymaster: Contract;
   let walletAddress: string, paymasterAddress: string;
   let ethersSigner;
 
-  let offchainSigner: Signer, deployer: Signer;
+  let offchainSigner: Signer, deployer: Signer, feeCollector: Signer;
 
-  let verifyingSingletonPaymaster: VerifyingSingletonPaymaster;
-  // Could also use published package or added submodule (for Account Implementation and Factory)
+  let verifyingSingletonPaymaster: VerifyingSingletonPaymasterV2;
   let smartWalletImp: BiconomyAccountImplementation;
   let ecdsaModule: EcdsaOwnershipRegistryModule;
   let walletFactory: BiconomyAccountFactory;
@@ -70,20 +68,23 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
     deployer = ethersSigner[0];
     offchainSigner = ethersSigner[1];
     depositorSigner = ethersSigner[2];
+    feeCollector = ethersSigner[3];
     walletOwner = deployer; // ethersSigner[3];
 
     const offchainSignerAddress = await offchainSigner.getAddress();
     const walletOwnerAddress = await walletOwner.getAddress();
+    const feeCollectorAddress = await feeCollector.getAddress();
 
     ecdsaModule = await new EcdsaOwnershipRegistryModule__factory(
       deployer
     ).deploy();
 
     verifyingSingletonPaymaster =
-      await new VerifyingSingletonPaymaster__factory(deployer).deploy(
+      await new VerifyingSingletonPaymasterV2__factory(deployer).deploy(
         await deployer.getAddress(),
         entryPoint.address,
-        offchainSignerAddress
+        offchainSignerAddress,
+        feeCollectorAddress
       );
 
     smartWalletImp = await new BiconomyAccountImplementation__factory(
@@ -118,12 +119,10 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
     );
 
     walletAddress = expected;
+    console.log(" wallet address ", walletAddress);
 
     paymasterAddress = verifyingSingletonPaymaster.address;
-
-    await verifyingSingletonPaymaster
-      .connect(deployer)
-      .addStake(86400, { value: parseEther("2") });
+    console.log("Paymaster address is ", paymasterAddress);
 
     await entryPoint.depositTo(paymasterAddress, { value: parseEther("1") });
   });
@@ -142,14 +141,15 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
       userOp1,
       paymasterId,
       MOCK_VALID_UNTIL,
-      MOCK_VALID_AFTER
+      MOCK_VALID_AFTER,
+      dynamicMarkup
     );
     const sig = await offchainSigner.signMessage(arrayify(hash));
     const paymasterData = abi.encode(
-      ["address", "uint48", "uint48", "bytes"],
-      [paymasterId, MOCK_VALID_UNTIL, MOCK_VALID_AFTER, sig]
+      ["address", "uint48", "uint48", "uint32"],
+      [paymasterId, MOCK_VALID_UNTIL, MOCK_VALID_AFTER, dynamicMarkup]
     );
-    const paymasterAndData = hexConcat([paymasterAddress, paymasterData]);
+    const paymasterAndData = hexConcat([paymasterAddress, paymasterData, sig]);
     return await fillAndSign(
       {
         ...userOp1,
@@ -162,17 +162,37 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
   }
 
   describe("#validatePaymasterUserOp", () => {
-    it("Should Fail when there is no deposit for paymaster id", async () => {
-      const paymasterId = await depositorSigner.getAddress();
-      const userOp = await getUserOpWithPaymasterInfo(paymasterId);
+    it("Should parse data properly", async () => {
+      const paymasterAndData = hexConcat([
+        paymasterAddress,
+        ethers.utils.defaultAbiCoder.encode(
+          ["address", "uint48", "uint48", "uint32"],
+          [
+            await offchainSigner.getAddress(),
+            MOCK_VALID_UNTIL,
+            MOCK_VALID_AFTER,
+            dynamicMarkup,
+          ]
+        ),
+        "0x" + "00".repeat(65),
+      ]);
 
-      const signatureWithModuleAddress = ethers.utils.defaultAbiCoder.encode(
-        ["bytes", "address"],
-        [userOp.signature, ecdsaModule.address]
+      const res = await verifyingSingletonPaymaster.parsePaymasterAndData(
+        paymasterAndData
       );
 
-      userOp.signature = signatureWithModuleAddress;
+      expect(res.paymasterId).to.equal(await offchainSigner.getAddress());
+      expect(res.validUntil).to.equal(ethers.BigNumber.from(MOCK_VALID_UNTIL));
+      expect(res.validAfter).to.equal(ethers.BigNumber.from(MOCK_VALID_AFTER));
+      expect(res.priceMarkup).to.equal(dynamicMarkup);
+      expect(res.signature).to.equal("0x" + "00".repeat(65));
+    });
 
+    it("Should Fail when there is no deposit for paymaster id", async () => {
+      const paymasterId = await depositorSigner.getAddress();
+      console.log("paymaster Id ", paymasterId);
+      const userOp = await getUserOpWithPaymasterInfo(paymasterId);
+      console.log("entrypoint ", entryPoint.address);
       await expect(
         entryPoint.callStatic.simulateValidation(userOp)
         // ).to.be.revertedWith("FailedOp");
@@ -180,6 +200,11 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
     });
 
     it("succeed with valid signature", async () => {
+      const feeCollectorBalanceBefore =
+        await verifyingSingletonPaymaster.getBalance(
+          await feeCollector.getAddress()
+        );
+      expect(feeCollectorBalanceBefore).to.be.equal(BigNumber.from(0));
       const signer = await verifyingSingletonPaymaster.verifyingSigner();
       const offchainSignerAddress = await offchainSigner.getAddress();
       expect(signer).to.be.equal(offchainSignerAddress);
@@ -202,7 +227,8 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
         userOp1,
         await offchainSigner.getAddress(),
         MOCK_VALID_UNTIL,
-        MOCK_VALID_AFTER
+        MOCK_VALID_AFTER,
+        dynamicMarkup
       );
       const sig = await offchainSigner.signMessage(arrayify(hash));
       const userOp = await fillAndSign(
@@ -211,14 +237,15 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
           paymasterAndData: hexConcat([
             paymasterAddress,
             ethers.utils.defaultAbiCoder.encode(
-              ["address", "uint48", "uint48", "bytes"],
+              ["address", "uint48", "uint48", "uint32"],
               [
                 await offchainSigner.getAddress(),
                 MOCK_VALID_UNTIL,
                 MOCK_VALID_AFTER,
-                sig,
+                dynamicMarkup,
               ]
             ),
+            sig,
           ]),
         },
         walletOwner,
@@ -230,14 +257,19 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
         ["bytes", "address"],
         [userOp.signature, ecdsaModule.address]
       );
-
       userOp.signature = signatureWithModuleAddress;
 
       await entryPoint.handleOps([userOp], await offchainSigner.getAddress());
-      // gas used VPM V1 134369
+      // gas used VPM V2  162081
       await expect(
         entryPoint.handleOps([userOp], await offchainSigner.getAddress())
       ).to.be.reverted;
+
+      const feeCollectorBalanceAfter =
+        await verifyingSingletonPaymaster.getBalance(
+          await feeCollector.getAddress()
+        );
+      expect(feeCollectorBalanceAfter).to.be.greaterThan(BigNumber.from(0));
     });
   });
 });

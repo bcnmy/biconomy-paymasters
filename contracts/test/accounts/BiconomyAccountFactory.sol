@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.17;
+pragma solidity ^0.8.20; // temp
 
 // Could also use published package or added submodule.
 
+// temp
 import {SmartAccountFactory} from "@biconomy-devx/account-contracts-v2/contracts/smart-account/factory/SmartAccountFactory.sol";
 
 contract BiconomyAccountFactory is SmartAccountFactory {

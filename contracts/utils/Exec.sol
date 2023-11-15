@@ -1,7 +1,5 @@
 // SPDX-License-Identifier: LGPL-3.0-only
-pragma solidity 0.8.17;
-
-// solhint-disable no-inline-assembly
+pragma solidity 0.8.20;
 
 /**
  * Utility functions helpful when making different kinds of contract calls in Solidity.

@@ -143,7 +143,7 @@ contract CandidePaymaster is BasePaymaster {
     function _validatePaymasterUserOp(
         UserOperation calldata userOp,
         bytes32 userOpHash,
-        uint256 /** maxCost */ 
+        uint256 /** maxCost */
     )
         internal
         virtual

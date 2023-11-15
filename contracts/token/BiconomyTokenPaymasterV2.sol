@@ -29,7 +29,7 @@ import "@openzeppelin/contracts/utils/Address.sol";
  *
  * Optionally a safe guard deposit may be used in future versions.
  */
-contract BiconomyTokenPaymaster is
+contract BiconomyTokenPaymasterV2 is
     BasePaymaster,
     ReentrancyGuard,
     TokenPaymasterErrors
@@ -194,6 +194,7 @@ contract BiconomyTokenPaymaster is
     function setUnaccountedEPGasOverhead(
         uint256 _newOverheadCost
     ) external payable onlyOwner {
+        // review if this could be high value in case of arbitrum
         if (_newOverheadCost > 200000) revert CannotBeUnrealisticValue();
         uint256 oldValue = UNACCOUNTED_COST;
         assembly ("memory-safe") {
@@ -604,7 +605,9 @@ contract BiconomyTokenPaymaster is
                 feeReceiver,
                 charge
             );
-            (bool success, ) = address(feeToken).call(_data);
+            (bool success, bytes memory returndata) = address(feeToken).call(
+                _data
+            );
             if (!success) {
                 // In case above transferFrom failed, pay with deposit / notify at least
                 // Sender could be banned indefinitely or for certain period
