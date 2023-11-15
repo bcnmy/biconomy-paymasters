@@ -1,6 +1,7 @@
 # Contributing to Biconomy Projects 🚀
 
-First off, thank you for considering contributing to Biconomy! We truly appreciate your effort and contributions from the community are what make Biconomy awesome. 🙌
+First off, thank you for considering contributing to Biconomy! We truly appreciate your effort. 
+Contributions from the community are what make Biconomy awesome. 🙌
 
 Your contributions are valued and will help in driving the decentralized web forward.
 
@@ -29,11 +30,11 @@ Your contributions are valued and will help in driving the decentralized web for
 
 Before reaching out, please ensure you've gone through our [Documentation](https://docs.biconomy.io/). If you still have questions:
 
-1. Search for existing [Issues](https://github.com/bcnmy/scw-contracts/issues) that might answer your question.
+1. Search for existing [Issues](https://github.com/bcnmy/biconomy-paymasters/issues) that might answer your question.
 2. Check out our [Forum](https://forum.biconomy.io/).
 3. Join our [Discord](https://discord.com/invite/biconomy) or [Telegram](https://t.me/biconomy) communities.
 
-If you still need assistance, feel free to open an [Issue](https://github.com/bcnmy/scw-contracts/issues/new) with your question.
+If you still need assistance, feel free to open an [Issue](https://github.com/bcnmy/biconomy-paymasters/issues/new) with your question.
 
 ## Ready to Contribute?
 
@@ -43,11 +44,11 @@ By contributing, you agree that you've authored your contribution and that it ca
 
 ### Reporting Bugs 🐛
 
-Before submitting a bug report, ensure you're using the latest version and that you've read our [documentation](https://docs.biconomy.io/). If you've identified a bug that hasn't been reported, open a new [Issue](https://github.com/bcnmy/scw-contracts/issues/new) detailing the bug.
+Before submitting a bug report, ensure you're using the latest version and that you've read our [documentation](https://docs.biconomy.io/). If you've identified a bug that hasn't been reported, open a new [Issue](https://github.com/bcnmy/biconomy-paymasters/issues/new) detailing the bug.
 
 ### Suggesting Enhancements 💡
 
-Have a feature in mind? First, ensure it aligns with Biconomy's mission and hasn't been suggested before. Then, open an [Issue](https://github.com/bcnmy/scw-contracts/issues/new) to discuss your enhancement.
+Have a feature in mind? First, ensure it aligns with Biconomy's mission and hasn't been suggested before. Then, open an [Issue](https://github.com/bcnmy/biconomy-paymasters/issues/new) to discuss your enhancement.
 
 ### First Time Contributing? 🌱
 
