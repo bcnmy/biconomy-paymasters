@@ -40,14 +40,6 @@ interface IVerifyingSingletonPaymaster {
     );
 
     /**
-     * @dev Returns the current balance of the paymasterId(aka fundingId)
-     * @param paymasterId The address of the paymasterId
-     */
-    function getBalance(
-        address paymasterId
-    ) external view returns (uint256 balance);
-
-    /**
      * @dev updates the verifyingSigner address
      * @param _newVerifyingSigner The new verifyingSigner address
      */
@@ -58,4 +50,12 @@ interface IVerifyingSingletonPaymaster {
      * @param value The new value
      */
     function setUnaccountedEPGasOverhead(uint256 value) external payable;
+
+    /**
+     * @dev Returns the current balance of the paymasterId(aka fundingId)
+     * @param paymasterId The address of the paymasterId
+     */
+    function getBalance(
+        address paymasterId
+    ) external view returns (uint256 balance);
 }

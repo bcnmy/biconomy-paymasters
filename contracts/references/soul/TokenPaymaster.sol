@@ -58,10 +58,6 @@ contract TokenPaymaster is ITokenPaymaster, Ownable {
         return _isSupportedToken(_token);
     }
 
-    function _isSupportedToken(address _token) private view returns (bool) {
-        return address(supportedToken[_token]) != address(0);
-    }
-
     /**
      * @dev Returns the exchange price of the token in wei.
      */
@@ -320,15 +316,6 @@ contract TokenPaymaster is ITokenPaymaster, Ownable {
         _IEntryPoint.withdrawStake(withdrawAddress);
     }
 
-    /// validate the call is made from a valid entrypoint
-    function _requireFromEntryPoint() private view {
-        require(msg.sender == address(_IEntryPoint));
-    }
-
-    function _withdrawToken(address token, address to, uint256 amount) private {
-        IERC20(token).transfer(to, amount);
-    }
-
     // withdraw token from this contract
     function withdrawToken(
         address token,
@@ -357,5 +344,18 @@ contract TokenPaymaster is ITokenPaymaster, Ownable {
         bytes4 interfaceId
     ) public pure override(IERC165) returns (bool) {
         return interfaceId == type(ITokenPaymaster).interfaceId;
+    }
+
+    function _withdrawToken(address token, address to, uint256 amount) private {
+        IERC20(token).transfer(to, amount);
+    }
+
+    function _isSupportedToken(address _token) private view returns (bool) {
+        return address(supportedToken[_token]) != address(0);
+    }
+
+    /// validate the call is made from a valid entrypoint
+    function _requireFromEntryPoint() private view {
+        require(msg.sender == address(_IEntryPoint));
     }
 }

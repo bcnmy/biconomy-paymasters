@@ -23,9 +23,9 @@ contract MockPriceFeed {
         return 18;
     }
 
-    function getThePrice() public view returns (int) {
+    function getThePrice() public view returns (int256) {
         // Always using decimals 18 for derived price feeds
-        int usdcMatic = 1043 * 1e15;
+        int256 usdcMatic = 1043 * 1e15;
         return usdcMatic;
     }
 }

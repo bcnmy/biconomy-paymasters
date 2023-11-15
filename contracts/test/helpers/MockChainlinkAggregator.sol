@@ -16,7 +16,6 @@ contract MockChainlinkOracleAggregator is Ownable, IOracleAggregator {
      a price of $100.50 might be represented as 100500000000 in the contract, with 9 decimal places 
      of precision */
         uint8 decimals;
-        // uint8 tokenDecimals;
         bool dataSigned;
         address callAddress;
         bytes callData;
@@ -96,12 +95,6 @@ contract MockChainlinkOracleAggregator is Ownable, IOracleAggregator {
 
     // Making explicit revert or make use of stale price feed which reverts
     // like done in below function and the test case
-    /*function _getTokenPrice(
-        address token
-    ) internal view returns (uint256 tokenPriceUnadjusted) {
-        bool success = false;
-        require(success, "ChainlinkOracleAggregator:: query failed");
-    }*/
 
     function _getTokenPrice(
         address token
@@ -109,7 +102,7 @@ contract MockChainlinkOracleAggregator is Ownable, IOracleAggregator {
         (bool success, bytes memory ret) = tokensInfo[token]
             .callAddress
             .staticcall(tokensInfo[token].callData);
-        console.log("price feed reverted here? success = %s ", success);
+
         require(success, "ChainlinkOracleAggregator:: query failed");
         if (tokensInfo[token].dataSigned) {
             tokenPriceUnadjusted = uint256(abi.decode(ret, (int256)));
