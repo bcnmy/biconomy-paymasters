@@ -15,6 +15,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import "../utils/SafeTransferLib.sol";
 import {TokenPaymasterErrors} from "./TokenPaymasterErrors.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
+import "hardhat/console.sol";
 
 // Biconomy Token Paymaster
 /**
@@ -232,11 +233,13 @@ contract BiconomyTokenPaymaster is
         address _token,
         address _oracleAggregator
     ) internal view virtual returns (uint256) {
+        uint256 gas = gasleft();
         try
             IOracleAggregator(_oracleAggregator).getTokenValueOfOneNativeToken(
                 _token
             )
         returns (uint256 exchangeRate) {
+            console.log("gas used for exchangePrice: %s", gas - gasleft());
             return exchangeRate;
         } catch {
             return 0;
@@ -349,8 +352,8 @@ contract BiconomyTokenPaymaster is
                 abi.encode(
                     userOp.getSender(),
                     userOp.nonce,
-                    keccak256(userOp.initCode),
-                    keccak256(userOp.callData),
+                    userOp.initCode,
+                    userOp.callData,
                     userOp.callGasLimit,
                     userOp.verificationGasLimit,
                     userOp.preVerificationGas,
@@ -451,6 +454,7 @@ contract BiconomyTokenPaymaster is
         );
 
         // review: in this method try to resolve stack too deep (though via-ir is good enough)
+        uint256 gas = gasleft();
         (
             ExchangeRateSource priceSource,
             uint48 validUntil,
@@ -461,6 +465,7 @@ contract BiconomyTokenPaymaster is
             uint32 priceMarkup,
             bytes calldata signature
         ) = parsePaymasterAndData(userOp.paymasterAndData);
+        console.log("gas used for parsePmd: %s", gas - gasleft());
 
         // we only "require" it here so that the revert reason on invalid signature will be of "VerifyingPaymaster", and not "ECDSA"
         require(
@@ -468,6 +473,7 @@ contract BiconomyTokenPaymaster is
             "BTPM: invalid signature length in paymasterAndData"
         );
 
+        gas = gasleft();
         bytes32 _hash = getHash(
             userOp,
             priceSource,
@@ -478,6 +484,7 @@ contract BiconomyTokenPaymaster is
             exchangeRate,
             priceMarkup
         ).toEthSignedMessageHash();
+        console.log("gas used for getHash: %s", gas - gasleft());
 
         context = "";
 
@@ -511,6 +518,7 @@ contract BiconomyTokenPaymaster is
             "BTPM: account does not have enough token balance"
         );
 
+        gas = gasleft();
         context = abi.encode(
             account,
             feeToken,
@@ -520,6 +528,15 @@ contract BiconomyTokenPaymaster is
             priceMarkup,
             userOpHash
         );
+        console.log("gas used for context encode: %s", gas - gasleft());
+
+        // console.log("account: %s", account);
+        // console.log("feeToken: %s", address(feeToken));
+        // console.log("oracleAggregator: %s", oracleAggregator);
+        // console.log("priceSource: %s", uint8(priceSource));
+        // console.log("exchangeRate: %s", exchangeRate);
+        // console.log("priceMarkup: %s", priceMarkup);
+        // console.log("userOpHash: %s", uint256(userOpHash));
 
         return (
             context,
@@ -538,26 +555,66 @@ contract BiconomyTokenPaymaster is
         bytes calldata context,
         uint256 actualGasCost
     ) internal virtual override {
-        (
-            address account,
-            IERC20 feeToken,
-            address oracleAggregator,
-            ExchangeRateSource priceSource,
-            uint256 exchangeRate,
-            uint32 priceMarkup,
-            bytes32 userOpHash
-        ) = abi.decode(
-                context,
-                (
-                    address,
-                    IERC20,
-                    address,
-                    ExchangeRateSource,
-                    uint256,
-                    uint32,
-                    bytes32
-                )
-            );
+        uint256 gas = gasleft();
+        // (
+        //     address account,
+        //     IERC20 feeToken,
+        //     address oracleAggregator,
+        //     ExchangeRateSource priceSource,
+        //     uint256 exchangeRate,
+        //     uint32 priceMarkup,
+        //     bytes32 userOpHash
+        // ) = abi.decode(
+        //         context,
+        //         (
+        //             address,
+        //             IERC20,
+        //             address,
+        //             ExchangeRateSource,
+        //             uint256,
+        //             uint32,
+        //             bytes32
+        //         )
+        //     );
+        address account;
+        IERC20 feeToken;
+        address oracleAggregator;
+        ExchangeRateSource priceSource;
+        uint256 exchangeRate;
+        uint32 priceMarkup;
+        bytes32 userOpHash;
+        assembly ("memory-safe") {
+            let offset := context.offset
+
+            account := calldataload(context.offset)
+            offset := add(offset, 0x20)
+
+            feeToken := calldataload(offset)
+            offset := add(offset, 0x20)
+
+            oracleAggregator := calldataload(offset)
+            offset := add(offset, 0x20)
+
+            priceSource := calldataload(offset)
+            offset := add(offset, 0x20)
+
+            exchangeRate := calldataload(offset)
+            offset := add(offset, 0x20)
+
+            priceMarkup := calldataload(offset)
+            offset := add(offset, 0x20)
+
+            userOpHash := calldataload(offset)
+        }
+        console.log("gas used for context decode: %s", gas - gasleft());
+
+        // console.log("account: %s", account);
+        // console.log("feeToken: %s", address(feeToken));
+        // console.log("oracleAggregator: %s", oracleAggregator);
+        // console.log("priceSource: %s", uint8(priceSource));
+        // console.log("exchangeRate: %s", exchangeRate);
+        // console.log("priceMarkup: %s", priceMarkup);
+        // console.log("userOpHash: %s", uint256(userOpHash));
 
         uint256 effectiveExchangeRate = exchangeRate;
 

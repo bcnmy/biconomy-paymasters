@@ -4,6 +4,8 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./IOracleAggregator.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {DerivedPriceFeed} from "./DerivedPriceFeed.sol";
+import "hardhat/console.sol";
 
 /**
  * @title Primary Oracle Aggregator contract used to maintain price feeds for chainlink supported tokens.
@@ -72,7 +74,7 @@ contract ChainlinkOracleAggregator is Ownable, IOracleAggregator {
         address token
     ) external view returns (uint256 tokenPrice) {
         // usually token / native (depends on price feed)
-        tokenPrice = _getTokenPrice(token);
+        (tokenPrice, ) = _getTokenPriceAndDecimals(token);
     }
 
     /**
@@ -84,26 +86,40 @@ contract ChainlinkOracleAggregator is Ownable, IOracleAggregator {
         address token
     ) external view virtual returns (uint256 exchangeRate) {
         // we'd actually want eth / token
-        uint256 tokenPriceUnadjusted = _getTokenPrice(token);
-        uint8 _tokenOracleDecimals = tokensInfo[token].decimals;
+        (
+            uint256 tokenPriceUnadjusted,
+            uint8 tokenOracleDecimals
+        ) = _getTokenPriceAndDecimals(token);
         exchangeRate =
-            ((10 ** _tokenOracleDecimals) *
-                (10 ** IERC20Metadata(token).decimals())) /
+            10 ** (tokenOracleDecimals + IERC20Metadata(token).decimals()) /
             tokenPriceUnadjusted;
     }
 
-    function _getTokenPrice(
+    function _getTokenPriceAndDecimals(
         address token
-    ) internal view returns (uint256 tokenPriceUnadjusted) {
+    )
+        internal
+        view
+        returns (uint256 tokenPriceUnadjusted, uint8 tokenOracleDecimals)
+    {
         // Note // If the callData is for latestAnswer, it could be for latestRoundData and then validateRound and extract price then
-        (bool success, bytes memory ret) = tokensInfo[token]
-            .callAddress
-            .staticcall(tokensInfo[token].callData);
-        require(success, "ChainlinkOracleAggregator:: query failed");
-        if (tokensInfo[token].dataSigned) {
-            tokenPriceUnadjusted = uint256(abi.decode(ret, (int256)));
+        TokenInfo storage tokenInfo = tokensInfo[token];
+        tokenOracleDecimals = tokenInfo.decimals;
+        // (bool success, bytes memory ret) = tokenInfo.callAddress.staticcall(
+        //     tokenInfo.callData
+        // );
+        // require(success, "ChainlinkOracleAggregator:: query failed");
+        // if (tokenInfo.dataSigned) {
+        //     tokenPriceUnadjusted = uint256(abi.decode(ret, (int256)));
+        // } else {
+        //     tokenPriceUnadjusted = abi.decode(ret, (uint256));
+        // }
+        if (tokenInfo.dataSigned) {
+            tokenPriceUnadjusted = uint256(
+                DerivedPriceFeed(tokenInfo.callAddress).getThePrice()
+            );
         } else {
-            tokenPriceUnadjusted = abi.decode(ret, (uint256));
+            // ??
         }
     }
 }
