@@ -192,11 +192,10 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
       const paymasterId = await depositorSigner.getAddress();
       console.log("paymaster Id ", paymasterId);
       const userOp = await getUserOpWithPaymasterInfo(paymasterId);
-      console.log("entrypoint ", entryPoint.address);
+
       await expect(
         entryPoint.callStatic.simulateValidation(userOp)
-        // ).to.be.revertedWith("FailedOp");
-      ).to.be.reverted;
+      ).to.be.revertedWithCustomError(entryPoint, "FailedOp");
     });
 
     it("succeed with valid signature", async () => {
