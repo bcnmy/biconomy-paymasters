@@ -6,7 +6,7 @@ Welcome to the `biconomy-paymasters`` repository! Paymaster contracts enable sea
 
 Biconomy Paymasters, structured as smart contracts, streamline the management of gas fees, offering end-users the convenience of executing user operations without gas costs or the flexibility to pay fees with ERC20 tokens. 🚀
 
-- **Verifying (Sponsorship) Paymaster**: Allows transactions without end-users needing to pay for gas, enhancing UX.
+- **Sponsorship Paymaster**: Allows transactions without end-users needing to pay for gas, enhancing UX.
 - **Token Paymaster**: Provides the ability to pay for transactions with ERC20 tokens.
 
 ## Features 🌟
@@ -17,6 +17,7 @@ Biconomy Paymasters, structured as smart contracts, streamline the management of
 - Hybrid Paymaster approach, combining gas sponsorship and token-based payments into a single, streamlined solution.
 
 ## Upcoming Features (Work in Progress)
+
 - Fiat Paymaster (WIP): Planned feature to allow users to pay gas fees using fiat currency.
 - Deposit Paymaster (WIP): Intended to enable Dapp deposit sponsorship in various tokens.
 
@@ -28,12 +29,12 @@ Biconomy Paymasters, structured as smart contracts, streamline the management of
 - Users initiate a transaction using an ERC20 token.
 - Paymaster validates the transaction and covers the userOp fees.This flow ensures ease of use and convenience for users.
 
-### Verifying (Sponsorship) Paymaster
+### Sponsorship Paymaster
 
 ![Sponsorship Paymaster](./assets/readme/conditional-gas-sponsorship-paymaster.png)
 
 - Users initiate the process with their userOps.
-- The operation is checked against the requirements set by the Sponsorship (Verifying) Paymaster.
+- The operation is checked against the requirements set by the Sponsorship Paymaster.
 - Once verified and approved, the Paymaster sponsors the gas fees.
 - This process ensures userOps are confirmed on the network without users incurring gas costs.
 
