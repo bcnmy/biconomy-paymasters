@@ -34,6 +34,7 @@ import {
   BundlerTestEnvironment,
   UserOperationSubmissionError,
 } from "../environment/bundlerEnvironment";
+import { getUserOpEvent } from "../../utils/testUtils";
 
 export const AddressZero = ethers.constants.AddressZero;
 
@@ -46,14 +47,6 @@ export async function deployEntryPoint(
 ): Promise<EntryPoint> {
   const epf = await (await ethers.getContractFactory("EntryPoint")).deploy();
   return EntryPoint__factory.connect(epf.address, provider.getSigner());
-}
-
-export async function getUserOpEvent(ep: EntryPoint) {
-  const [log] = await ep.queryFilter(
-    ep.filters.UserOperationEvent(),
-    await ethers.provider.getBlockNumber()
-  );
-  return log;
 }
 
 describe("EntryPoint with VerifyingPaymaster Singleton", function () {

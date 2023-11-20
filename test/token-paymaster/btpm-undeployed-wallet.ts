@@ -39,6 +39,7 @@ import {
   EcdsaOwnershipRegistryModule,
   EcdsaOwnershipRegistryModule__factory,
 } from "@biconomy-devx/account-contracts-v2/dist/types";
+import { getUserOpEvent } from "../utils/testUtils";
 
 export const AddressZero = ethers.constants.AddressZero;
 const NATIVE_ADDRESS = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
@@ -75,14 +76,6 @@ export const encodePaymasterData = (
     ]
   );
 };
-
-export async function getUserOpEvent(ep: EntryPoint) {
-  const [log] = await ep.queryFilter(
-    ep.filters.UserOperationEvent(),
-    await ethers.provider.getBlockNumber()
-  );
-  return log;
-}
 
 export const encodeERC20Approval = (
   account: BiconomyAccountImplementation,

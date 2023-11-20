@@ -40,6 +40,7 @@ import {
 import { arrayify, hexConcat, parseEther } from "ethers/lib/utils";
 import { BigNumber, BigNumberish, Contract, Signer } from "ethers";
 import { SignerWithAddress } from "hardhat-deploy-ethers/signers";
+import { getUserOpEvent } from "../utils/testUtils";
 
 export const AddressZero = ethers.constants.AddressZero;
 
@@ -75,14 +76,6 @@ export const encodePaymasterData = (
     ]
   );
 };
-
-export async function getUserOpEvent(ep: EntryPoint) {
-  const [log] = await ep.queryFilter(
-    ep.filters.UserOperationEvent(),
-    await ethers.provider.getBlockNumber()
-  );
-  return log;
-}
 
 export const encodeERC20Approval = (
   account: BiconomyAccountImplementation,

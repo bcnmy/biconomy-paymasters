@@ -23,6 +23,7 @@ import {
 // import { expect } from "chai";
 // import { debugTransaction } from "./debugTx";
 import { keccak256 } from "ethereumjs-util";
+import { EntryPoint } from "../../lib/account-abstraction/typechain";
 
 export const AddressZero = ethers.constants.AddressZero;
 export const HashZero = ethers.constants.HashZero;
@@ -58,6 +59,14 @@ const panicCodes: { [key: number]: string } = {
 export async function getBalance(address: string): Promise<number> {
   const balance = await ethers.provider.getBalance(address);
   return parseInt(balance.toString());
+}
+
+export async function getUserOpEvent(ep: EntryPoint) {
+  const [log] = await ep.queryFilter(
+    ep.filters.UserOperationEvent(),
+    await ethers.provider.getBlockNumber()
+  );
+  return log;
 }
 
 export function rethrow(): (e: Error) => void {
