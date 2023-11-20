@@ -22,25 +22,34 @@ import {
 // Review: Could import from scw-contracts submodules to be consistent
 import { fillAndSign } from "../../lib/account-abstraction/test/UserOp";
 import { UserOperation } from "../../lib/account-abstraction/test/UserOperation";
-import { createAccount, simulationResultCatch } from "../../lib/account-abstraction/test/testutils";
-import { EntryPoint, EntryPoint__factory, SimpleAccount, TestToken, TestToken__factory } from "../../lib/account-abstraction/typechain";
-
-export const AddressZero = ethers.constants.AddressZero;
-const NATIVE_ADDRESS = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'
+import {
+  createAccount,
+  simulationResultCatch,
+} from "../../lib/account-abstraction/test/testutils";
+import {
+  EntryPoint,
+  EntryPoint__factory,
+  SimpleAccount,
+  TestToken,
+  TestToken__factory,
+} from "../../lib/account-abstraction/typechain";
 import { arrayify, hexConcat, parseEther } from "ethers/lib/utils";
 import { BigNumber, BigNumberish, Contract, Signer } from "ethers";
-import { EcdsaOwnershipRegistryModule, EcdsaOwnershipRegistryModule__factory } from "@biconomy-devx/account-contracts-v2/dist/types";
+import {
+  EcdsaOwnershipRegistryModule,
+  EcdsaOwnershipRegistryModule__factory,
+} from "@biconomy-devx/account-contracts-v2/dist/types";
+
+export const AddressZero = ethers.constants.AddressZero;
+const NATIVE_ADDRESS = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
 
 const MOCK_VALID_UNTIL = "0x00000000deadbeef";
 const MOCK_VALID_AFTER = "0x0000000000001234";
 const MOCK_SIG = "0x1234";
 const MOCK_ERC20_ADDR = "0x" + "01".repeat(20);
 const DEFAULT_FEE_MARKUP = 1100000;
-// Assume TOKEN decimals is 18, then 1 ETH = 1000 TOKENS
-// const MOCK_FX = ethers.constants.WeiPerEther.mul(1000);
 
 const MOCK_FX: BigNumberish = "977100"; // matic to usdc approx
-console.log("MOCK FX ", MOCK_FX); // 1000000000000000000000
 
 export async function deployEntryPoint(
   provider = ethers.provider
@@ -56,7 +65,14 @@ export const encodePaymasterData = (
 ) => {
   return ethers.utils.defaultAbiCoder.encode(
     ["uint48", "uint48", "address", "address", "uint256", "uint32"],
-    [MOCK_VALID_UNTIL, MOCK_VALID_AFTER, feeToken, oracleAggregator, exchangeRate, priceMarkup]
+    [
+      MOCK_VALID_UNTIL,
+      MOCK_VALID_AFTER,
+      feeToken,
+      oracleAggregator,
+      exchangeRate,
+      priceMarkup,
+    ]
   );
 };
 
@@ -116,14 +132,17 @@ describe("Biconomy Token Paymaster", function () {
     // const offchainSignerAddress = await deployer.getAddress();
     const walletOwnerAddress = await walletOwner.getAddress();
 
-    oracleAggregator = await new ChainlinkOracleAggregator__factory(deployer).deploy(walletOwnerAddress);
+    oracleAggregator = await new ChainlinkOracleAggregator__factory(
+      deployer
+    ).deploy(walletOwnerAddress);
 
-    ecdsaModule = await new EcdsaOwnershipRegistryModule__factory(deployer).deploy();
+    ecdsaModule = await new EcdsaOwnershipRegistryModule__factory(
+      deployer
+    ).deploy();
 
     const MockToken = await ethers.getContractFactory("MockToken");
     token = await MockToken.deploy();
     await token.deployed();
-    console.log("Test token deployed at: ", token.address);
 
     const usdcMaticPriceFeedMock = await new MockPriceFeed__factory(
       deployer
@@ -144,12 +163,6 @@ describe("Biconomy Token Paymaster", function () {
       priceFeedTxUsdc.data
     );
 
-    const priceResult = await oracleAggregator.getTokenValueOfOneNativeToken(
-      token.address
-    );
-    console.log("priceResult");
-    console.log(priceResult);
-
     sampleTokenPaymaster = await new BiconomyTokenPaymaster__factory(
       deployer
     ).deploy(
@@ -158,19 +171,20 @@ describe("Biconomy Token Paymaster", function () {
       await offchainSigner.getAddress()
     );
 
-    smartWalletImp = await new BiconomyAccountImplementation__factory(deployer).deploy(
-      entryPoint.address
-    );
+    smartWalletImp = await new BiconomyAccountImplementation__factory(
+      deployer
+    ).deploy(entryPoint.address);
 
     walletFactory = await new BiconomyAccountFactory__factory(deployer).deploy(
       smartWalletImp.address,
       walletOwnerAddress
     );
 
-    await walletFactory.connect(deployer).addStake(entryPoint.address, 86400, { value: parseEther("2") })
+    await walletFactory
+      .connect(deployer)
+      .addStake(entryPoint.address, 86400, { value: parseEther("2") });
 
-    const ecdsaOwnershipSetupData =
-    ecdsaModule.interface.encodeFunctionData(
+    const ecdsaOwnershipSetupData = ecdsaModule.interface.encodeFunctionData(
       "initForSmartAccount",
       [walletOwnerAddress]
     );
@@ -178,24 +192,18 @@ describe("Biconomy Token Paymaster", function () {
     const smartAccountDeploymentIndex = 0;
 
     const expected = await walletFactory.getAddressForCounterFactualAccount(
-      ecdsaModule.address, ecdsaOwnershipSetupData, smartAccountDeploymentIndex
+      ecdsaModule.address,
+      ecdsaOwnershipSetupData,
+      smartAccountDeploymentIndex
     );
 
-    console.log("mint tokens to owner address..");
     await token.mint(walletOwnerAddress, ethers.utils.parseEther("1000000"));
 
     walletAddress = expected;
-    console.log(" wallet address ", walletAddress);
 
     paymasterAddress = sampleTokenPaymaster.address;
-    console.log("Paymaster address is ", paymasterAddress);
 
-    /* await sampleTokenPaymaster
-      .connect(deployer)
-      .addStake(86400, { value: parseEther("2") });
-    console.log("paymaster staked"); */
-
-    await entryPoint.depositTo(paymasterAddress, { value: parseEther("2") });    
+    await entryPoint.depositTo(paymasterAddress, { value: parseEther("2") });
   });
 
   describe("Token Payamster read methods and state checks", () => {
@@ -203,7 +211,12 @@ describe("Biconomy Token Paymaster", function () {
       const paymasterAndData = ethers.utils.hexConcat([
         paymasterAddress,
         ethers.utils.hexlify(1).slice(0, 4),
-        encodePaymasterData(token.address, oracleAggregator.address, MOCK_FX, DEFAULT_FEE_MARKUP),
+        encodePaymasterData(
+          token.address,
+          oracleAggregator.address,
+          MOCK_FX,
+          DEFAULT_FEE_MARKUP
+        ),
         "0x" + "00".repeat(65),
       ]);
 
@@ -228,13 +241,6 @@ describe("Biconomy Token Paymaster", function () {
 
       const feeReceiver = await sampleTokenPaymaster.feeReceiver();
 
-      console.log(
-        "current values from contracts",
-        owner,
-        verifyingSigner,
-        feeReceiver
-      );
-
       expect(owner).to.be.equal(await walletOwner.getAddress());
       expect(verifyingSigner).to.be.equal(await offchainSigner.getAddress());
       expect(feeReceiver).to.be.equal(paymasterAddress);
@@ -243,7 +249,10 @@ describe("Biconomy Token Paymaster", function () {
 
   describe("Token Payamster functionality: positive test", () => {
     it("succeed with valid signature and valid erc20 pre approval for allowed ERC20 token: Deployed account", async () => {
-      const userSCW: any = BiconomyAccountImplementation__factory.connect(walletAddress, deployer)
+      const userSCW: any = BiconomyAccountImplementation__factory.connect(
+        walletAddress,
+        deployer
+      );
 
       await token
         .connect(deployer)
@@ -254,15 +263,19 @@ describe("Biconomy Token Paymaster", function () {
         "SmartAccountFactory"
       );
       const ecdsaOwnershipSetupData = ecdsaModule.interface.encodeFunctionData(
-      "initForSmartAccount",
-      [owner]
+        "initForSmartAccount",
+        [owner]
       );
 
       const smartAccountDeploymentIndex = 0;
 
       const deploymentData = AccountFactory.interface.encodeFunctionData(
         "deployCounterFactualAccount",
-        [ecdsaModule.address, ecdsaOwnershipSetupData, smartAccountDeploymentIndex]
+        [
+          ecdsaModule.address,
+          ecdsaOwnershipSetupData,
+          smartAccountDeploymentIndex,
+        ]
       );
 
       const userOp1 = await fillAndSign(
@@ -301,7 +314,12 @@ describe("Biconomy Token Paymaster", function () {
           paymasterAndData: ethers.utils.hexConcat([
             paymasterAddress,
             ethers.utils.hexlify(1).slice(0, 4),
-            encodePaymasterData(token.address, oracleAggregator.address, MOCK_FX, DEFAULT_FEE_MARKUP),
+            encodePaymasterData(
+              token.address,
+              oracleAggregator.address,
+              MOCK_FX,
+              DEFAULT_FEE_MARKUP
+            ),
             sig,
           ]),
         },
@@ -315,69 +333,22 @@ describe("Biconomy Token Paymaster", function () {
         [userOp.signature, ecdsaModule.address]
       );
 
-      userOp.signature = signatureWithModuleAddress
-    
+      userOp.signature = signatureWithModuleAddress;
 
       const requiredPrefund = ethers.BigNumber.from(userOp.callGasLimit)
         .add(ethers.BigNumber.from(userOp.verificationGasLimit).mul(3))
         .add(userOp.preVerificationGas)
         .mul(userOp.maxFeePerGas);
 
-      console.log("required prefund ", requiredPrefund.toString());
-
-      const initBalance = await token.balanceOf(paymasterAddress);
-      console.log("fee receiver token balance before ", initBalance.toString());
-
-      const preTokenBalanceForAccount = await token.balanceOf(walletAddress);
-      console.log(
-        "smart account erc20 balance before",
-        preTokenBalanceForAccount.toString()
-      );
-
       const tx = await entryPoint.handleOps(
         [userOp],
         await offchainSigner.getAddress()
       );
-      const receipt = await tx.wait();
-      console.log(
-        "fees paid in native ",
-        receipt.effectiveGasPrice.mul(receipt.gasUsed).toString()
-      );
 
-      console.log("gas used ");
-      console.log(receipt.gasUsed.toNumber());
-
-      const postBalance = await token.balanceOf(paymasterAddress);
-      console.log("fee receiver token balance after ", postBalance.toString());
-
-      const postTokenBalanceForAccount = await token.balanceOf(walletAddress);
-      console.log(
-        "smart account erc20 balance after",
-        postTokenBalanceForAccount.toString()
-      );
-
-      console.log(
-        "required prefund in token terms ",
-        requiredPrefund
-          .mul(MOCK_FX)
-          .div(ethers.constants.WeiPerEther)
-          .toString()
-      );
-
-      const code = await ethers.provider.getCode(walletAddress)
-      console.log(code)
+      await tx.wait();
 
       const ev = await getUserOpEvent(entryPoint);
       expect(ev.args.success).to.be.true;
-
-      /* expect(postBalance.sub(initBalance)).to.be.greaterThan(
-        ethers.constants.Zero
-      );
-      expect(postBalance.sub(initBalance)).to.be.lessThanOrEqual(
-        requiredPrefund.mul(MOCK_FX).div(ethers.constants.WeiPerEther)
-      ); */
-
-      
 
       await expect(
         entryPoint.handleOps([userOp], await offchainSigner.getAddress())

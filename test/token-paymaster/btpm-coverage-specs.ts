@@ -19,24 +19,32 @@ import {
   MockToken,
 } from "../../typechain-types";
 
-
 import { fillAndSign } from "../../lib/account-abstraction/test/UserOp";
 import { UserOperation } from "../../lib/account-abstraction/test/UserOperation";
-import { createAccount, simulationResultCatch } from "../../lib/account-abstraction/test/testutils";
-import { EntryPoint, EntryPoint__factory, SimpleAccount, TestToken, TestToken__factory } from "../../lib/account-abstraction/typechain";
-
-export const AddressZero = ethers.constants.AddressZero;
+import {
+  createAccount,
+  simulationResultCatch,
+} from "../../lib/account-abstraction/test/testutils";
+import {
+  EntryPoint,
+  EntryPoint__factory,
+  SimpleAccount,
+  TestToken,
+  TestToken__factory,
+} from "../../lib/account-abstraction/typechain";
 import { arrayify, hexConcat, parseEther } from "ethers/lib/utils";
 import { BigNumber, BigNumberish, Contract, Signer } from "ethers";
-import { EcdsaOwnershipRegistryModule, EcdsaOwnershipRegistryModule__factory } from "@biconomy-devx/account-contracts-v2/dist/types";
+import {
+  EcdsaOwnershipRegistryModule,
+  EcdsaOwnershipRegistryModule__factory,
+} from "@biconomy-devx/account-contracts-v2/dist/types";
+
+export const AddressZero = ethers.constants.AddressZero;
 
 const MOCK_VALID_UNTIL = "0x00000000deadbeef";
 const MOCK_VALID_AFTER = "0x0000000000001234";
-// Assume TOKEN decimals is 18, then 1 ETH = 1000 TOKENS
-// const MOCK_FX = ethers.constants.WeiPerEther.mul(1000);
 
 const MOCK_FX: BigNumberish = "977100"; // matic to usdc approx
-console.log("MOCK FX ", MOCK_FX); // 1000000000000000000000
 
 export async function deployEntryPoint(
   provider = ethers.provider
@@ -60,7 +68,14 @@ export const encodePaymasterData = (
 ) => {
   return ethers.utils.defaultAbiCoder.encode(
     ["uint48", "uint48", "address", "address", "uint256", "uint32"],
-    [MOCK_VALID_UNTIL, MOCK_VALID_AFTER, feeToken, oracleAggregator, exchangeRate, priceMarkup]
+    [
+      MOCK_VALID_UNTIL,
+      MOCK_VALID_AFTER,
+      feeToken,
+      oracleAggregator,
+      exchangeRate,
+      priceMarkup,
+    ]
   );
 };
 
@@ -120,14 +135,17 @@ describe("Biconomy Token Paymaster", function () {
     // const offchainSignerAddress = await deployer.getAddress();
     const walletOwnerAddress = await walletOwner.getAddress();
 
-    oracleAggregator = await new ChainlinkOracleAggregator__factory(deployer).deploy(walletOwnerAddress);
+    oracleAggregator = await new ChainlinkOracleAggregator__factory(
+      deployer
+    ).deploy(walletOwnerAddress);
 
-    ecdsaModule = await new EcdsaOwnershipRegistryModule__factory(deployer).deploy();
+    ecdsaModule = await new EcdsaOwnershipRegistryModule__factory(
+      deployer
+    ).deploy();
 
     const MockToken = await ethers.getContractFactory("MockToken");
     token = await MockToken.deploy();
     await token.deployed();
-    console.log("Test token deployed at: ", token.address);
 
     const usdcMaticPriceFeedMock = await new MockPriceFeed__factory(
       deployer
@@ -151,8 +169,6 @@ describe("Biconomy Token Paymaster", function () {
     const priceResult = await oracleAggregator.getTokenValueOfOneNativeToken(
       token.address
     );
-    console.log("priceResult");
-    console.log(priceResult);
 
     sampleTokenPaymaster = await new BiconomyTokenPaymaster__factory(
       deployer
@@ -162,67 +178,63 @@ describe("Biconomy Token Paymaster", function () {
       await offchainSigner.getAddress()
     );
 
-    smartWalletImp = await new BiconomyAccountImplementation__factory(deployer).deploy(
-      entryPoint.address
-    );
+    smartWalletImp = await new BiconomyAccountImplementation__factory(
+      deployer
+    ).deploy(entryPoint.address);
 
     walletFactory = await new BiconomyAccountFactory__factory(deployer).deploy(
       smartWalletImp.address,
       walletOwnerAddress
     );
 
-    await walletFactory.connect(deployer).addStake(entryPoint.address, 86400, { value: parseEther("2") })
+    await walletFactory
+      .connect(deployer)
+      .addStake(entryPoint.address, 86400, { value: parseEther("2") });
 
-    const ecdsaOwnershipSetupData =
-        ecdsaModule.interface.encodeFunctionData(
-          "initForSmartAccount",
-          [walletOwnerAddress]
-   );
+    const ecdsaOwnershipSetupData = ecdsaModule.interface.encodeFunctionData(
+      "initForSmartAccount",
+      [walletOwnerAddress]
+    );
 
     const smartAccountDeploymentIndex = 0;
 
-
-    await walletFactory.deployCounterFactualAccount(ecdsaModule.address, ecdsaOwnershipSetupData, smartAccountDeploymentIndex);
-
-    const expected = await walletFactory.getAddressForCounterFactualAccount(
-      ecdsaModule.address, ecdsaOwnershipSetupData, smartAccountDeploymentIndex
+    await walletFactory.deployCounterFactualAccount(
+      ecdsaModule.address,
+      ecdsaOwnershipSetupData,
+      smartAccountDeploymentIndex
     );
 
-    console.log("mint tokens to owner address..");
+    const expected = await walletFactory.getAddressForCounterFactualAccount(
+      ecdsaModule.address,
+      ecdsaOwnershipSetupData,
+      smartAccountDeploymentIndex
+    );
+
     await token.mint(walletOwnerAddress, ethers.utils.parseEther("1000000"));
 
     walletAddress = expected;
-    console.log(" wallet address ", walletAddress);
 
     paymasterAddress = sampleTokenPaymaster.address;
-    console.log("Paymaster address is ", paymasterAddress);
 
     await sampleTokenPaymaster
       .connect(deployer)
       .addStake(1, { value: parseEther("2") });
-    console.log("paymaster staked");
 
     await entryPoint.depositTo(paymasterAddress, { value: parseEther("2") });
 
     const resultSet = await entryPoint.getDepositInfo(paymasterAddress);
-    console.log("deposited state ", resultSet);
   });
 
   describe("Token Payamster Staking + Gas deposits / withdraw", () => {
-    it("Owner should be able to add and withdraw stake", async ()  => {
+    it("Owner should be able to add and withdraw stake", async () => {
       await sampleTokenPaymaster
-      .connect(deployer)
-      .addStake(1, { value: parseEther("2") });
-      
-      
-      console.log("paymaster staked");
+        .connect(deployer)
+        .addStake(1, { value: parseEther("2") });
     });
   });
 
   describe("Pull: ether / tokens recovery", () => {
     it("only owner should be able to pull tokens, withdraw gas", async () => {
-
-      // paymaster can receive eth
       await deployer.sendTransaction({
         to: paymasterAddress,
         value: parseEther("1"),
@@ -232,81 +244,135 @@ describe("Biconomy Token Paymaster", function () {
 
       const withdrawAddress = await ethersSigner[7].getAddress();
 
-      const etherBalanceBefore = await ethers.provider.getBalance(withdrawAddress);
-      console.log("balance before ", etherBalanceBefore.toString());
+      const etherBalanceBefore = await ethers.provider.getBalance(
+        withdrawAddress
+      );
 
       const tokenBalanceBefore = await token.balanceOf(withdrawAddress);
-      console.log("token balance before ", tokenBalanceBefore.toString());
 
-      const currentGasDeposited = await sampleTokenPaymaster.deposit()
-      console.log("current gas in Entry Point ", currentGasDeposited.toString());
+      const currentGasDeposited = await sampleTokenPaymaster.deposit();
 
-      await sampleTokenPaymaster.transferOwnership(await ethersSigner[6].getAddress());
-      
-      await sampleTokenPaymaster.connect(ethersSigner[6]).withdrawTo(withdrawAddress, ethers.utils.parseEther("0.2"));
+      await sampleTokenPaymaster.transferOwnership(
+        await ethersSigner[6].getAddress()
+      );
 
-      const gasasDepositedAfter = await sampleTokenPaymaster.deposit()
-      console.log("current gas in Entry Point ", gasasDepositedAfter.toString());
+      await sampleTokenPaymaster
+        .connect(ethersSigner[6])
+        .withdrawTo(withdrawAddress, ethers.utils.parseEther("0.2"));
 
-      await expect(sampleTokenPaymaster.connect(ethersSigner[9]).withdrawTo(withdrawAddress, ethers.utils.parseEther("0.2")))
-      .to.be.revertedWith("Ownable: caller is not the owner");
+      const gasasDepositedAfter = await sampleTokenPaymaster.deposit();
 
-      const etherBalanceAfter = await ethers.provider.getBalance(withdrawAddress);
-      console.log("balance after ", etherBalanceBefore.toString());
+      await expect(
+        sampleTokenPaymaster
+          .connect(ethersSigner[9])
+          .withdrawTo(withdrawAddress, ethers.utils.parseEther("0.2"))
+      ).to.be.revertedWith("Ownable: caller is not the owner");
 
-      expect(etherBalanceBefore.add(ethers.utils.parseEther("0.2"))).to.be.equal(etherBalanceAfter);
+      const etherBalanceAfter = await ethers.provider.getBalance(
+        withdrawAddress
+      );
+
+      expect(
+        etherBalanceBefore.add(ethers.utils.parseEther("0.2"))
+      ).to.be.equal(etherBalanceAfter);
 
       const collectedTokens = await token.balanceOf(paymasterAddress);
-      console.log("collected tokens ", collectedTokens)
 
-      await expect(sampleTokenPaymaster.connect(ethersSigner[9]).withdrawERC20(token.address, withdrawAddress, collectedTokens))
-      .to.be.revertedWith("Ownable: caller is not the owner");
+      await expect(
+        sampleTokenPaymaster
+          .connect(ethersSigner[9])
+          .withdrawERC20(token.address, withdrawAddress, collectedTokens)
+      ).to.be.revertedWith("Ownable: caller is not the owner");
 
-      await expect(sampleTokenPaymaster.connect(ethersSigner[6]).withdrawERC20(token.address, ethers.constants.AddressZero, collectedTokens))
-      .to.be.revertedWithCustomError(sampleTokenPaymaster, "CanNotWithdrawToZeroAddress");
+      await expect(
+        sampleTokenPaymaster
+          .connect(ethersSigner[6])
+          .withdrawERC20(
+            token.address,
+            ethers.constants.AddressZero,
+            collectedTokens
+          )
+      ).to.be.revertedWithCustomError(
+        sampleTokenPaymaster,
+        "CanNotWithdrawToZeroAddress"
+      );
 
-      await sampleTokenPaymaster.connect(ethersSigner[6]).withdrawERC20(token.address, withdrawAddress, collectedTokens);
+      await sampleTokenPaymaster
+        .connect(ethersSigner[6])
+        .withdrawERC20(token.address, withdrawAddress, collectedTokens);
 
       const tokenBalanceAfter = await token.balanceOf(withdrawAddress);
-      console.log("token balance after ", tokenBalanceAfter.toString());
 
-      expect(tokenBalanceBefore.add(collectedTokens)).to.be.equal(tokenBalanceAfter); 
+      expect(tokenBalanceBefore.add(collectedTokens)).to.be.equal(
+        tokenBalanceAfter
+      );
 
       await sampleTokenPaymaster.connect(ethersSigner[6]).unlockStake();
 
       await delay(1000);
-      
-      await sampleTokenPaymaster.connect(ethersSigner[6]).withdrawStake(withdrawAddress);
+
+      await sampleTokenPaymaster
+        .connect(ethersSigner[6])
+        .withdrawStake(withdrawAddress);
 
       await token.mint(paymasterAddress, ethers.utils.parseEther("100"));
 
       const withdrawAddressNew = await ethersSigner[8].getAddress();
 
-      await sampleTokenPaymaster.connect(ethersSigner[6]).withdrawERC20Full(token.address, withdrawAddressNew);
+      await sampleTokenPaymaster
+        .connect(ethersSigner[6])
+        .withdrawERC20Full(token.address, withdrawAddressNew);
 
-      expect(await token.balanceOf(withdrawAddressNew)).to.be.equal(ethers.utils.parseEther("100"));
-
-      await token.mint(paymasterAddress, ethers.utils.parseEther("200"));
-
-      await sampleTokenPaymaster.connect(ethersSigner[6]).withdrawMultipleERC20([token.address, token.address], withdrawAddressNew, [ethers.utils.parseEther("100"), ethers.utils.parseEther("100")]);
-
-      expect(await token.balanceOf(withdrawAddressNew)).to.be.equal(ethers.utils.parseEther("300"));
+      expect(await token.balanceOf(withdrawAddressNew)).to.be.equal(
+        ethers.utils.parseEther("100")
+      );
 
       await token.mint(paymasterAddress, ethers.utils.parseEther("200"));
 
-      await sampleTokenPaymaster.connect(ethersSigner[6]).withdrawMultipleERC20Full([token.address, token.address], withdrawAddressNew);
+      await sampleTokenPaymaster
+        .connect(ethersSigner[6])
+        .withdrawMultipleERC20(
+          [token.address, token.address],
+          withdrawAddressNew,
+          [ethers.utils.parseEther("100"), ethers.utils.parseEther("100")]
+        );
 
-      expect(await token.balanceOf(withdrawAddressNew)).to.be.equal(ethers.utils.parseEther("500"));
+      expect(await token.balanceOf(withdrawAddressNew)).to.be.equal(
+        ethers.utils.parseEther("300")
+      );
 
-      const ethBalanceOfDestBefore = await ethers.provider.getBalance(withdrawAddressNew);
+      await token.mint(paymasterAddress, ethers.utils.parseEther("200"));
 
-      await sampleTokenPaymaster.connect(ethersSigner[6]).withdrawAllNative(withdrawAddressNew);
+      await sampleTokenPaymaster
+        .connect(ethersSigner[6])
+        .withdrawMultipleERC20Full(
+          [token.address, token.address],
+          withdrawAddressNew
+        );
 
-      const ethBalanceOfDestAfter = await ethers.provider.getBalance(withdrawAddressNew);
+      expect(await token.balanceOf(withdrawAddressNew)).to.be.equal(
+        ethers.utils.parseEther("500")
+      );
 
-      expect(ethBalanceOfDestAfter.sub(ethBalanceOfDestBefore)).to.be.equal(parseEther("1"));
+      const ethBalanceOfDestBefore = await ethers.provider.getBalance(
+        withdrawAddressNew
+      );
 
-      expect(await ethers.provider.getBalance(paymasterAddress)).to.be.equal(parseEther("0"));
+      await sampleTokenPaymaster
+        .connect(ethersSigner[6])
+        .withdrawAllNative(withdrawAddressNew);
+
+      const ethBalanceOfDestAfter = await ethers.provider.getBalance(
+        withdrawAddressNew
+      );
+
+      expect(ethBalanceOfDestAfter.sub(ethBalanceOfDestBefore)).to.be.equal(
+        parseEther("1")
+      );
+
+      expect(await ethers.provider.getBalance(paymasterAddress)).to.be.equal(
+        parseEther("0")
+      );
     });
   });
 });

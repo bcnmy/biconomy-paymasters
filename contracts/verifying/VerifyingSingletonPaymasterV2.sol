@@ -71,41 +71,6 @@ contract VerifyingSingletonPaymasterV2 is
     }
 
     /**
-     * @dev get the current deposit for paymasterId (Dapp Depositor address)
-     * @param paymasterId dapp identifier
-     */
-    function getBalance(
-        address paymasterId
-    ) external view returns (uint256 balance) {
-        balance = paymasterIdBalances[paymasterId];
-    }
-
-    /**
-     @dev Override the default implementation.
-     */
-    function deposit() public payable virtual override {
-        revert("Use depositFor() instead");
-    }
-
-    /**
-     * @dev Withdraws the specified amount of gas tokens from the paymaster's balance and transfers them to the specified address.
-     * @param withdrawAddress The address to which the gas tokens should be transferred.
-     * @param amount The amount of gas tokens to withdraw.
-     */
-    function withdrawTo(
-        address payable withdrawAddress,
-        uint256 amount
-    ) public override nonReentrant {
-        if (withdrawAddress == address(0)) revert CanNotWithdrawToZeroAddress();
-        uint256 currentBalance = paymasterIdBalances[msg.sender];
-        if (amount > currentBalance)
-            revert InsufficientBalance(amount, currentBalance);
-        paymasterIdBalances[msg.sender] = currentBalance - amount;
-        entryPoint.withdrawTo(withdrawAddress, amount);
-        emit GasWithdrawn(msg.sender, withdrawAddress, amount);
-    }
-
-    /**
      * @dev Set a new verifying signer address.
      * Can only be called by the owner of the contract.
      * @param _newVerifyingSigner The new address to be set as the verifying signer.
@@ -171,6 +136,41 @@ contract VerifyingSingletonPaymasterV2 is
     }
 
     /**
+     * @dev get the current deposit for paymasterId (Dapp Depositor address)
+     * @param paymasterId dapp identifier
+     */
+    function getBalance(
+        address paymasterId
+    ) external view returns (uint256 balance) {
+        balance = paymasterIdBalances[paymasterId];
+    }
+
+    /**
+     @dev Override the default implementation.
+     */
+    function deposit() public payable virtual override {
+        revert("Use depositFor() instead");
+    }
+
+    /**
+     * @dev Withdraws the specified amount of gas tokens from the paymaster's balance and transfers them to the specified address.
+     * @param withdrawAddress The address to which the gas tokens should be transferred.
+     * @param amount The amount of gas tokens to withdraw.
+     */
+    function withdrawTo(
+        address payable withdrawAddress,
+        uint256 amount
+    ) public override nonReentrant {
+        if (withdrawAddress == address(0)) revert CanNotWithdrawToZeroAddress();
+        uint256 currentBalance = paymasterIdBalances[msg.sender];
+        if (amount > currentBalance)
+            revert InsufficientBalance(amount, currentBalance);
+        paymasterIdBalances[msg.sender] = currentBalance - amount;
+        entryPoint.withdrawTo(withdrawAddress, amount);
+        emit GasWithdrawn(msg.sender, withdrawAddress, amount);
+    }
+
+    /**
      * @dev This method is called by the off-chain service, to sign the request.
      * It is called on-chain from the validatePaymasterUserOp, to validate the signature.
      * @notice That this signature covers all fields of the UserOperation, except the "paymasterAndData",
@@ -207,20 +207,66 @@ contract VerifyingSingletonPaymasterV2 is
             );
     }
 
-    // Note: do not use this in validation phase
-    function getGasPrice(
-        uint256 maxFeePerGas,
-        uint256 maxPriorityFeePerGas
-    ) internal view returns (uint256) {
-        if (maxFeePerGas == maxPriorityFeePerGas) {
-            //legacy mode (for networks that don't support basefee opcode)
-            return maxFeePerGas;
-        }
-        return
-            MathLib.minuint256(
-                maxFeePerGas,
-                maxPriorityFeePerGas + block.basefee
-            );
+    function parsePaymasterAndData(
+        bytes calldata paymasterAndData
+    )
+        public
+        pure
+        returns (
+            address paymasterId,
+            uint48 validUntil,
+            uint48 validAfter,
+            uint32 priceMarkup,
+            bytes calldata signature
+        )
+    {
+        (paymasterId, validUntil, validAfter, priceMarkup) = abi.decode(
+            paymasterAndData[VALID_PND_OFFSET:SIGNATURE_OFFSET],
+            (address, uint48, uint48, uint32)
+        );
+
+        signature = paymasterAndData[SIGNATURE_OFFSET:];
+    }
+
+    /**
+     * @dev Executes the paymaster's payment conditions
+     * @param context payment conditions signed by the paymaster in `validatePaymasterUserOp`
+     * @param actualGasCost amount to be paid to the entry point in wei
+     */
+    function _postOp(
+        PostOpMode /** mode */,
+        bytes calldata context,
+        uint256 actualGasCost
+    ) internal virtual override {
+        (
+            address paymasterId,
+            uint32 dynamicMarkup,
+            uint256 maxFeePerGas,
+            uint256 maxPriorityFeePerGas,
+            bytes32 userOpHash
+        ) = abi.decode(context, (address, uint32, uint256, uint256, bytes32));
+
+        uint256 effectiveGasPrice = getGasPrice(
+            maxFeePerGas,
+            maxPriorityFeePerGas
+        );
+
+        uint256 balToDeduct = actualGasCost +
+            unaccountedEPGasOverhead *
+            effectiveGasPrice;
+
+        uint256 costIncludingPremium = (balToDeduct * dynamicMarkup) /
+            PRICE_DENOMINATOR;
+
+        // deduct with premium
+        paymasterIdBalances[paymasterId] -= costIncludingPremium;
+
+        uint256 actualPremium = costIncludingPremium - balToDeduct;
+        // "collect" premium
+        paymasterIdBalances[feeCollector] += actualPremium;
+
+        emit GasBalanceDeducted(paymasterId, costIncludingPremium, userOpHash);
+        emit PremiumCollected(paymasterId, actualPremium);
     }
 
     /**
@@ -234,7 +280,7 @@ contract VerifyingSingletonPaymasterV2 is
      */
     function _validatePaymasterUserOp(
         UserOperation calldata userOp,
-        bytes32 /*userOpHash*/,
+        bytes32 userOpHash,
         uint256 requiredPreFund
     ) internal override returns (bytes memory context, uint256 validationData) {
         (
@@ -281,71 +327,26 @@ contract VerifyingSingletonPaymasterV2 is
             paymasterId,
             dynamicMarkup,
             userOp.maxFeePerGas,
-            userOp.maxPriorityFeePerGas
+            userOp.maxPriorityFeePerGas,
+            userOpHash
         );
 
         return (context, _packValidationData(false, validUntil, validAfter));
     }
 
-    function parsePaymasterAndData(
-        bytes calldata paymasterAndData
-    )
-        public
-        pure
-        returns (
-            address paymasterId,
-            uint48 validUntil,
-            uint48 validAfter,
-            uint32 priceMarkup,
-            bytes calldata signature
-        )
-    {
-        (paymasterId, validUntil, validAfter, priceMarkup) = abi.decode(
-            paymasterAndData[VALID_PND_OFFSET:SIGNATURE_OFFSET],
-            (address, uint48, uint48, uint32)
-        );
-
-        signature = paymasterAndData[SIGNATURE_OFFSET:];
-    }
-
-    /**
-     * @dev Executes the paymaster's payment conditions
-     * @param mode tells whether the op succeeded, reverted, or if the op succeeded but cause the postOp to revert
-     * @param context payment conditions signed by the paymaster in `validatePaymasterUserOp`
-     * @param actualGasCost amount to be paid to the entry point in wei
-     */
-    function _postOp(
-        PostOpMode mode,
-        bytes calldata context,
-        uint256 actualGasCost
-    ) internal virtual override {
-        (
-            address paymasterId,
-            uint32 dynamicMarkup,
-            uint256 maxFeePerGas,
-            uint256 maxPriorityFeePerGas
-        ) = abi.decode(context, (address, uint32, uint256, uint256));
-
-        uint256 effectiveGasPrice = getGasPrice(
-            maxFeePerGas,
-            maxPriorityFeePerGas
-        );
-
-        uint256 balToDeduct = actualGasCost +
-            unaccountedEPGasOverhead *
-            effectiveGasPrice;
-
-        uint256 costIncludingPremium = (balToDeduct * dynamicMarkup) /
-            PRICE_DENOMINATOR;
-
-        // deduct with premium
-        paymasterIdBalances[paymasterId] -= costIncludingPremium;
-
-        uint256 actualPremium = costIncludingPremium - balToDeduct;
-        // "collect" premium
-        paymasterIdBalances[feeCollector] += actualPremium;
-
-        emit GasBalanceDeducted(paymasterId, costIncludingPremium);
-        emit PremiumCollected(paymasterId, actualPremium);
+    // Note: do not use this in validation phase
+    function getGasPrice(
+        uint256 maxFeePerGas,
+        uint256 maxPriorityFeePerGas
+    ) internal view returns (uint256) {
+        if (maxFeePerGas == maxPriorityFeePerGas) {
+            //legacy mode (for networks that don't support basefee opcode)
+            return maxFeePerGas;
+        }
+        return
+            MathLib.minuint256(
+                maxFeePerGas,
+                maxPriorityFeePerGas + block.basefee
+            );
     }
 }

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.4;
+pragma solidity ^0.8.20;
 
 /// @notice Safe ETH and ERC20 transfer library that gracefully handles missing return values.
 /// @author Solady (https://github.com/vectorized/solady/blob/main/src/utils/SafeTransferLib.sol)
@@ -9,18 +9,6 @@ library SafeTransferLib {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       CUSTOM ERRORS                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-
-    /// @dev The ETH transfer has failed.
-    error ETHTransferFailed();
-
-    /// @dev The ERC20 `transferFrom` has failed.
-    error TransferFromFailed();
-
-    /// @dev The ERC20 `transfer` has failed.
-    error TransferFailed();
-
-    /// @dev The ERC20 `approve` has failed.
-    error ApproveFailed();
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */
@@ -34,6 +22,18 @@ library SafeTransferLib {
     /// storage reads and writes, but low enough to prevent griefing.
     /// Multiply by a small constant (e.g. 2), if needed.
     uint256 internal constant _GAS_STIPEND_NO_GRIEF = 100000;
+
+    /// @dev The ETH transfer has failed.
+    error ETHTransferFailed();
+
+    /// @dev The ERC20 `transferFrom` has failed.
+    error TransferFromFailed();
+
+    /// @dev The ERC20 `transfer` has failed.
+    error TransferFailed();
+
+    /// @dev The ERC20 `approve` has failed.
+    error ApproveFailed();
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      ERC20 OPERATIONS                      */

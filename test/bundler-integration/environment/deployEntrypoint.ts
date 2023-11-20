@@ -11,7 +11,6 @@ if (require.main === module) {
     await BundlerTestEnvironment.getDefaultInstance();
     const [deployer] = await ethers.getSigners();
     const entrypoint = await new EntryPoint__factory(deployer).deploy();
-    console.log("Entrypoint deployed at", entrypoint.address);
     await promises.writeFile(envPath, `ENTRYPOINT=${entrypoint.address}`);
   })();
 }

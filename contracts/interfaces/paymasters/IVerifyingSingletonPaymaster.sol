@@ -31,20 +31,13 @@ interface IVerifyingSingletonPaymaster {
     );
     event GasBalanceDeducted(
         address indexed _paymasterId,
-        uint256 indexed _charge
+        uint256 indexed _charge,
+        bytes32 indexed userOpHash
     );
     event PremiumCollected(
         address indexed _paymasterId,
         uint256 indexed _premium
     );
-
-    /**
-     * @dev Returns the current balance of the paymasterId(aka fundingId)
-     * @param paymasterId The address of the paymasterId
-     */
-    function getBalance(
-        address paymasterId
-    ) external view returns (uint256 balance);
 
     /**
      * @dev updates the verifyingSigner address
@@ -57,4 +50,12 @@ interface IVerifyingSingletonPaymaster {
      * @param value The new value
      */
     function setUnaccountedEPGasOverhead(uint256 value) external payable;
+
+    /**
+     * @dev Returns the current balance of the paymasterId(aka fundingId)
+     * @param paymasterId The address of the paymasterId
+     */
+    function getBalance(
+        address paymasterId
+    ) external view returns (uint256 balance);
 }

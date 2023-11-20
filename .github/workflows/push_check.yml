@@ -1,0 +1,80 @@
+name: Test workflow
+on: push
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      cache-key: ${{ steps.cache-keys.outputs.cache-key }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Get cache key
+        id: cache-keys
+        run: echo "::set-output name=cache-key::$(echo ${{ runner.os }}-node-$(cat yarn.lock | sha256sum | cut -d' ' -f1))"
+
+      - name: Cache node modules
+        uses: actions/cache@v2
+        with:
+          path: |
+            **/node_modules
+          key: ${{ steps.cache-keys.outputs.cache-key }}
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+  lint:
+    name: Lint sources
+    runs-on: ubuntu-latest
+    needs: setup
+    strategy:
+      matrix:
+        node-version: [18.x]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Cache node modules
+        uses: actions/cache@v2
+        with:
+          path: |
+            **/node_modules
+          key: ${{ needs.setup.outputs.cache-key }}
+
+      - name: Lint sources
+        run: yarn lint:sol
+
+  unit_test:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    needs: setup
+    strategy:
+      matrix:
+        node-version: [18.x]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Cache node modules
+        uses: actions/cache@v2
+        with:
+          path: |
+            **/node_modules
+          key: ${{ needs.setup.outputs.cache-key }}
+
+      - name: Create a fake .secret file
+        run: echo "primary twist rack vendor diagram image used route theme frown either will" > .secret
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Install foundry dependencies
+        run: forge install
+
+      - name: Build Typechain and Foundry
+        run: yarn build
+
+      - name: Run Forge and Hardhat Tests
+        run: yarn test

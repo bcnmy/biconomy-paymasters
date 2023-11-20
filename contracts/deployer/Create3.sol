@@ -6,10 +6,6 @@ pragma solidity ^0.8.20;
   @author Agustin Aguilar <aa@horizon.io>
 */
 library Create3 {
-    error ErrorCreatingProxy();
-    error ErrorCreatingContract();
-    error TargetAlreadyExists();
-
     /**
     @notice The bytecode for a contract that proxies the creation of another contract
     @dev If this code is deployed using CREATE2 it can be used to decouple `creationCode` from the child contract address
@@ -40,29 +36,9 @@ library Create3 {
     bytes32 internal constant KECCAK256_PROXY_CHILD_BYTECODE =
         0x21c35dbe1b344a2488cf3321d6ce542f8e9f305544ff09e4993a62319a497c1f;
 
-    /**
-    @notice Returns the size of the code on a given address
-    @param _addr Address that may or may not contain code
-    @return size of the code on the given `_addr`
-  */
-    function codeSize(address _addr) internal view returns (uint256 size) {
-        assembly {
-            size := extcodesize(_addr)
-        }
-    }
-
-    /**
-    @notice Creates a new contract with given `_creationCode` and `_salt`
-    @param _salt Salt of the contract creation, resulting address will be derivated from this value only
-    @param _creationCode Creation code (constructor) of the contract to be deployed, this value doesn't affect the resulting address
-    @return addr of the deployed contract, reverts on error
-  */
-    function create3(
-        bytes32 _salt,
-        bytes memory _creationCode
-    ) internal returns (address addr) {
-        return create3(_salt, _creationCode, 0);
-    }
+    error ErrorCreatingProxy();
+    error ErrorCreatingContract();
+    error TargetAlreadyExists();
 
     /**
     @notice Creates a new contract with given `_creationCode` and `_salt`
@@ -100,6 +76,19 @@ library Create3 {
         if (!success || codeSize(addr) == 0) revert ErrorCreatingContract();
     }
 
+    /**
+    @notice Creates a new contract with given `_creationCode` and `_salt`
+    @param _salt Salt of the contract creation, resulting address will be derivated from this value only
+    @param _creationCode Creation code (constructor) of the contract to be deployed, this value doesn't affect the resulting address
+    @return addr of the deployed contract, reverts on error
+  */
+    function create3(
+        bytes32 _salt,
+        bytes memory _creationCode
+    ) internal returns (address addr) {
+        return create3(_salt, _creationCode, 0);
+    }
+
     function addressOfProxy(bytes32 _salt) internal view returns (address) {
         return
             address(
@@ -116,6 +105,17 @@ library Create3 {
                     )
                 )
             );
+    }
+
+    /**
+    @notice Returns the size of the code on a given address
+    @param _addr Address that may or may not contain code
+    @return size of the code on the given `_addr`
+  */
+    function codeSize(address _addr) internal view returns (uint256 size) {
+        assembly {
+            size := extcodesize(_addr)
+        }
     }
 
     /**

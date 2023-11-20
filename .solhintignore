@@ -1,0 +1,6 @@
+node_modules
+artifacts
+contracts/test
+contracts/libs
+contracts/token
+contracts/references

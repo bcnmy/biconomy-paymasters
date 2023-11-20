@@ -19,6 +19,11 @@ import {UserOperation} from "@account-abstraction/contracts/interfaces/UserOpera
 import {IStakeManager} from "@account-abstraction/contracts/interfaces/IStakeManager.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
+import {SmartAccountFactory} from "@biconomy-devx/account-contracts-v2/contracts/smart-account/factory/SmartAccountFactory.sol";
+import {SmartAccount} from "@biconomy-devx/account-contracts-v2/contracts/smart-account/SmartAccount.sol";
+import {EcdsaOwnershipRegistryModule} from "@biconomy-devx/account-contracts-v2/contracts/smart-account/modules/EcdsaOwnershipRegistryModule.sol";
+
+
 import {MockToken} from "../contracts/test/helpers/MockToken.sol";
 import {MockPriceFeed} from "../contracts/test/helpers/MockPriceFeed.sol";
 import {FeedInterface} from "../contracts/token/oracles/FeedInterface.sol";
@@ -51,6 +56,7 @@ contract TokenPaymasterTest is Test {
     address internal alice; // owner
     address internal bob; // verifyingSigner
     address internal charlie; // wallet owner
+    address internal factoryOwner;
     address payable beneficiary;
     address internal unauthorized;
 
@@ -62,8 +68,11 @@ contract TokenPaymasterTest is Test {
     IEntryPoint public _ep;
     MockToken usdc;
     MockPriceFeed usdcMaticFeed;
-    ISmartAccountFactory smartAccountFactory;
-    ISmartAccount smartAccount;
+    SmartAccountFactory smartAccountFactory;
+    SmartAccount smartAccount;
+    // Modules
+    EcdsaOwnershipRegistryModule ecdsaOwnershipRegistryModule;
+
     TestCounter counter;
 
     function setUp() public {
@@ -103,26 +112,27 @@ contract TokenPaymasterTest is Test {
         );
         console2.log(priceToLog);
 
-        smartAccount = ISmartAccount(
-            deployCode(
-                "BiconomyAccountImpl.sol:BiconomyAccountImplementation",
-                abi.encode(_ep)
-            )
-        );
-        smartAccountFactory = ISmartAccountFactory(
-            deployCode(
-                "BiconomyAccountFactory.sol:BiconomyAccountFactory",
-                abi.encode(smartAccount, users[4])
-            )
+        smartAccount = new SmartAccount(_ep);
+        vm.label(address(smartAccount), "Smart Account Implementation");
+
+        factoryOwner = users[4];
+        smartAccountFactory = new SmartAccountFactory(address(smartAccount),factoryOwner);
+        vm.label(address(smartAccountFactory), "Smart Account Factory");
+
+        ecdsaOwnershipRegistryModule = new EcdsaOwnershipRegistryModule();
+        vm.label(
+            address(ecdsaOwnershipRegistryModule),
+            "ECDSA Ownership Registry Module"
         );
 
-        address accountAddress = smartAccountFactory
-            .deployCounterFactualAccount(charlie, 0);
-        console2.log(" smart account address ", accountAddress);
+        smartAccount = getSmartAccountWithModule(
+            address(ecdsaOwnershipRegistryModule),
+            getEcdsaOwnershipRegistryModuleSetupData(charlie),
+            0,
+            "Smart Account with ECDSA Ownership Registry Module"
+        );
 
-        // resetting the state
-        // smartAccount = BiconomyAccountImplementation(payable(accountAddress));
-        smartAccount = ISmartAccount(accountAddress);
+        address accountAddress = address(smartAccount);
 
         vm.deal(charlie, 2 ether);
         vm.prank(charlie);
@@ -132,6 +142,36 @@ contract TokenPaymasterTest is Test {
         usdc.mint(charlie, 100e6);
         usdc.mint(accountAddress, 100e6);
         vm.warp(1680509051);
+    }
+
+    // Utility Functions
+    function getSmartAccountWithModule(
+        address _moduleSetupContract,
+        bytes memory _moduleSetupData,
+        uint256 _index,
+        string memory _label
+    ) internal returns (SmartAccount sa) {
+        sa = SmartAccount(
+            payable(
+                smartAccountFactory.deployCounterFactualAccount(
+                    _moduleSetupContract,
+                    _moduleSetupData,
+                    _index
+                )
+            )
+        );
+        vm.label(address(sa), _label);
+    }
+
+    // Module Setup Data Helpers
+    function getEcdsaOwnershipRegistryModuleSetupData(
+        address _owner
+    ) internal pure returns (bytes memory) {
+        return
+            abi.encodeCall(
+                EcdsaOwnershipRegistryModule.initForSmartAccount,
+                (_owner)
+            );
     }
 
     function testDeploy() external {
@@ -192,7 +232,7 @@ contract TokenPaymasterTest is Test {
     function testCall() external {
         vm.deal(address(smartAccount), 1e18);
         (UserOperation memory op, uint256 prefund) = fillUserOp(
-            address(smartAccount),
+            smartAccount,
             keyUser,
             address(counter),
             0,
@@ -214,7 +254,7 @@ contract TokenPaymasterTest is Test {
             usdc.balanceOf(address(_btpm))
         );
         (UserOperation memory op, uint256 prefund) = fillUserOp(
-            address(smartAccount),
+            smartAccount,
             keyUser,
             address(usdc),
             0,
@@ -265,7 +305,7 @@ contract TokenPaymasterTest is Test {
             usdc.balanceOf(address(_btpm))
         );
         (UserOperation memory op, uint256 prefund) = fillUserOp(
-            address(smartAccount),
+            smartAccount,
             keyUser,
             address(usdc),
             0,
@@ -316,7 +356,7 @@ contract TokenPaymasterTest is Test {
             usdc.balanceOf(address(_btpm))
         );
         (UserOperation memory op, uint256 prefund) = fillUserOp(
-            address(smartAccount),
+            smartAccount,
             keyUser,
             address(usdc),
             0,
@@ -340,7 +380,7 @@ contract TokenPaymasterTest is Test {
             usdc.balanceOf(address(_btpm))
         );
         (UserOperation memory op, uint256 prefund) = fillUserOp(
-            address(smartAccount),
+            smartAccount,
             keyUser,
             address(usdc),
             0,
@@ -371,7 +411,7 @@ contract TokenPaymasterTest is Test {
             usdc.balanceOf(address(_btpm))
         );
         (UserOperation memory op, uint256 prefund) = fillUserOp(
-            address(smartAccount),
+            smartAccount,
             keyUser,
             address(usdc),
             0,
@@ -425,7 +465,7 @@ contract TokenPaymasterTest is Test {
             usdc.balanceOf(address(_btpm))
         );
         (UserOperation memory op, uint256 prefund) = fillUserOp(
-            address(smartAccount),
+            smartAccount,
             keyUser,
             address(usdc),
             0,
@@ -478,7 +518,7 @@ contract TokenPaymasterTest is Test {
             usdc.balanceOf(address(_btpm))
         );
         (UserOperation memory op, uint256 prefund) = fillUserOp(
-            address(smartAccount),
+            smartAccount,
             keyUser,
             address(usdc),
             0,
@@ -537,7 +577,7 @@ contract TokenPaymasterTest is Test {
     }
 
     function fillUserOp(
-        address _sender,
+        SmartAccount _sender,
         uint256 _key,
         address _to,
         uint256 _value,
@@ -545,12 +585,7 @@ contract TokenPaymasterTest is Test {
     ) public returns (UserOperation memory op, uint256 prefund) {
         op.sender = address(_sender);
         op.nonce = _ep.getNonce(address(_sender), 0);
-        op.callData = abi.encodeWithSelector(
-            ISmartAccount.executeCall.selector,
-            _to,
-            _value,
-            _data
-        );
+        op.callData = abi.encodeWithSelector(SmartAccount.execute_ncC.selector, _to, _value, _data);
         op.callGasLimit = 50000;
         op.verificationGasLimit = 80000;
         op.preVerificationGas = 50000;
@@ -559,7 +594,13 @@ contract TokenPaymasterTest is Test {
         op.signature = signUserOp(op, _key);
         (op, prefund) = simulateVerificationGas(_ep, op);
         op.callGasLimit = simulateCallGas(_ep, op);
+
         //op.signature = signUserOp(op, _name);
+
+        op.signature = abi.encode(
+            op.signature,
+            address(ecdsaOwnershipRegistryModule)
+        );
     }
 
     function signUserOp(
@@ -572,6 +613,10 @@ contract TokenPaymasterTest is Test {
             hash.toEthSignedMessageHash()
         );
         signature = abi.encodePacked(r, s, v);
+        signature = abi.encode(
+            signature,
+            address(ecdsaOwnershipRegistryModule)
+        );
     }
 
     function signPaymasterSignature(
