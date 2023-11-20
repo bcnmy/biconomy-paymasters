@@ -30,7 +30,10 @@ import {
 } from "@biconomy-devx/account-contracts-v2/dist/types";
 import { arrayify, hexConcat, parseEther } from "ethers/lib/utils";
 import { BigNumber, BigNumberish, Contract, Signer } from "ethers";
-import { BundlerTestEnvironment } from "../environment/bundlerEnvironment";
+import {
+  BundlerTestEnvironment,
+  UserOperationSubmissionError,
+} from "../environment/bundlerEnvironment";
 
 export const AddressZero = ethers.constants.AddressZero;
 
@@ -205,7 +208,7 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
       const userOp1 = await fillAndSign(
         {
           sender: walletAddress,
-          verificationGasLimit: 50000, // for positive case 200k
+          verificationGasLimit: 200000, // for positive case 200k
           preVerificationGas: 55000, // min expected by bundler is 46k
         },
         walletOwner,
@@ -268,6 +271,172 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
           await feeCollector.getAddress()
         );
       expect(feeCollectorBalanceAfter).to.be.greaterThan(BigNumber.from(0));
+    });
+
+    it("fails if verificationGasLimit is not enough", async () => {
+      const feeCollectorBalanceBefore =
+        await verifyingSingletonPaymaster.getBalance(
+          await feeCollector.getAddress()
+        );
+      expect(feeCollectorBalanceBefore).to.be.equal(BigNumber.from(0));
+      const signer = await verifyingSingletonPaymaster.verifyingSigner();
+      const offchainSignerAddress = await offchainSigner.getAddress();
+      expect(signer).to.be.equal(offchainSignerAddress);
+
+      await verifyingSingletonPaymaster.depositFor(
+        await offchainSigner.getAddress(),
+        { value: ethers.utils.parseEther("1") }
+      );
+      const userOp1 = await fillAndSign(
+        {
+          sender: walletAddress,
+          verificationGasLimit: 50000, // for positive case 200k
+          preVerificationGas: 55000, // min expected by bundler is 46k
+        },
+        walletOwner,
+        entryPoint,
+        "nonce"
+      );
+
+      const hash = await verifyingSingletonPaymaster.getHash(
+        userOp1,
+        await offchainSigner.getAddress(),
+        MOCK_VALID_UNTIL,
+        MOCK_VALID_AFTER,
+        dynamicMarkup
+      );
+      const sig = await offchainSigner.signMessage(arrayify(hash));
+      const userOp = await fillAndSign(
+        {
+          ...userOp1,
+          paymasterAndData: hexConcat([
+            paymasterAddress,
+            ethers.utils.defaultAbiCoder.encode(
+              ["address", "uint48", "uint48", "uint32"],
+              [
+                await offchainSigner.getAddress(),
+                MOCK_VALID_UNTIL,
+                MOCK_VALID_AFTER,
+                dynamicMarkup,
+              ]
+            ),
+            sig,
+          ]),
+        },
+        walletOwner,
+        entryPoint,
+        "nonce"
+      );
+
+      const signatureWithModuleAddress = ethers.utils.defaultAbiCoder.encode(
+        ["bytes", "address"],
+        [userOp.signature, ecdsaModule.address]
+      );
+      userOp.signature = signatureWithModuleAddress;
+
+      console.log("userop VGL ", userOp.verificationGasLimit.toString());
+      console.log("userop PVG ", userOp.preVerificationGas.toString());
+
+      let thrownError: Error | null = null;
+
+      try {
+        await environment.sendUserOperation(userOp, entryPoint.address);
+      } catch (e) {
+        thrownError = e as Error;
+      }
+
+      const expectedError = new UserOperationSubmissionError(
+        '{"message":"account validation failed: AA40 over verificationGasLimit'
+      );
+
+      expect(thrownError).to.contain(expectedError);
+
+      await expect(
+        entryPoint.handleOps([userOp], await offchainSigner.getAddress())
+      ).to.be.reverted;
+    });
+
+    it("fails if preVerificationGas is not enough", async () => {
+      const feeCollectorBalanceBefore =
+        await verifyingSingletonPaymaster.getBalance(
+          await feeCollector.getAddress()
+        );
+      expect(feeCollectorBalanceBefore).to.be.equal(BigNumber.from(0));
+      const signer = await verifyingSingletonPaymaster.verifyingSigner();
+      const offchainSignerAddress = await offchainSigner.getAddress();
+      expect(signer).to.be.equal(offchainSignerAddress);
+
+      await verifyingSingletonPaymaster.depositFor(
+        await offchainSigner.getAddress(),
+        { value: ethers.utils.parseEther("1") }
+      );
+      const userOp1 = await fillAndSign(
+        {
+          sender: walletAddress,
+          verificationGasLimit: 200000, // for positive case 200k
+          // preVerificationGas: 55000, // min expected by bundler is 46k
+        },
+        walletOwner,
+        entryPoint,
+        "nonce"
+      );
+
+      const hash = await verifyingSingletonPaymaster.getHash(
+        userOp1,
+        await offchainSigner.getAddress(),
+        MOCK_VALID_UNTIL,
+        MOCK_VALID_AFTER,
+        dynamicMarkup
+      );
+      const sig = await offchainSigner.signMessage(arrayify(hash));
+      const userOp = await fillAndSign(
+        {
+          ...userOp1,
+          paymasterAndData: hexConcat([
+            paymasterAddress,
+            ethers.utils.defaultAbiCoder.encode(
+              ["address", "uint48", "uint48", "uint32"],
+              [
+                await offchainSigner.getAddress(),
+                MOCK_VALID_UNTIL,
+                MOCK_VALID_AFTER,
+                dynamicMarkup,
+              ]
+            ),
+            sig,
+          ]),
+        },
+        walletOwner,
+        entryPoint,
+        "nonce"
+      );
+
+      const signatureWithModuleAddress = ethers.utils.defaultAbiCoder.encode(
+        ["bytes", "address"],
+        [userOp.signature, ecdsaModule.address]
+      );
+      userOp.signature = signatureWithModuleAddress;
+
+      console.log("userop VGL ", userOp.verificationGasLimit.toString());
+      console.log("userop PVG ", userOp.preVerificationGas.toString());
+
+      let thrownError: Error | null = null;
+
+      try {
+        await environment.sendUserOperation(userOp, entryPoint.address);
+      } catch (e) {
+        thrownError = e as Error;
+      }
+
+      const expectedError = new UserOperationSubmissionError(
+        '{"message":"preVerificationGas too low: expected at least 45916'
+      );
+
+      expect(thrownError).to.contain(expectedError);
+
+      // await expect(
+      //   entryPoint.handleOps([userOp], await offchainSigner.getAddress())
+      // ).to.be.reverted;
     });
   });
 });
