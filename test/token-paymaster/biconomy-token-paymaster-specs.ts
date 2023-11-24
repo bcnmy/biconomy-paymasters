@@ -160,8 +160,7 @@ describe("Biconomy Token Paymaster", function () {
       token.address,
       usdcMaticPriceFeedMock.address,
       18,
-      priceFeedTxUsdc.data,
-      true
+      priceFeedTxUsdc.data
     );
 
     const priceResult = await oracleAggregator.getTokenValueOfOneNativeToken(
@@ -362,6 +361,16 @@ describe("Biconomy Token Paymaster", function () {
       );
       const receipt = await tx.wait();
 
+      const gasUsed = receipt.gasUsed.toNumber();
+      console.log("gas used token paymaster", gasUsed);
+      console.log(
+        "fees paid in native ",
+        receipt.effectiveGasPrice.mul(receipt.gasUsed).toString()
+      );
+
+      console.log("gas used ");
+      console.log(receipt.gasUsed.toNumber());
+
       const postBalance = await token.balanceOf(paymasterAddress);
 
       const postTokenBalanceForAccount = await token.balanceOf(walletAddress);
@@ -419,10 +428,7 @@ describe("Biconomy Token Paymaster", function () {
 
       await expect(entryPoint.callStatic.simulateValidation(userOp))
         .to.be.revertedWithCustomError(entryPoint, "FailedOp")
-        .withArgs(
-          0,
-          "AA33 reverted: BTPM: invalid signature length in paymasterAndData"
-        );
+        .withArgs(0, "AA33 reverted: ECDSA: invalid signature length");
     });
 
     it("should revert (from EntryPoint) on invalid paymaster and data length", async () => {

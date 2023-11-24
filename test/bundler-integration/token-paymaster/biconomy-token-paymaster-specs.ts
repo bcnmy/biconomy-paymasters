@@ -154,8 +154,7 @@ describe("Biconomy Token Paymaster (with Bundler)", function () {
       token.address,
       usdcMaticPriceFeedMock.address,
       18,
-      priceFeedTxUsdc.data,
-      true
+      priceFeedTxUsdc.data
     );
 
     const priceResult = await oracleAggregator.getTokenValueOfOneNativeToken(

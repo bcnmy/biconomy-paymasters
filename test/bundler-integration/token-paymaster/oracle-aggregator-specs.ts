@@ -158,8 +158,7 @@ describe("Biconomy Token Paymaster (With Bundler)", function () {
       token.address,
       usdcMaticPriceFeedMock.address,
       18,
-      priceFeedTxUsdc.data,
-      true
+      priceFeedTxUsdc.data
     );
 
     const stalePriceFeedMock = await new MockStalePriceFeed__factory(

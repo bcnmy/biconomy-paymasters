@@ -160,8 +160,7 @@ describe("Biconomy Token Paymaster", function () {
       token.address,
       usdcMaticPriceFeedMock.address,
       18,
-      priceFeedTxUsdc.data,
-      true
+      priceFeedTxUsdc.data
     );
 
     sampleTokenPaymaster = await new BiconomyTokenPaymaster__factory(

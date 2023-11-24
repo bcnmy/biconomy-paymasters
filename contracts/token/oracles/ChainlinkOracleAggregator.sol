@@ -17,7 +17,6 @@ contract ChainlinkOracleAggregator is Ownable, IOracleAggregator {
      of precision */
         uint8 decimals;
         // uint8 tokenDecimals;
-        bool dataSigned;
         address callAddress;
         bytes callData;
     }
@@ -33,14 +32,12 @@ contract ChainlinkOracleAggregator is Ownable, IOracleAggregator {
      * @param callAddress price feed / derived price feed address to call
      * @param decimals decimals (precision) defined in this price feed
      * @param callData function selector which will be used to query price data
-     * @param signed if the feed may return result as signed integrer
      */
     function setTokenOracle(
         address token,
         address callAddress,
         uint8 decimals,
-        bytes calldata callData,
-        bool signed
+        bytes calldata callData
     ) external onlyOwner {
         require(
             callAddress != address(0),
@@ -53,7 +50,6 @@ contract ChainlinkOracleAggregator is Ownable, IOracleAggregator {
         tokensInfo[token].callAddress = callAddress;
         tokensInfo[token].decimals = decimals;
         tokensInfo[token].callData = callData;
-        tokensInfo[token].dataSigned = signed;
     }
 
     /**
@@ -87,12 +83,12 @@ contract ChainlinkOracleAggregator is Ownable, IOracleAggregator {
     ) external view virtual returns (uint256 exchangeRate) {
         // we'd actually want eth / token
         (
-            uint256 tokenPriceUnadjusted,
+            uint256 tokenPrice,
             uint8 tokenOracleDecimals
         ) = _getTokenPriceAndDecimals(token);
         exchangeRate =
             10 ** (tokenOracleDecimals + IERC20Metadata(token).decimals()) /
-            tokenPriceUnadjusted;
+            tokenPrice;
     }
 
     function _getTokenPriceAndDecimals(
@@ -100,26 +96,24 @@ contract ChainlinkOracleAggregator is Ownable, IOracleAggregator {
     )
         internal
         view
-        returns (uint256 tokenPriceUnadjusted, uint8 tokenOracleDecimals)
+        returns (uint256 tokenPrice, uint8 tokenOracleDecimals)
     {
         // Note // If the callData is for latestAnswer, it could be for latestRoundData and then validateRound and extract price then
         TokenInfo storage tokenInfo = tokensInfo[token];
         tokenOracleDecimals = tokenInfo.decimals;
-        // (bool success, bytes memory ret) = tokenInfo.callAddress.staticcall(
-        //     tokenInfo.callData
-        // );
-        // require(success, "ChainlinkOracleAggregator:: query failed");
-        // if (tokenInfo.dataSigned) {
-        //     tokenPriceUnadjusted = uint256(abi.decode(ret, (int256)));
+        (bool success, bytes memory ret) = tokenInfo.callAddress.staticcall(
+            tokenInfo.callData
+        );
+        require(success, "ChainlinkOracleAggregator:: query failed");
+        tokenPrice = abi.decode(ret, (uint256));
+
+
+        // if (tokenInfo.derivedFeed) {
+        //     tokenPrice = uint256(
+        //         DerivedPriceFeed(tokenInfo.callAddress).getThePrice()
+        //     );
         // } else {
-        //     tokenPriceUnadjusted = abi.decode(ret, (uint256));
+        //     // ??
         // }
-        if (tokenInfo.dataSigned) {
-            tokenPriceUnadjusted = uint256(
-                DerivedPriceFeed(tokenInfo.callAddress).getThePrice()
-            );
-        } else {
-            // ??
-        }
     }
 }

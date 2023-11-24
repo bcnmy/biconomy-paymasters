@@ -30,6 +30,9 @@ import "hardhat/console.sol";
  *
  * Optionally a safe guard deposit may be used in future versions.
  */
+
+// TODO // Use OracleAggregator/Helper as base class for this contract
+// TODO remove hardhta console logs 
 contract BiconomyTokenPaymaster is
     BasePaymaster,
     ReentrancyGuard,
@@ -75,9 +78,6 @@ contract BiconomyTokenPaymaster is
     uint256 private constant VALID_PND_OFFSET = 21;
 
     uint256 private constant SIGNATURE_OFFSET = 213;
-
-    address private constant NATIVE_ADDRESS =
-        0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     /**
      * Designed to enable the community to track change in storage variable UNACCOUNTED_COST which is used
@@ -329,6 +329,18 @@ contract BiconomyTokenPaymaster is
         if (!success) revert NativeTokensWithdrawalFailed();
     }
 
+    // TODO move to helpers library
+    function calldataKeccak(
+        bytes calldata data
+    ) internal pure returns (bytes32 ret) {
+        assembly {
+            let mem := mload(0x40)
+            let len := data.length
+            calldatacopy(mem, data.offset, len)
+            ret := keccak256(mem, len) 
+        }
+    }
+
     /**
      * @dev This method is called by the off-chain service, to sign the request.
      * It is called on-chain from the validatePaymasterUserOp, to validate the signature.
@@ -352,8 +364,8 @@ contract BiconomyTokenPaymaster is
                 abi.encode(
                     userOp.getSender(),
                     userOp.nonce,
-                    userOp.initCode,
-                    userOp.callData,
+                    calldataKeccak(userOp.initCode),
+                    calldataKeccak(userOp.callData),
                     userOp.callGasLimit,
                     userOp.verificationGasLimit,
                     userOp.preVerificationGas,
@@ -446,14 +458,7 @@ contract BiconomyTokenPaymaster is
         returns (bytes memory context, uint256 validationData)
     {
         (requiredPreFund);
-        // verificationGasLimit is dual-purposed, as gas limit for postOp. make sure it is high enough
-        // make sure that verificationGasLimit is high enough to handle postOp
-        require(
-            userOp.verificationGasLimit > UNACCOUNTED_COST,
-            "BTPM: gas too low for postOp"
-        );
 
-        // review: in this method try to resolve stack too deep (though via-ir is good enough)
         uint256 gas = gasleft();
         (
             ExchangeRateSource priceSource,
@@ -466,12 +471,6 @@ contract BiconomyTokenPaymaster is
             bytes calldata signature
         ) = parsePaymasterAndData(userOp.paymasterAndData);
         console.log("gas used for parsePmd: %s", gas - gasleft());
-
-        // we only "require" it here so that the revert reason on invalid signature will be of "VerifyingPaymaster", and not "ECDSA"
-        require(
-            signature.length == 65,
-            "BTPM: invalid signature length in paymasterAndData"
-        );
 
         gas = gasleft();
         bytes32 _hash = getHash(
@@ -486,8 +485,6 @@ contract BiconomyTokenPaymaster is
         ).toEthSignedMessageHash();
         console.log("gas used for getHash: %s", gas - gasleft());
 
-        context = "";
-
         //don't revert on signature failure: return SIG_VALIDATION_FAILED
         if (verifyingSigner != _hash.recover(signature)) {
             // empty context and sigFailed true
@@ -497,7 +494,7 @@ contract BiconomyTokenPaymaster is
             );
         }
 
-        address account = userOp.getSender();
+        address account = userOp.sender;
 
         // This model assumes irrespective of priceSource exchangeRate is always sent from outside
         // for below checks you would either need maxCost or some exchangeRate
@@ -506,12 +503,7 @@ contract BiconomyTokenPaymaster is
 
         uint256 tokenRequiredPreFund = (btpmRequiredPrefund * exchangeRate) /
             10 ** 18;
-        require(
-            tokenRequiredPreFund != 0,
-            "BTPM: calculated token charge invalid"
-        );
         require(priceMarkup <= 2e6, "BTPM: price markup percentage too high");
-        require(priceMarkup >= 1e6, "BTPM: price markup percentage too low");
         require(
             IERC20(feeToken).balanceOf(account) >=
                 ((tokenRequiredPreFund * priceMarkup) / PRICE_DENOMINATOR),
@@ -620,7 +612,6 @@ contract BiconomyTokenPaymaster is
 
         if (
             priceSource == ExchangeRateSource.ORACLE_BASED &&
-            oracleAggregator != address(NATIVE_ADDRESS) &&
             oracleAggregator != address(0)
         ) {
             uint256 result = exchangePrice(address(feeToken), oracleAggregator);
@@ -669,6 +660,7 @@ contract BiconomyTokenPaymaster is
                 // Do nothing else here to not revert the whole bundle and harm reputation
             }
         }
+        console.log("gas used for postop: %s", gas - gasleft());
     }
 
     function _withdrawERC20(

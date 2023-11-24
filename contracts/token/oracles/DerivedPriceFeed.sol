@@ -56,10 +56,10 @@ contract DerivedPriceFeed {
         // 2 days old price is considered stale since the price is updated every 24 hours
         if (updatedAt < block.timestamp - staleFeedThreshold)
             revert PriceFeedStale();
-        if (updatedAt == 0) revert LatestRoundIncomplete();
         if (answeredInRound < roundId) revert PriceFeedStale();
     }
 
+    // could rename to latestRoundData
     function getThePrice() public view returns (int256) {
         /**
          * Returns the latest price of price feed 1

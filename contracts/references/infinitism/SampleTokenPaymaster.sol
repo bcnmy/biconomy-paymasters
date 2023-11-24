@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.20;
 
 // Import the required libraries and contracts
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
@@ -7,13 +7,10 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 
 import "@account-abstraction/contracts/core/EntryPoint.sol";
+import "@account-abstraction/contracts/interfaces/IEntryPoint.sol";
 import "@account-abstraction/contracts/core/BasePaymaster.sol";
 import "./UniswapHelper.sol";
 import "./OracleHelper.sol";
-
-// OG GSN same correlation https://github.com/opengsn/gsn/blob/master/packages/paymasters/contracts/TokenPaymaster.sol
-
-// TODO: Update with latest contract changes and make required modifications / variations
 
 // TODO: note https://github.com/pimlicolabs/erc20-paymaster-contracts/issues/10
 // TODO: set a hard limit on how much gas a single user op may cost (postOp to fix the price)
@@ -35,6 +32,10 @@ contract TokenPaymaster is BasePaymaster, UniswapHelper, OracleHelper {
         uint256 priceMarkup;
         /// @notice Exchange tokens to native currency if the EntryPoint balance of this Paymaster falls below this value
         uint256 minEntryPointBalance;
+        /// @notice Estimated gas cost for refunding tokens after the transaction is completed
+        uint256 refundPostopCost;
+        /// @notice Transactions are only valid as long as the cached price is not older than this value
+        uint256 priceMaxAge;
     }
 
     event ConfigUpdated(TokenPaymasterConfig tokenPaymasterConfig);
@@ -51,10 +52,7 @@ contract TokenPaymaster is BasePaymaster, UniswapHelper, OracleHelper {
     event Received(address indexed sender, uint256 value);
 
     /// @notice All 'price' variables are multiplied by this value to avoid rounding up
-    uint256 private constant PRICE_DENOMINATOR = 1e6;
-
-    /// @notice Estimated gas cost for refunding tokens after the transaction is completed
-    uint256 public constant REFUND_POSTOP_COST = 40000;
+    uint256 private constant PRICE_DENOMINATOR = 1e26;
 
     TokenPaymasterConfig private tokenPaymasterConfig;
 
@@ -106,12 +104,6 @@ contract TokenPaymaster is BasePaymaster, UniswapHelper, OracleHelper {
         emit ConfigUpdated(_tokenPaymasterConfig);
     }
 
-    function setOracleConfiguration(
-        OracleHelperConfig memory _oracleHelperConfig
-    ) external onlyOwner {
-        _setOracleConfiguration(_oracleHelperConfig);
-    }
-
     function setUniswapConfiguration(
         UniswapHelperConfig memory _uniswapHelperConfig
     ) external onlyOwner {
@@ -148,7 +140,7 @@ contract TokenPaymaster is BasePaymaster, UniswapHelper, OracleHelper {
                 "TPM: invalid data length"
             );
             uint256 preChargeNative = requiredPreFund +
-                (REFUND_POSTOP_COST * userOp.maxFeePerGas);
+                (tokenPaymasterConfig.refundPostopCost * userOp.maxFeePerGas);
             // note: as price is in ether-per-token and we want more tokens increasing it means dividing it by markup
             uint256 cachedPriceWithMarkup = (cachedPrice * PRICE_DENOMINATOR) /
                 priceMarkup;
@@ -171,45 +163,45 @@ contract TokenPaymaster is BasePaymaster, UniswapHelper, OracleHelper {
                 address(this),
                 tokenAmount
             );
-            context = abi.encodePacked(
+            context = abi.encode(
                 tokenAmount,
                 userOp.maxFeePerGas,
                 userOp.maxPriorityFeePerGas,
                 userOp.sender
             );
-            validationResult = 0;
+            validationResult = _packValidationData(
+                false,
+                uint48(cachedPriceTimestamp + tokenPaymasterConfig.priceMaxAge),
+                0
+            );
         }
     }
 
     /// @notice Performs post-operation tasks, such as updating the token price and refunding excess tokens.
     /// @dev This function is called after a user operation has been executed or reverted.
-    /// @param mode The post-operation mode (either successful or reverted).
     /// @param context The context containing the token amount and user sender address.
     /// @param actualGasCost The actual gas cost of the transaction.
     function _postOp(
-        PostOpMode mode,
+        PostOpMode,
         bytes calldata context,
         uint256 actualGasCost
     ) internal override {
         unchecked {
             uint256 priceMarkup = tokenPaymasterConfig.priceMarkup;
-            uint256 preCharge = uint256(bytes32(context[0:32]));
-            uint256 maxFeePerGas = uint256(bytes32(context[32:64]));
-            uint256 maxPriorityFeePerGas = uint256(bytes32(context[64:96]));
+            (
+                uint256 preCharge,
+                uint256 maxFeePerGas,
+                uint256 maxPriorityFeePerGas,
+                address userOpSender
+            ) = abi.decode(context, (uint256, uint256, uint256, address));
             uint256 gasPrice = getGasPrice(maxFeePerGas, maxPriorityFeePerGas);
-            address userOpSender = address(bytes20(context[96:116]));
-            if (mode == PostOpMode.postOpReverted) {
-                emit PostOpReverted(userOpSender, preCharge);
-                // Do nothing here to not revert the whole bundle and harm reputation
-                return;
-            }
             uint256 _cachedPrice = updateCachedPrice(false);
             // note: as price is in ether-per-token and we want more tokens increasing it means dividing it by markup
             uint256 cachedPriceWithMarkup = (_cachedPrice * PRICE_DENOMINATOR) /
                 priceMarkup;
             // Refund tokens based on actual gas cost
             uint256 actualChargeNative = actualGasCost +
-                REFUND_POSTOP_COST *
+                tokenPaymasterConfig.refundPostopCost *
                 gasPrice;
             uint256 actualTokenNeeded = weiToToken(
                 actualChargeNative,
@@ -237,7 +229,7 @@ contract TokenPaymaster is BasePaymaster, UniswapHelper, OracleHelper {
                 userOpSender,
                 actualTokenNeeded,
                 actualGasCost,
-                cachedPrice
+                _cachedPrice
             );
             refillEntryPointDeposit(_cachedPrice);
         }
