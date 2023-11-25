@@ -52,7 +52,7 @@ contract VerifyingSingletonPaymasterV2 is
             sstore(verifyingSigner.slot, _verifyingSigner)
             sstore(feeCollector.slot, _feeCollector)
         }
-        unaccountedEPGasOverhead = 12000;
+        unaccountedEPGasOverhead = 24000;
         fixedPriceMarkup = 1100000; // 10%
     }
 

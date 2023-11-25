@@ -35,7 +35,7 @@ export const AddressZero = ethers.constants.AddressZero;
 
 const MOCK_VALID_UNTIL = "0x00000000deadbeef";
 const MOCK_VALID_AFTER = "0x0000000000001234";
-const dynamicMarkup = 1200000; // or 0 or 1100000
+const dynamicMarkup = 1100000; // or 0 or 1100000
 
 export async function deployEntryPoint(
   provider = ethers.provider
@@ -173,19 +173,29 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
     });
 
     it("succeed with valid signature", async () => {
+      const fundingId = await offchainSigner.getAddress();
+
+      await verifyingSingletonPaymaster
+        .connect(deployer)
+        .setUnaccountedEPGasOverhead(24000);
+
+      await verifyingSingletonPaymaster.depositFor(fundingId, {
+        value: ethers.utils.parseEther("1"),
+      });
+
+      const paymasterFundsBefore = await entryPoint.balanceOf(paymasterAddress);
+      const paymasterIdBalanceBefore =
+        await verifyingSingletonPaymaster.getBalance(fundingId);
       const feeCollectorBalanceBefore =
         await verifyingSingletonPaymaster.getBalance(
           await feeCollector.getAddress()
         );
+      console.log("feeCollectorBalanceBefore ", feeCollectorBalanceBefore);
       expect(feeCollectorBalanceBefore).to.be.equal(BigNumber.from(0));
       const signer = await verifyingSingletonPaymaster.verifyingSigner();
       const offchainSignerAddress = await offchainSigner.getAddress();
       expect(signer).to.be.equal(offchainSignerAddress);
 
-      await verifyingSingletonPaymaster.depositFor(
-        await offchainSigner.getAddress(),
-        { value: ethers.utils.parseEther("1") }
-      );
       const userOp1 = await fillAndSign(
         {
           sender: walletAddress,
@@ -198,7 +208,7 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
 
       const hash = await verifyingSingletonPaymaster.getHash(
         userOp1,
-        await offchainSigner.getAddress(),
+        fundingId,
         MOCK_VALID_UNTIL,
         MOCK_VALID_AFTER,
         dynamicMarkup
@@ -211,12 +221,7 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
             paymasterAddress,
             ethers.utils.defaultAbiCoder.encode(
               ["address", "uint48", "uint48", "uint32"],
-              [
-                await offchainSigner.getAddress(),
-                MOCK_VALID_UNTIL,
-                MOCK_VALID_AFTER,
-                dynamicMarkup,
-              ]
+              [fundingId, MOCK_VALID_UNTIL, MOCK_VALID_AFTER, dynamicMarkup]
             ),
             sig,
           ]),
@@ -232,8 +237,44 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
       );
       userOp.signature = signatureWithModuleAddress;
 
-      await entryPoint.handleOps([userOp], await offchainSigner.getAddress());
-      // gas used VPM V2  162081
+      const tx = await entryPoint.handleOps(
+        [userOp],
+        await offchainSigner.getAddress()
+      );
+      const receipt = await tx.wait();
+      console.log("gas used VPM V2 ", receipt.gasUsed.toString());
+      console.log("gas price ", receipt.effectiveGasPrice.toString());
+
+      const bundlerPaid = receipt.effectiveGasPrice.mul(receipt.gasUsed);
+      console.log("bundler paid ", bundlerPaid.toString());
+
+      const paymasterFundsAfter = await entryPoint.balanceOf(paymasterAddress);
+      const paymasterIdBalanceAfter =
+        await verifyingSingletonPaymaster.getBalance(fundingId);
+
+      const paymasterIdBalanceDiff = paymasterIdBalanceBefore.sub(
+        paymasterIdBalanceAfter
+      );
+      console.log("paymasterIdBalanceDiff ", paymasterIdBalanceDiff.toString());
+
+      const paymasterFundsDiff = paymasterFundsBefore.sub(paymasterFundsAfter);
+      console.log("paymasterFundsDiff ", paymasterFundsDiff.toString());
+
+      // Review
+      // 10/11 actual gas used
+      /* const paymasterIdBalanceDiffWithoutPremium = paymasterIdBalanceDiff
+        .mul(BigNumber.from(10))
+        .div(BigNumber.from(11));
+
+      console.log(
+        "paymasterIdBalanceDiffWithoutPremium ",
+        paymasterIdBalanceDiffWithoutPremium.toString()
+      ); */
+
+      expect(paymasterIdBalanceDiff.sub(paymasterFundsDiff)).to.be.greaterThan(
+        BigNumber.from(0)
+      );
+
       await expect(
         entryPoint.handleOps([userOp], await offchainSigner.getAddress())
       ).to.be.reverted;
@@ -243,6 +284,11 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
           await feeCollector.getAddress()
         );
       expect(feeCollectorBalanceAfter).to.be.greaterThan(BigNumber.from(0));
+
+      // 0.1 / 1.1 = actual gas used * 0.1
+      expect(feeCollectorBalanceAfter).to.be.equal(
+        paymasterIdBalanceDiff.mul(BigNumber.from(1)).div(BigNumber.from(11))
+      );
     });
   });
 
