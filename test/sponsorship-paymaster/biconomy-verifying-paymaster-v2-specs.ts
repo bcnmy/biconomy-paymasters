@@ -35,7 +35,7 @@ export const AddressZero = ethers.constants.AddressZero;
 
 const MOCK_VALID_UNTIL = "0x00000000deadbeef";
 const MOCK_VALID_AFTER = "0x0000000000001234";
-const dynamicMarkup = 1200000; // or 0 or 1100000
+const dynamicMarkup = 1100000; // or 0 or 1100000
 
 export async function deployEntryPoint(
   provider = ethers.provider
@@ -69,7 +69,7 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
     offchainSigner = ethersSigner[1];
     depositorSigner = ethersSigner[2];
     feeCollector = ethersSigner[3];
-    walletOwner = deployer; // ethersSigner[3];
+    walletOwner = deployer; // ethersSigner[0];
 
     const offchainSignerAddress = await offchainSigner.getAddress();
     const walletOwnerAddress = await walletOwner.getAddress();
@@ -161,7 +161,138 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
     );
   }
 
-  describe("#validatePaymasterUserOp", () => {
+  describe("Verifying paymaster basic positive tests", () => {
+    it("Should Fail when there is no deposit for paymaster id", async () => {
+      const paymasterId = await depositorSigner.getAddress();
+      console.log("paymaster Id ", paymasterId);
+      const userOp = await getUserOpWithPaymasterInfo(paymasterId);
+
+      await expect(
+        entryPoint.callStatic.simulateValidation(userOp)
+      ).to.be.revertedWithCustomError(entryPoint, "FailedOp");
+    });
+
+    it("succeed with valid signature", async () => {
+      const fundingId = await offchainSigner.getAddress();
+
+      await verifyingSingletonPaymaster
+        .connect(deployer)
+        .setUnaccountedEPGasOverhead(24000);
+
+      await verifyingSingletonPaymaster.depositFor(fundingId, {
+        value: ethers.utils.parseEther("1"),
+      });
+
+      const paymasterFundsBefore = await entryPoint.balanceOf(paymasterAddress);
+      const paymasterIdBalanceBefore =
+        await verifyingSingletonPaymaster.getBalance(fundingId);
+      const feeCollectorBalanceBefore =
+        await verifyingSingletonPaymaster.getBalance(
+          await feeCollector.getAddress()
+        );
+      console.log("feeCollectorBalanceBefore ", feeCollectorBalanceBefore);
+      expect(feeCollectorBalanceBefore).to.be.equal(BigNumber.from(0));
+      const signer = await verifyingSingletonPaymaster.verifyingSigner();
+      const offchainSignerAddress = await offchainSigner.getAddress();
+      expect(signer).to.be.equal(offchainSignerAddress);
+
+      const userOp1 = await fillAndSign(
+        {
+          sender: walletAddress,
+          verificationGasLimit: 200000,
+        },
+        walletOwner,
+        entryPoint,
+        "nonce"
+      );
+
+      const hash = await verifyingSingletonPaymaster.getHash(
+        userOp1,
+        fundingId,
+        MOCK_VALID_UNTIL,
+        MOCK_VALID_AFTER,
+        dynamicMarkup
+      );
+      const sig = await offchainSigner.signMessage(arrayify(hash));
+      const userOp = await fillAndSign(
+        {
+          ...userOp1,
+          paymasterAndData: hexConcat([
+            paymasterAddress,
+            ethers.utils.defaultAbiCoder.encode(
+              ["address", "uint48", "uint48", "uint32"],
+              [fundingId, MOCK_VALID_UNTIL, MOCK_VALID_AFTER, dynamicMarkup]
+            ),
+            sig,
+          ]),
+        },
+        walletOwner,
+        entryPoint,
+        "nonce"
+      );
+
+      const signatureWithModuleAddress = ethers.utils.defaultAbiCoder.encode(
+        ["bytes", "address"],
+        [userOp.signature, ecdsaModule.address]
+      );
+      userOp.signature = signatureWithModuleAddress;
+
+      const tx = await entryPoint.handleOps(
+        [userOp],
+        await offchainSigner.getAddress()
+      );
+      const receipt = await tx.wait();
+      console.log("gas used VPM V2 ", receipt.gasUsed.toString());
+      console.log("gas price ", receipt.effectiveGasPrice.toString());
+
+      const bundlerPaid = receipt.effectiveGasPrice.mul(receipt.gasUsed);
+      console.log("bundler paid ", bundlerPaid.toString());
+
+      const paymasterFundsAfter = await entryPoint.balanceOf(paymasterAddress);
+      const paymasterIdBalanceAfter =
+        await verifyingSingletonPaymaster.getBalance(fundingId);
+
+      const paymasterIdBalanceDiff = paymasterIdBalanceBefore.sub(
+        paymasterIdBalanceAfter
+      );
+      console.log("paymasterIdBalanceDiff ", paymasterIdBalanceDiff.toString());
+
+      const paymasterFundsDiff = paymasterFundsBefore.sub(paymasterFundsAfter);
+      console.log("paymasterFundsDiff ", paymasterFundsDiff.toString());
+
+      // Review
+      // 10/11 actual gas used
+      /* const paymasterIdBalanceDiffWithoutPremium = paymasterIdBalanceDiff
+        .mul(BigNumber.from(10))
+        .div(BigNumber.from(11));
+
+      console.log(
+        "paymasterIdBalanceDiffWithoutPremium ",
+        paymasterIdBalanceDiffWithoutPremium.toString()
+      ); */
+
+      expect(paymasterIdBalanceDiff.sub(paymasterFundsDiff)).to.be.greaterThan(
+        BigNumber.from(0)
+      );
+
+      await expect(
+        entryPoint.handleOps([userOp], await offchainSigner.getAddress())
+      ).to.be.reverted;
+
+      const feeCollectorBalanceAfter =
+        await verifyingSingletonPaymaster.getBalance(
+          await feeCollector.getAddress()
+        );
+      expect(feeCollectorBalanceAfter).to.be.greaterThan(BigNumber.from(0));
+
+      // 0.1 / 1.1 = actual gas used * 0.1
+      expect(feeCollectorBalanceAfter).to.be.equal(
+        paymasterIdBalanceDiff.mul(BigNumber.from(1)).div(BigNumber.from(11))
+      );
+    });
+  });
+
+  describe("Verifying Paymaster - read methods and state checks", () => {
     it("Should parse data properly", async () => {
       const paymasterAndData = hexConcat([
         paymasterAddress,
@@ -188,88 +319,78 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
       expect(res.signature).to.equal("0x" + "00".repeat(65));
     });
 
-    it("Should Fail when there is no deposit for paymaster id", async () => {
-      const paymasterId = await depositorSigner.getAddress();
-      console.log("paymaster Id ", paymasterId);
-      const userOp = await getUserOpWithPaymasterInfo(paymasterId);
-      console.log("entrypoint ", entryPoint.address);
+    it("Invalid paymasterAndData causes revert", async () => {
+      const paymasterAndData =
+        "0x9c145aed00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000124468721a7000000000000000000000000831153c6b9537d0ff5b7db830c2749de3042e77600000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000649b890b7000000000000000000000000071bc333f52a7971dde5de5b6c1ab0e7341e9724c00000000000000000000000021a6f9fa7246de45762e6f9db1f55e3c0f8566db00000000000000000000000000000000000000000000000000000000000000";
+
       await expect(
-        entryPoint.callStatic.simulateValidation(userOp)
-        // ).to.be.revertedWith("FailedOp");
+        verifyingSingletonPaymaster.parsePaymasterAndData(paymasterAndData)
       ).to.be.reverted;
     });
 
-    it("succeed with valid signature", async () => {
-      const feeCollectorBalanceBefore =
-        await verifyingSingletonPaymaster.getBalance(
-          await feeCollector.getAddress()
-        );
-      expect(feeCollectorBalanceBefore).to.be.equal(BigNumber.from(0));
-      const signer = await verifyingSingletonPaymaster.verifyingSigner();
-      const offchainSignerAddress = await offchainSigner.getAddress();
-      expect(signer).to.be.equal(offchainSignerAddress);
+    it("should check the correct states set on the paymaster", async () => {
+      const owner = await verifyingSingletonPaymaster.owner();
 
-      await verifyingSingletonPaymaster.depositFor(
-        await offchainSigner.getAddress(),
-        { value: ethers.utils.parseEther("1") }
-      );
-      const userOp1 = await fillAndSign(
-        {
-          sender: walletAddress,
-          verificationGasLimit: 200000,
-        },
-        walletOwner,
-        entryPoint,
-        "nonce"
-      );
+      const verifyingSigner =
+        await verifyingSingletonPaymaster.verifyingSigner();
 
-      const hash = await verifyingSingletonPaymaster.getHash(
-        userOp1,
-        await offchainSigner.getAddress(),
-        MOCK_VALID_UNTIL,
-        MOCK_VALID_AFTER,
-        dynamicMarkup
-      );
-      const sig = await offchainSigner.signMessage(arrayify(hash));
-      const userOp = await fillAndSign(
-        {
-          ...userOp1,
-          paymasterAndData: hexConcat([
-            paymasterAddress,
-            ethers.utils.defaultAbiCoder.encode(
-              ["address", "uint48", "uint48", "uint32"],
-              [
-                await offchainSigner.getAddress(),
-                MOCK_VALID_UNTIL,
-                MOCK_VALID_AFTER,
-                dynamicMarkup,
-              ]
-            ),
-            sig,
-          ]),
-        },
-        walletOwner,
-        entryPoint,
-        "nonce"
-      );
+      const feeReceiver = await verifyingSingletonPaymaster.feeCollector();
 
-      const signatureWithModuleAddress = ethers.utils.defaultAbiCoder.encode(
-        ["bytes", "address"],
-        [userOp.signature, ecdsaModule.address]
-      );
-      userOp.signature = signatureWithModuleAddress;
+      expect(owner).to.be.equal(deployer.address);
+      expect(verifyingSigner).to.be.equal(offchainSigner.address);
+      expect(feeReceiver).to.be.equal(feeCollector.address);
+    });
+  });
 
-      await entryPoint.handleOps([userOp], await offchainSigner.getAddress());
-      // gas used VPM V2  162081
+  describe("Verifying Paymaster - deposit and withdraw tests", () => {
+    it("Deposits into the specified address", async () => {
+      const paymasterId = await depositorSigner.getAddress();
+
+      await verifyingSingletonPaymaster.depositFor(paymasterId, {
+        value: parseEther("1"),
+      });
+
+      const balance = await verifyingSingletonPaymaster.getBalance(paymasterId);
+      expect(balance).to.be.equal(parseEther("1"));
+    });
+
+    it("Does not allow 0 value deposits", async () => {
+      const paymasterId = await depositorSigner.getAddress();
+
       await expect(
-        entryPoint.handleOps([userOp], await offchainSigner.getAddress())
-      ).to.be.reverted;
+        verifyingSingletonPaymaster.depositFor(paymasterId, {
+          value: parseEther("0"),
+        })
+      ).to.be.revertedWithCustomError(
+        verifyingSingletonPaymaster,
+        "DepositCanNotBeZero"
+      );
+    });
 
-      const feeCollectorBalanceAfter =
-        await verifyingSingletonPaymaster.getBalance(
-          await feeCollector.getAddress()
-        );
-      expect(feeCollectorBalanceAfter).to.be.greaterThan(BigNumber.from(0));
+    it("Does not allow deposits for 0 address paymasterId", async () => {
+      const paymasterId = ethers.constants.AddressZero;
+
+      await expect(
+        verifyingSingletonPaymaster.depositFor(paymasterId, {
+          value: parseEther("0.5"),
+        })
+      ).to.be.revertedWithCustomError(
+        verifyingSingletonPaymaster,
+        "PaymasterIdCannotBeZero"
+      );
+    });
+
+    it("Reverts when paymasterIdBalance is not enough", async () => {
+      const paymasterId = await depositorSigner.getAddress();
+
+      await expect(
+        verifyingSingletonPaymaster
+          .connect(depositorSigner)
+          .withdrawTo(paymasterId, parseEther("1.1"))
+      ).to.be.revertedWithCustomError(
+        verifyingSingletonPaymaster,
+        "InsufficientBalance"
+      );
     });
   });
 });
