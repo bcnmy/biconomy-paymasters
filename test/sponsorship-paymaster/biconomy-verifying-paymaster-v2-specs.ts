@@ -69,7 +69,7 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
     offchainSigner = ethersSigner[1];
     depositorSigner = ethersSigner[2];
     feeCollector = ethersSigner[3];
-    walletOwner = deployer; // ethersSigner[3];
+    walletOwner = deployer; // ethersSigner[0];
 
     const offchainSignerAddress = await offchainSigner.getAddress();
     const walletOwnerAddress = await walletOwner.getAddress();

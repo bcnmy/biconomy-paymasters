@@ -31,8 +31,8 @@ import {
 } from "../../../lib/account-abstraction/typechain";
 import { arrayify, hexConcat, parseEther } from "ethers/lib/utils";
 import { BigNumber, BigNumberish, Contract, Signer } from "ethers";
-import { BundlerTestEnvironment } from "../environment/bundlerEnvironment";
-import { getUserOpEvent } from "../../utils/testUtils";
+import { BundlerTestEnvironment, EthSendUserOperationResult } from "../environment/bundlerEnvironment";
+import { getUserOpEvent, parseEvent } from "../../utils/testUtils";
 
 export const AddressZero = ethers.constants.AddressZero;
 
@@ -43,6 +43,9 @@ const DEFAULT_FEE_MARKUP = 1100000;
 // const MOCK_FX = ethers.constants.WeiPerEther.mul(1000);
 
 const MOCK_FX: BigNumberish = "977100"; // matic to usdc approx
+
+const UserOperationEventTopic =
+  "0x49628fd1471006c1482da88028e9ce4dbb080b815c9b0344d39e5a8e6ec1419f";
 
 export async function deployEntryPoint(
   provider = ethers.provider
@@ -116,7 +119,7 @@ describe("Biconomy Token Paymaster (with Bundler)", function () {
     entryPoint = EntryPoint__factory.connect(process.env.ENTRYPOINT!, deployer);
 
     offchainSigner = ethersSigner[1];
-    walletOwner = deployer; // ethersSigner[3];
+    walletOwner = deployer; // ethersSigner[0];
 
     // const offchainSignerAddress = await deployer.getAddress();
     const walletOwnerAddress = await walletOwner.getAddress();
@@ -302,14 +305,20 @@ describe("Biconomy Token Paymaster (with Bundler)", function () {
 
       userOp.signature = signatureWithModuleAddress;
 
-      const response = await environment.sendUserOperation(
-        userOp,
-        entryPoint.address
-      );
-      console.log("response", response);
+      const result: EthSendUserOperationResult =
+        await environment.sendUserOperation(userOp, entryPoint.address);
 
-      // const ev = await getUserOpEvent(entryPoint);
-      // expect(ev.args.success).to.be.true;
+      const receipt = (await environment.getUserOperationReceipt(result.result))
+        .result;
+
+      const event = parseEvent(receipt.receipt, UserOperationEventTopic);
+
+      const eventLogs = entryPoint.interface.decodeEventLog(
+        "UserOperationEvent",
+        event[0].data
+      );
+
+      expect(eventLogs.success).to.be.true;
 
       const accountBalAfter = await token.balanceOf(walletAddress);
       const feeReceiverBalAfter = await token.balanceOf(paymasterAddress);

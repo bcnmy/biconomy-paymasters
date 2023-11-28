@@ -122,7 +122,7 @@ describe("Biconomy Token Paymaster", function () {
     deployer = ethersSigner[0];
     offchainSigner = ethersSigner[1];
     depositorSigner = ethersSigner[2];
-    walletOwner = deployer; // ethersSigner[3];
+    walletOwner = deployer; // ethersSigner[0];
 
     // const offchainSignerAddress = await deployer.getAddress();
     const walletOwnerAddress = await walletOwner.getAddress();

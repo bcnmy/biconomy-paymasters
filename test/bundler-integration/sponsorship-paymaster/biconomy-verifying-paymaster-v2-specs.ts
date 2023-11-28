@@ -32,11 +32,15 @@ import { arrayify, hexConcat, parseEther } from "ethers/lib/utils";
 import { BigNumber, BigNumberish, Contract, Signer } from "ethers";
 import {
   BundlerTestEnvironment,
+  EthSendUserOperationResult,
   UserOperationSubmissionError,
 } from "../environment/bundlerEnvironment";
-import { getUserOpEvent } from "../../utils/testUtils";
+import { getUserOpEvent, parseEvent } from "../../utils/testUtils";
 
 export const AddressZero = ethers.constants.AddressZero;
+
+const UserOperationEventTopic =
+  "0x49628fd1471006c1482da88028e9ce4dbb080b815c9b0344d39e5a8e6ec1419f";
 
 const MOCK_VALID_UNTIL = "0x00000000deadbeef";
 const MOCK_VALID_AFTER = "0x0000000000001234";
@@ -83,7 +87,7 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
     offchainSigner = ethersSigner[1];
     depositorSigner = ethersSigner[2];
     feeCollector = ethersSigner[3];
-    walletOwner = deployer; // ethersSigner[3];
+    walletOwner = deployer; // ethersSigner[0];
 
     const offchainSignerAddress = await offchainSigner.getAddress();
     const walletOwnerAddress = await walletOwner.getAddress();
@@ -248,12 +252,21 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
       console.log("userop VGL ", userOp.verificationGasLimit.toString());
       console.log("userop PVG ", userOp.preVerificationGas.toString());
 
-      await environment.sendUserOperation(userOp, entryPoint.address);
+      const result: EthSendUserOperationResult =
+        await environment.sendUserOperation(userOp, entryPoint.address);
 
-      const ev = await getUserOpEvent(entryPoint);
+      const receipt = (await environment.getUserOperationReceipt(result.result))
+        .result;
+
+      const event = parseEvent(receipt.receipt, UserOperationEventTopic);
+
+      const eventLogs = entryPoint.interface.decodeEventLog(
+        "UserOperationEvent",
+        event[0].data
+      );
 
       // eslint-disable-next-line no-unused-expressions
-      expect(ev.args.success).to.be.true;
+      expect(eventLogs.success).to.be.true;
 
       await expect(
         entryPoint.handleOps([userOp], await offchainSigner.getAddress())

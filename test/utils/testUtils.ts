@@ -6,6 +6,7 @@ import {
   parseEther,
   // solidityKeccak256,
 } from "ethers/lib/utils";
+import { TransactionReceipt } from "@ethersproject/providers";
 import {
   BigNumber,
   // BigNumberish,
@@ -67,6 +68,12 @@ export async function getUserOpEvent(ep: EntryPoint) {
     await ethers.provider.getBlockNumber()
   );
   return log;
+}
+
+export function parseEvent(receipt: TransactionReceipt, topicName: string) {
+  return receipt.logs
+    .map((log) => log)
+    .filter((log) => log.topics[0] === topicName);
 }
 
 export function rethrow(): (e: Error) => void {
