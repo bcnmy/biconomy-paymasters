@@ -259,6 +259,16 @@ const config: HardhatUserConfig = {
       accounts: hardhatAccounts,
       chainId: 1001,
     },
+    coreDaoTestnet: {
+      url: process.env.COREDAO_TESTNET_URL || "",
+      accounts: hardhatAccounts,
+      chainId: 1115,
+    },
+    coreDaoMainnet: {
+      url: process.env.COREDAO_MAINNET_URL || "",
+      accounts: hardhatAccounts,
+      chainId: 1116,
+    },
   },
   gasReporter: {
     enabled: process.env.REPORT_GAS !== undefined,
@@ -299,8 +309,26 @@ const config: HardhatUserConfig = {
       chillizTestnet: "PLACEHOLDER_STRING",
       chillizMainnet: "PLACEHOLDER_STRING",
       capxTestnet: "PLACEHOLDER_STRING",
+      coreDaoTestnet: process.env.COREDAO_TESTNET_API_KEY || "",
+      coreDaoMainnet: process.env.COREDAO_MAINNET_API_KEY || "",
     },
     customChains: [
+      {
+        network: "coreDaoTestnet",
+        chainId: 1115,
+        urls: {
+          apiURL: "https://api.test.btcs.network/api",
+          browserURL: "https://scan.test.btcs.network/",
+        },
+      },
+      {
+        network: "coreDaoMainnet",
+        chainId: 1116,
+        urls: {
+          apiURL: "https://openapi.coredao.org/api",
+          browserURL: "https://scan.coredao.org/",
+        },
+      },
       {
         network: "capxTestnet",
         chainId: 1001,
