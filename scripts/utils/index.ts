@@ -222,6 +222,10 @@ export const paymasterStakeConfigDevx: Record<number, PaymasterStakeConfig> = {
     unstakeDelayInSec: 60 * 60 * 24, // 1 Day
     stakeInWei: parseEther("0.1"),
   },
+  1001: {
+    unstakeDelayInSec: 60 * 60 * 24, // 1 Day
+    stakeInWei: parseEther("0.1"),
+  },
 
   // Mainnets
   137: {
@@ -353,6 +357,10 @@ export const paymasterStakeConfigProd: Record<number, PaymasterStakeConfig> = {
     unstakeDelayInSec: 60 * 60 * 24, // 1 Day
     stakeInWei: parseEther("0.1"),
   },
+  1001: {
+    unstakeDelayInSec: 60 * 60 * 24, // 1 Day
+    stakeInWei: parseEther("0.1"),
+  },
 
   // Mainnets
   137: {
@@ -465,6 +473,9 @@ export const DEPLOYMENT_CHAIN_GAS_PRICES: Record<
   88018: {},
   88882: {
     gasPrice: parseUnits("10", "gwei"),
+  },
+  1001: {
+    gasPrice: parseUnits("1", "gwei"),
   },
 
   // Mainnets
