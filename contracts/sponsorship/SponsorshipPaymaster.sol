@@ -9,6 +9,7 @@ import {UserOperation, UserOperationLib} from "@account-abstraction/contracts/in
 import "../BasePaymaster.sol";
 import {SponsorshipPaymasterErrors} from "../common/Errors.sol";
 import {MathLib} from "../libs/MathLib.sol";
+import {AddressUtils} from "../libs/AddressUtils.sol";
 import {ISponsorshipPaymaster} from "../interfaces/paymasters/ISponsorshipPaymaster.sol";
 
 /**
@@ -29,6 +30,7 @@ contract SponsorshipPaymaster is
     ISponsorshipPaymaster
 {
     using ECDSA for bytes32;
+    using AddressUtils for address;
     using UserOperationLib for UserOperation;
 
     uint32 private constant PRICE_DENOMINATOR = 1e6;
@@ -72,7 +74,7 @@ contract SponsorshipPaymaster is
      * @param paymasterId dapp identifier for which deposit is being made
      */
     function depositFor(address paymasterId) external payable nonReentrant {
-        if(isContract(paymasterId)) revert PaymasterIdCannotBeContract();
+        if(paymasterId.isContract()) revert PaymasterIdCannotBeContract();
         if (paymasterId == address(0)) revert PaymasterIdCannotBeZero();
         if (msg.value == 0) revert DepositCanNotBeZero();
         paymasterIdBalances[paymasterId] += msg.value;
@@ -109,7 +111,7 @@ contract SponsorshipPaymaster is
     function setFeeCollector(
         address _newFeeCollector
     ) external payable onlyOwner {
-        if(isContract(_newFeeCollector)) revert FeeCollectorCannotBeContract();
+        if(_newFeeCollector.isContract()) revert FeeCollectorCannotBeContract();
         if (_newFeeCollector == address(0)) revert FeeCollectorCannotBeZero();
         address oldFeeCollector = feeCollector;
         assembly {
@@ -359,20 +361,5 @@ contract SponsorshipPaymaster is
                 maxFeePerGas,
                 maxPriorityFeePerGas + block.basefee
             );
-    }
-
-     /**
-     * @notice Will return true if provided address is a contract
-     * @param account Address to verify if contract or not
-     * @dev This contract will return false if called within the constructor of
-     *      a contract's deployment, as the code is not yet stored on-chain.
-     */
-    function isContract(address account) internal view returns (bool) {
-        uint256 csize;
-        // solhint-disable-next-line no-inline-assembly
-        assembly {
-            csize := extcodesize(account)
-        }
-        return csize != 0;
     }
 }
