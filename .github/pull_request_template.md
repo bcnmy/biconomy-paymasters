@@ -29,5 +29,5 @@ Related Issue: # (issue number)
 <!-- Any additional information or context about the PR. -->
 
 # Branch Naming
-<!-- Make sure your branch name follows the pattern: `features/`, `fixes/`, or `releases/`. -->
+<!-- Make sure your branch name follows the pattern: `feat/`, `fix/`, `chore/` or `release/`. -->
 <!-- **Note**: The person creating the PR is responsible for merging and deleting the branch. Ensure the code has been tested, commented, linted, and documents updated if needed. -->
