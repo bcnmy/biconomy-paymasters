@@ -20,3 +20,5 @@ artifacts-filtered
 account-abstraction
 scw-contracts
 
+.DS_Store
+yarn-error.log
