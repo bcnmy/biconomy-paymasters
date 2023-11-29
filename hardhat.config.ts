@@ -269,6 +269,21 @@ const config: HardhatUserConfig = {
       accounts: hardhatAccounts,
       chainId: 1116,
     },
+    mantaTestnet: {
+      url: process.env.MANTA_TESTNET_URL || "",
+      accounts: hardhatAccounts,
+      chainId: 3441005,
+    },
+    mantaMainnet: {
+      url: process.env.MANTA_MAINNET_URL || "",
+      accounts: hardhatAccounts,
+      chainId: 169,
+    },
+    arbitrumSepoliaTestnet: {
+      url: process.env.ARBITRUM_SEPOLIA_TESTNET_URL || "",
+      accounts: hardhatAccounts,
+      chainId: 421614,
+    },
   },
   gasReporter: {
     enabled: process.env.REPORT_GAS !== undefined,
@@ -311,8 +326,35 @@ const config: HardhatUserConfig = {
       capxTestnet: "PLACEHOLDER_STRING",
       coreDaoTestnet: process.env.COREDAO_TESTNET_API_KEY || "",
       coreDaoMainnet: process.env.COREDAO_MAINNET_API_KEY || "",
+      mantaMainnet: "PLACEHOLDER_STRING",
+      mantaTestnet: "PLACEHOLDER_STRING",
+      arbitrumSepolia: "PLACEHOLDER_STRING",
     },
     customChains: [
+      {
+        network: "arbitrumSepolia",
+        chainId: 421614,
+        urls: {
+          apiURL: "https://api-sepolia.arbiscan.io/api",
+          browserURL: "https://sepolia.arbiscan.io",
+        },
+      },
+      {
+        network: "mantaMainnet",
+        chainId: 169,
+        urls: {
+          apiURL: "https://manta-pacific.calderaexplorer.xyz/api",
+          browserURL: "https://manta-pacific.calderaexplorer.xyz",
+        },
+      },
+      {
+        network: "mantaTestnet",
+        chainId: 3441005,
+        urls: {
+          apiURL: "https://pacific-explorer.testnet.manta.network/api/",
+          browserURL: "https://pacific-explorer.testnet.manta.network/",
+        },
+      },
       {
         network: "coreDaoTestnet",
         chainId: 1115,
@@ -375,6 +417,14 @@ const config: HardhatUserConfig = {
         urls: {
           apiURL: "https://explorer.goerli.linea.build/api",
           browserURL: "https://goerli.lineascan.build",
+        },
+      },
+      {
+        network: "arbitrumSepolia",
+        chainId: 421614,
+        urls: {
+          apiURL: "https://api-sepolia.arbiscan.io/api",
+          browserURL: "https://sepolia.arbiscan.io",
         },
       },
       {

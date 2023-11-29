@@ -230,6 +230,14 @@ export const paymasterStakeConfigDevx: Record<number, PaymasterStakeConfig> = {
     unstakeDelayInSec: 60 * 60 * 24, // 1 Day
     stakeInWei: parseEther("0.1"),
   },
+  3441005: {
+    unstakeDelayInSec: 60 * 60 * 24, // 1 Day
+    stakeInWei: parseEther("0.1"),
+  },
+  421614: {
+    unstakeDelayInSec: 60 * 60 * 24, // 1 Day
+    stakeInWei: parseEther("0.001"),
+  },
 
   // Mainnets
   137: {
@@ -295,6 +303,10 @@ export const paymasterStakeConfigDevx: Record<number, PaymasterStakeConfig> = {
   1116: {
     unstakeDelayInSec: 60 * 60 * 24, // 1 Day
     stakeInWei: parseEther("0.1"),
+  },
+  169: {
+    unstakeDelayInSec: 60 * 60 * 24, // 1 Day
+    stakeInWei: parseEther("0.001"),
   },
 };
 
@@ -373,6 +385,14 @@ export const paymasterStakeConfigProd: Record<number, PaymasterStakeConfig> = {
     unstakeDelayInSec: 60 * 60 * 24, // 1 Day
     stakeInWei: parseEther("0.1"),
   },
+  3441005: {
+    unstakeDelayInSec: 60 * 60 * 24, // 1 Day
+    stakeInWei: parseEther("0.1"),
+  },
+  421614: {
+    unstakeDelayInSec: 60 * 60 * 24, // 1 Day
+    stakeInWei: parseEther("0.001"),
+  },
 
   // Mainnets
   137: {
@@ -439,6 +459,10 @@ export const paymasterStakeConfigProd: Record<number, PaymasterStakeConfig> = {
     unstakeDelayInSec: 60 * 60 * 24, // 1 Day
     stakeInWei: parseEther("300"), // 1 CORE = $0.5
   },
+  169: {
+    unstakeDelayInSec: 60 * 60 * 24, // 1 Day
+    stakeInWei: parseEther("0.1"), // 1 ETH = $1,674.88
+  },
 };
 
 export const DEPLOYMENT_CHAIN_GAS_PRICES: Record<
@@ -496,6 +520,8 @@ export const DEPLOYMENT_CHAIN_GAS_PRICES: Record<
   1115: {
     gasPrice: parseUnits("30", "gwei"),
   },
+  3441005: {},
+  421614: {},
 
   // Mainnets
   137: { maxPriorityFeePerGas: parseUnits("50", "gwei") },
@@ -521,8 +547,9 @@ export const DEPLOYMENT_CHAIN_GAS_PRICES: Record<
     gasPrice: parseUnits("10", "gwei"),
   },
   1116: {
-    gasPrice: parseUnits("1", "gwei"),
+    // gasPrice: parseUnits("1", "gwei"),
   },
+  169: {},
 };
 
 // Marked for removal
