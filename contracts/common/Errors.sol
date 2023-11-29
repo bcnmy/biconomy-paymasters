@@ -9,7 +9,7 @@ contract BasePaymasterErrors {
     error CallerIsNotAnEntryPoint(address caller);
 }
 
-contract VerifyingPaymasterErrors {
+contract SponsorshipPaymasterErrors {
     /**
      * @notice Throws when the Entrypoint address provided is address(0)
      */

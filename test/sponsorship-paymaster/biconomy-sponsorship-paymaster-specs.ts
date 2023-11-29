@@ -8,28 +8,20 @@ import {
   BiconomyAccountImplementation__factory,
   BiconomyAccountFactory,
   BiconomyAccountFactory__factory,
-  VerifyingSingletonPaymasterV2,
-  VerifyingSingletonPaymasterV2__factory,
+  SponsorshipPaymaster,
+  SponsorshipPaymaster__factory,
 } from "../../typechain-types";
 import { fillAndSign } from "../utils/userOp";
-import { UserOperation } from "../../lib/account-abstraction/test/UserOperation";
-import {
-  createAccount,
-  simulationResultCatch,
-} from "../../lib/account-abstraction/test/testutils";
 import {
   EntryPoint,
   EntryPoint__factory,
-  SimpleAccount,
-  TestToken,
-  TestToken__factory,
 } from "../../lib/account-abstraction/typechain";
 import {
   EcdsaOwnershipRegistryModule,
   EcdsaOwnershipRegistryModule__factory,
 } from "@biconomy-devx/account-contracts-v2/dist/types";
 import { arrayify, hexConcat, parseEther } from "ethers/lib/utils";
-import { BigNumber, BigNumberish, Contract, Signer } from "ethers";
+import { BigNumber, Signer } from "ethers";
 
 export const AddressZero = ethers.constants.AddressZero;
 
@@ -46,7 +38,6 @@ export async function deployEntryPoint(
 
 describe("EntryPoint with VerifyingPaymaster Singleton", function () {
   let entryPoint: EntryPoint;
-  let entryPointStatic: EntryPoint;
   let depositorSigner: Signer;
   let walletOwner: Signer;
   let walletAddress: string, paymasterAddress: string;
@@ -54,7 +45,7 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
 
   let offchainSigner: Signer, deployer: Signer, feeCollector: Signer;
 
-  let verifyingSingletonPaymaster: VerifyingSingletonPaymasterV2;
+  let sponsorshipPaymaster: SponsorshipPaymaster;
   let smartWalletImp: BiconomyAccountImplementation;
   let ecdsaModule: EcdsaOwnershipRegistryModule;
   let walletFactory: BiconomyAccountFactory;
@@ -63,7 +54,6 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
   beforeEach(async function () {
     ethersSigner = await ethers.getSigners();
     entryPoint = await deployEntryPoint();
-    entryPointStatic = entryPoint.connect(AddressZero);
 
     deployer = ethersSigner[0];
     offchainSigner = ethersSigner[1];
@@ -79,13 +69,14 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
       deployer
     ).deploy();
 
-    verifyingSingletonPaymaster =
-      await new VerifyingSingletonPaymasterV2__factory(deployer).deploy(
-        await deployer.getAddress(),
-        entryPoint.address,
-        offchainSignerAddress,
-        feeCollectorAddress
-      );
+    sponsorshipPaymaster = await new SponsorshipPaymaster__factory(
+      deployer
+    ).deploy(
+      await deployer.getAddress(),
+      entryPoint.address,
+      offchainSignerAddress,
+      feeCollectorAddress
+    );
 
     smartWalletImp = await new BiconomyAccountImplementation__factory(
       deployer
@@ -121,7 +112,7 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
     walletAddress = expected;
     console.log(" wallet address ", walletAddress);
 
-    paymasterAddress = verifyingSingletonPaymaster.address;
+    paymasterAddress = sponsorshipPaymaster.address;
     console.log("Paymaster address is ", paymasterAddress);
 
     await entryPoint.depositTo(paymasterAddress, { value: parseEther("1") });
@@ -137,7 +128,7 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
       "nonce"
     );
 
-    const hash = await verifyingSingletonPaymaster.getHash(
+    const hash = await sponsorshipPaymaster.getHash(
       userOp1,
       paymasterId,
       MOCK_VALID_UNTIL,
@@ -175,24 +166,24 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
     it("succeed with valid signature", async () => {
       const fundingId = await offchainSigner.getAddress();
 
-      await verifyingSingletonPaymaster
+      await sponsorshipPaymaster
         .connect(deployer)
         .setUnaccountedEPGasOverhead(24000);
 
-      await verifyingSingletonPaymaster.depositFor(fundingId, {
+      await sponsorshipPaymaster.depositFor(fundingId, {
         value: ethers.utils.parseEther("1"),
       });
 
       const paymasterFundsBefore = await entryPoint.balanceOf(paymasterAddress);
-      const paymasterIdBalanceBefore =
-        await verifyingSingletonPaymaster.getBalance(fundingId);
-      const feeCollectorBalanceBefore =
-        await verifyingSingletonPaymaster.getBalance(
-          await feeCollector.getAddress()
-        );
+      const paymasterIdBalanceBefore = await sponsorshipPaymaster.getBalance(
+        fundingId
+      );
+      const feeCollectorBalanceBefore = await sponsorshipPaymaster.getBalance(
+        await feeCollector.getAddress()
+      );
       console.log("feeCollectorBalanceBefore ", feeCollectorBalanceBefore);
       expect(feeCollectorBalanceBefore).to.be.equal(BigNumber.from(0));
-      const signer = await verifyingSingletonPaymaster.verifyingSigner();
+      const signer = await sponsorshipPaymaster.verifyingSigner();
       const offchainSignerAddress = await offchainSigner.getAddress();
       expect(signer).to.be.equal(offchainSignerAddress);
 
@@ -206,7 +197,7 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
         "nonce"
       );
 
-      const hash = await verifyingSingletonPaymaster.getHash(
+      const hash = await sponsorshipPaymaster.getHash(
         userOp1,
         fundingId,
         MOCK_VALID_UNTIL,
@@ -249,8 +240,9 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
       console.log("bundler paid ", bundlerPaid.toString());
 
       const paymasterFundsAfter = await entryPoint.balanceOf(paymasterAddress);
-      const paymasterIdBalanceAfter =
-        await verifyingSingletonPaymaster.getBalance(fundingId);
+      const paymasterIdBalanceAfter = await sponsorshipPaymaster.getBalance(
+        fundingId
+      );
 
       const paymasterIdBalanceDiff = paymasterIdBalanceBefore.sub(
         paymasterIdBalanceAfter
@@ -279,10 +271,9 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
         entryPoint.handleOps([userOp], await offchainSigner.getAddress())
       ).to.be.reverted;
 
-      const feeCollectorBalanceAfter =
-        await verifyingSingletonPaymaster.getBalance(
-          await feeCollector.getAddress()
-        );
+      const feeCollectorBalanceAfter = await sponsorshipPaymaster.getBalance(
+        await feeCollector.getAddress()
+      );
       expect(feeCollectorBalanceAfter).to.be.greaterThan(BigNumber.from(0));
 
       // 0.1 / 1.1 = actual gas used * 0.1
@@ -308,7 +299,7 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
         "0x" + "00".repeat(65),
       ]);
 
-      const res = await verifyingSingletonPaymaster.parsePaymasterAndData(
+      const res = await sponsorshipPaymaster.parsePaymasterAndData(
         paymasterAndData
       );
 
@@ -323,18 +314,16 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
       const paymasterAndData =
         "0x9c145aed00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000124468721a7000000000000000000000000831153c6b9537d0ff5b7db830c2749de3042e77600000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000649b890b7000000000000000000000000071bc333f52a7971dde5de5b6c1ab0e7341e9724c00000000000000000000000021a6f9fa7246de45762e6f9db1f55e3c0f8566db00000000000000000000000000000000000000000000000000000000000000";
 
-      await expect(
-        verifyingSingletonPaymaster.parsePaymasterAndData(paymasterAndData)
-      ).to.be.reverted;
+      await expect(sponsorshipPaymaster.parsePaymasterAndData(paymasterAndData))
+        .to.be.reverted;
     });
 
     it("should check the correct states set on the paymaster", async () => {
-      const owner = await verifyingSingletonPaymaster.owner();
+      const owner = await sponsorshipPaymaster.owner();
 
-      const verifyingSigner =
-        await verifyingSingletonPaymaster.verifyingSigner();
+      const verifyingSigner = await sponsorshipPaymaster.verifyingSigner();
 
-      const feeReceiver = await verifyingSingletonPaymaster.feeCollector();
+      const feeReceiver = await sponsorshipPaymaster.feeCollector();
 
       expect(owner).to.be.equal(deployer.address);
       expect(verifyingSigner).to.be.equal(offchainSigner.address);
@@ -346,11 +335,11 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
     it("Deposits into the specified address", async () => {
       const paymasterId = await depositorSigner.getAddress();
 
-      await verifyingSingletonPaymaster.depositFor(paymasterId, {
+      await sponsorshipPaymaster.depositFor(paymasterId, {
         value: parseEther("1"),
       });
 
-      const balance = await verifyingSingletonPaymaster.getBalance(paymasterId);
+      const balance = await sponsorshipPaymaster.getBalance(paymasterId);
       expect(balance).to.be.equal(parseEther("1"));
     });
 
@@ -358,11 +347,11 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
       const paymasterId = await depositorSigner.getAddress();
 
       await expect(
-        verifyingSingletonPaymaster.depositFor(paymasterId, {
+        sponsorshipPaymaster.depositFor(paymasterId, {
           value: parseEther("0"),
         })
       ).to.be.revertedWithCustomError(
-        verifyingSingletonPaymaster,
+        sponsorshipPaymaster,
         "DepositCanNotBeZero"
       );
     });
@@ -371,11 +360,11 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
       const paymasterId = ethers.constants.AddressZero;
 
       await expect(
-        verifyingSingletonPaymaster.depositFor(paymasterId, {
+        sponsorshipPaymaster.depositFor(paymasterId, {
           value: parseEther("0.5"),
         })
       ).to.be.revertedWithCustomError(
-        verifyingSingletonPaymaster,
+        sponsorshipPaymaster,
         "PaymasterIdCannotBeZero"
       );
     });
@@ -384,11 +373,11 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
       const paymasterId = await depositorSigner.getAddress();
 
       await expect(
-        verifyingSingletonPaymaster
+        sponsorshipPaymaster
           .connect(depositorSigner)
           .withdrawTo(paymasterId, parseEther("1.1"))
       ).to.be.revertedWithCustomError(
-        verifyingSingletonPaymaster,
+        sponsorshipPaymaster,
         "InsufficientBalance"
       );
     });

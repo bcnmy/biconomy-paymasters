@@ -7,15 +7,26 @@ import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {UserOperation, UserOperationLib} from "@account-abstraction/contracts/interfaces/UserOperation.sol";
 import "../BasePaymaster.sol";
-import {VerifyingPaymasterErrors} from "../common/Errors.sol";
+import {SponsorshipPaymasterErrors} from "../common/Errors.sol";
 import {MathLib} from "../libs/MathLib.sol";
-import {IVerifyingSingletonPaymaster} from "../interfaces/paymasters/IVerifyingSingletonPaymaster.sol";
+import {ISponsorshipPaymaster} from "../interfaces/paymasters/ISponsorshipPaymaster.sol";
 
-contract VerifyingSingletonPaymasterV2 is
+/**
+ * @title SponsorshipPaymaster
+ * @author livingrockrises<chirag@biconomy.io>
+ * @notice Based on Infinitism 'VerifyingPaymaster' contract
+ * @dev This contract is used to sponsor the transaction fees of the user operations
+ * Uses a verifying signer to provide the signature if predetermined conditions are met 
+ * regarding the user operation calldata. Also this paymaster is Singleton in nature which 
+ * means multiple Dapps/Wallet clients willing to sponsor the transactions can share this paymaster.
+ * Maintains it's own accounting of the gas balance for each Dapp/Wallet client 
+ * and Manages it's own deposit on the EntryPoint.
+ */
+contract SponsorshipPaymaster is
     BasePaymaster,
     ReentrancyGuard,
-    VerifyingPaymasterErrors,
-    IVerifyingSingletonPaymaster
+    SponsorshipPaymasterErrors,
+    ISponsorshipPaymaster
 {
     using ECDSA for bytes32;
     using UserOperationLib for UserOperation;
