@@ -1,87 +1,93 @@
-# biconomy-paymasters
+# Biconomy Paymasters 🌐
 
-### Playground for ERC4337 Paymasters built with :heart_eyes: by Biconomy 
-#### Some examples 
+Welcome to the `biconomy-paymasters`` repository! Paymaster contracts enable seamless userOp fee handling in decentralized applications, offering innovative solutions similar to traditional web2 payment processing models. 🛠️
 
-1. Sponsorship Paymaster: Acts as a sponsorship paymaster and lets Dapps manage deposit without deploying a new one for each Dapp.
+## What are Biconomy Paymasters? 🤔
 
-2. Token Paymaster: Extended version of Verifying Paymaster which can accept fees from user by withdrawing ERC20 tokens
+Biconomy Paymasters, structured as smart contracts, streamline the management of gas fees, offering end-users the convenience of executing user operations without gas costs or the flexibility to pay fees with ERC20 tokens. 🚀
 
-#### Other WIP
+- **Sponsorship Paymaster**: Allows transactions without end-users needing to pay for gas, enhancing UX.
+- **Token Paymaster**: Provides the ability to pay for transactions with ERC20 tokens.
 
-Fiat Paymaster
+## Features 🌟
 
-Deposit Paymaster
+- Simplified transaction fee handling.
+- ERC 4337 Account Abstraction compliant.
+- Multi-token support for gas payments.
+- Hybrid Paymaster approach, combining gas sponsorship and token-based payments into a single, streamlined solution.
 
-Custom versions of above Verifying (allow Dapp deposit sponsorship in different tokens) and Token Paymaster (acts as deposit paymaster also)
+## Upcoming Features (Work in Progress)
 
+- Fiat Paymaster (WIP): Planned feature to allow users to pay gas fees using fiat currency.
+- Deposit Paymaster (WIP): Intended to enable Dapp deposit sponsorship in various tokens.
 
+### ERC20 Token Paymaster
 
-# How to run the project
+![ERC20 Token Paymaster](./assets/readme/erc20-token-gas-payment-flow.png)
 
-#### You're going to need to place a private key in a .env file in the root. ####
+- ERC20 Token Paymaster helps users pay for their transactions using ERC20 tokens.
+- Users initiate a transaction using an ERC20 token.
+- Paymaster validates the transaction and covers the userOp fees.This flow ensures ease of use and convenience for users.
 
-#### In order to add/udpate git submodule account-abstraction: ####
-.gitmodules file is already added. two submodules are being used in this project
+### Sponsorship Paymaster
 
-git submodule update --init (This command will initialize and fetch the submodules listed in the .gitmodules file.)
+![Sponsorship Paymaster](./assets/readme/conditional-gas-sponsorship-paymaster.png)
 
-git submodule update --remote (This will update the submodules to the latest commit in their respective repositories.)
+- Users initiate the process with their userOps.
+- The operation is checked against the requirements set by the Sponsorship Paymaster.
+- Once verified and approved, the Paymaster sponsors the gas fees.
+- This process ensures userOps are confirmed on the network without users incurring gas costs.
 
-you can also alternatively run forge install (or forge install <repo_url>)
+Note: The Paymaster's approval process is crucial, requiring a verifying party's signature to confirm sponsorship eligibility for each userOp​​.
 
-If you encounter any issues during the submodule update process, you can try deleting the submodules directory and then running the git submodule update --init command again.
+## Getting Started 🏁
 
-#### If you face below error, make sure typechain artifacts are generated in account-abstraction folder. ####
-Error: Cannot find module '../typechain'
+To set up and use the Biconomy Paymasters, you'll need to have Node.js, Yarn, Hardhat, and Foundry installed.
 
-cd lib/account-abstraction
-yarn
-npx hardhat compile
+### Prerequisites 📋
 
+Make sure you have Node.js and Yarn installed. You will also need to install Foundry for smart contract development with Solidity.
 
-This project demonstrates an advanced Hardhat use case, integrating other tools commonly used alongside Hardhat in the ecosystem. Foundry support is also added.
+### Installation 📦
 
-Try running some of the following tasks:
+Clone the repository and install the dependencies with `yarn`:
 
-```shell
-forge build --via-ir
-
-npx hardhat accounts
-npx hardhat compile
-npx hardhat clean
-npx hardhat test
-npx hardhat node
-npx hardhat help
-REPORT_GAS=true npx hardhat test
-npx hardhat coverage
-npx hardhat run scripts/deploy.ts
-TS_NODE_FILES=true npx ts-node scripts/deploy.ts
-npx eslint '**/*.{js,ts}'
-npx eslint '**/*.{js,ts}' --fix
-npx prettier '**/*.{json,sol,md}' --check
-npx prettier '**/*.{json,sol,md}' --write
-npx solhint 'contracts/**/*.sol'
-npx solhint 'contracts/**/*.sol' --fix
+```bash
+git clone https://github.com/bcnmy/biconomy-paymasters.git
+cd biconomy-paymasters
+yarn install
 ```
 
-# Etherscan verification
+### Building the Project 🏗️
 
-To try out Etherscan verification, you first need to deploy a contract to an Ethereum network that's supported by Etherscan, such as Ropsten.
+Compile your smart contracts and generate typechain artifacts:
 
-In this project, copy the .env.example file to a file named .env, and then edit it to fill in the details. Enter your Etherscan API key, your Ropsten node URL (eg from Alchemy), and the private key of the account which will send the deployment transaction. With a valid .env file in place, first deploy your contract:
-
-```shell
-hardhat run --network polygon_mumbai scripts/deploy.ts
+```bash
+yarn build
 ```
 
-Then, copy the deployment address and paste it in to replace `DEPLOYED_CONTRACT_ADDRESS` in this command:
+### Running Tests 🧪
 
-```shell
-npx hardhat verify --network polygon_mumbai DEPLOYED_CONTRACT_ADDRESS "Hello, Hardhat!"
+After building, run your tests to ensure everything is working correctly:
+
+```bash
+yarn test
 ```
 
-# Performance optimizations
+This will run both Hardhat and Foundry tests as specified in your `package.json` scripts.
 
-For faster runs of your tests and scripts, consider skipping ts-node's type checking by setting the environment variable `TS_NODE_TRANSPILE_ONLY` to `1` in hardhat's environment. For more details see [the documentation](https://hardhat.org/guides/typescript.html#performance-optimizations).
+## Documentation 📚
 
+For more detailed information about Paymasters and how to integrate them into your project, visit the [Biconomy Paymaster Documentation](https://docs.biconomy.io/category/paymaster).
+
+## Foundry Installation
+
+For instructions on how to set up Foundryfollow the instructions provided in the [Foundry Book](https://book.getfoundry.sh/getting-started/installation.html).
+
+## Contributing 🤝
+
+We welcome contributions from the community. Please take a look at the [guidelines for contributions](./CONTRIBUTING.md).
+
+## License 📜
+
+This project is licensed under the MIT License. See the [`LICENSE`](./LICENSE.md) file for more information.
