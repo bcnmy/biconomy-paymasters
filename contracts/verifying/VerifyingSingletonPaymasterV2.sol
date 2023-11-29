@@ -52,7 +52,7 @@ contract VerifyingSingletonPaymasterV2 is
             sstore(verifyingSigner.slot, _verifyingSigner)
             sstore(feeCollector.slot, _feeCollector)
         }
-        unaccountedEPGasOverhead = 12000;
+        unaccountedEPGasOverhead = 24000;
         fixedPriceMarkup = 1100000; // 10%
     }
 
@@ -130,6 +130,7 @@ contract VerifyingSingletonPaymasterV2 is
      */
     function setFixedPriceMarkup(uint32 _markup) external payable onlyOwner {
         require(_markup <= PRICE_DENOMINATOR * 2, "Markup too high");
+        require(_markup >= PRICE_DENOMINATOR, "Markup too low"); // if allowed that would mean discounted
         uint32 oldValue = fixedPriceMarkup;
         fixedPriceMarkup = _markup;
         emit FixedPriceMarkupChanged(oldValue, _markup);
