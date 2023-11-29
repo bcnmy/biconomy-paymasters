@@ -9,6 +9,7 @@ import {UserOperation, UserOperationLib} from "@account-abstraction/contracts/in
 import "../BasePaymaster.sol";
 import {SponsorshipPaymasterErrors} from "../common/Errors.sol";
 import {MathLib} from "../libs/MathLib.sol";
+import {AddressUtils} from "../libs/AddressUtils.sol";
 import {ISponsorshipPaymaster} from "../interfaces/paymasters/ISponsorshipPaymaster.sol";
 
 /**
@@ -29,6 +30,7 @@ contract SponsorshipPaymaster is
     ISponsorshipPaymaster
 {
     using ECDSA for bytes32;
+    using AddressUtils for address;
     using UserOperationLib for UserOperation;
 
     uint32 private constant PRICE_DENOMINATOR = 1e6;
@@ -72,11 +74,10 @@ contract SponsorshipPaymaster is
      * @param paymasterId dapp identifier for which deposit is being made
      */
     function depositFor(address paymasterId) external payable nonReentrant {
+        if(paymasterId.isContract()) revert PaymasterIdCannotBeContract();
         if (paymasterId == address(0)) revert PaymasterIdCannotBeZero();
         if (msg.value == 0) revert DepositCanNotBeZero();
-        paymasterIdBalances[paymasterId] =
-            paymasterIdBalances[paymasterId] +
-            msg.value;
+        paymasterIdBalances[paymasterId] += msg.value;
         entryPoint.depositTo{value: msg.value}(address(this));
         emit GasDeposited(paymasterId, msg.value);
     }
@@ -110,6 +111,7 @@ contract SponsorshipPaymaster is
     function setFeeCollector(
         address _newFeeCollector
     ) external payable onlyOwner {
+        if(_newFeeCollector.isContract()) revert FeeCollectorCannotBeContract();
         if (_newFeeCollector == address(0)) revert FeeCollectorCannotBeZero();
         address oldFeeCollector = feeCollector;
         assembly {
@@ -324,7 +326,6 @@ contract SponsorshipPaymaster is
         require(priceMarkup <= 2e6, "Verifying PM:high markup %");
 
         uint32 dynamicMarkup = MathLib.maxuint32(priceMarkup, fixedPriceMarkup);
-        require(dynamicMarkup >= 1e6, "Verifying PM:low markup %");
 
         uint256 effectiveCost = (requiredPreFund * dynamicMarkup) /
             PRICE_DENOMINATOR;

@@ -21,6 +21,16 @@ contract SponsorshipPaymasterErrors {
     error VerifyingSignerCannotBeZero();
 
     /**
+     * @notice Throws when the paymaster id provided is a deployed contract   
+     */
+    error PaymasterIdCannotBeContract();
+
+    /**
+     * @notice Throws when the fee collector address provided is a deployed contract
+     */
+    error FeeCollectorCannotBeContract();
+
+    /**
      * @notice Throws when the fee collector address provided is address(0)
      */
     error FeeCollectorCannotBeZero();
