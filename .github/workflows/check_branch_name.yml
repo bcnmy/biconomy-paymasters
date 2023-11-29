@@ -5,14 +5,14 @@ on:
 jobs:
   check-branch-name:
     runs-on: ubuntu-latest
-    if: github.event.ref_type == 'branch' && !contains(github.ref, 'refs/heads/main') && !contains(github.ref, 'refs/heads/develop')
+    if: github.event.ref_type == 'branch' && !contains(github.ref, 'refs/heads/main')
     steps:
       - name: Check Branch Name
         run: |
-          BRANCH_PREFIX_REGEX="^(features/|fixes/|releases/).+"
+          BRANCH_PREFIX_REGEX="^(feat/|fix/|release/|chore/).+"
           BRANCH_NAME=${GITHUB_REF#refs/heads/}
           if [[ ! $BRANCH_NAME =~ $BRANCH_PREFIX_REGEX ]]; then
             echo "Invalid branch name: $BRANCH_NAME"
-            echo "Branch name must start with 'features/', 'fixes/', or 'releases/'."
+            echo "Branch name must start with 'feat/', 'fix/', 'chore/', or 'release/'."
             exit 1
           fi
