@@ -12,8 +12,6 @@ import {
   BiconomyAccountFactory__factory,
   BiconomyTokenPaymaster,
   BiconomyTokenPaymaster__factory,
-  ChainlinkOracleAggregator,
-  ChainlinkOracleAggregator__factory,
   MockPriceFeed__factory,
   MockToken,
 } from "../../../typechain-types";
@@ -51,20 +49,12 @@ export async function deployEntryPoint(
 
 export const encodePaymasterData = (
   feeToken = ethers.constants.AddressZero,
-  oracleAggregator = ethers.constants.AddressZero,
   exchangeRate: BigNumberish = ethers.constants.Zero,
   priceMarkup: BigNumberish = ethers.constants.Zero
 ) => {
   return ethers.utils.defaultAbiCoder.encode(
-    ["uint48", "uint48", "address", "address", "uint256", "uint32"],
-    [
-      MOCK_VALID_UNTIL,
-      MOCK_VALID_AFTER,
-      feeToken,
-      oracleAggregator,
-      exchangeRate,
-      priceMarkup,
-    ]
+    ["uint48", "uint48", "address", "uint256", "uint32"],
+    [MOCK_VALID_UNTIL, MOCK_VALID_AFTER, feeToken, exchangeRate, priceMarkup]
   );
 };
 
@@ -99,7 +89,6 @@ describe("Biconomy Token Paymaster (with Bundler)", function () {
   let offchainSigner: Signer, deployer: Signer;
 
   let sampleTokenPaymaster: BiconomyTokenPaymaster;
-  let oracleAggregator: ChainlinkOracleAggregator;
 
   // Could also use published package or added submodule (for Account Implementation and Factory)
   let smartWalletImp: BiconomyAccountImplementation;
@@ -128,10 +117,6 @@ describe("Biconomy Token Paymaster (with Bundler)", function () {
     // const offchainSignerAddress = await deployer.getAddress();
     const walletOwnerAddress = await walletOwner.getAddress();
 
-    oracleAggregator = await new ChainlinkOracleAggregator__factory(
-      deployer
-    ).deploy(walletOwnerAddress);
-
     ecdsaModule = await new EcdsaOwnershipRegistryModule__factory(
       deployer
     ).deploy();
@@ -149,16 +134,6 @@ describe("Biconomy Token Paymaster (with Bundler)", function () {
       usdcMaticPriceFeedMock.address
     );
 
-    const priceFeedTxUsdc: any =
-      await priceFeedUsdc.populateTransaction.getThePrice();
-
-    await oracleAggregator.setTokenOracle(
-      token.address,
-      usdcMaticPriceFeedMock.address,
-      18,
-      priceFeedTxUsdc.data
-    );
-
     sampleTokenPaymaster = await new BiconomyTokenPaymaster__factory(
       deployer
     ).deploy(
@@ -166,6 +141,17 @@ describe("Biconomy Token Paymaster (with Bundler)", function () {
       entryPoint.address,
       await offchainSigner.getAddress()
     );
+
+    await sampleTokenPaymaster.setTokenOracle(
+      token.address,
+      18,
+      await token.decimals(),
+      usdcMaticPriceFeedMock.address,
+      true
+    );
+
+    const priceResult =
+      await sampleTokenPaymaster.getTokenValueOfOneNativeToken(token.address);
 
     smartWalletImp = await new BiconomyAccountImplementation__factory(
       deployer
@@ -273,7 +259,6 @@ describe("Biconomy Token Paymaster (with Bundler)", function () {
         MOCK_VALID_UNTIL,
         MOCK_VALID_AFTER,
         token.address,
-        oracleAggregator.address,
         MOCK_FX,
         DEFAULT_FEE_MARKUP
       );
@@ -284,12 +269,7 @@ describe("Biconomy Token Paymaster (with Bundler)", function () {
           paymasterAndData: ethers.utils.hexConcat([
             paymasterAddress,
             ethers.utils.hexlify(1).slice(0, 4),
-            encodePaymasterData(
-              token.address,
-              oracleAggregator.address,
-              MOCK_FX,
-              DEFAULT_FEE_MARKUP
-            ),
+            encodePaymasterData(token.address, MOCK_FX, DEFAULT_FEE_MARKUP),
             sig,
           ]),
         },

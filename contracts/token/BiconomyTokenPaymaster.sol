@@ -8,14 +8,14 @@ import {UserOperation} from "@account-abstraction/contracts/interfaces/UserOpera
 import {UserOperationLib} from "@account-abstraction/contracts/interfaces/UserOperation.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {BasePaymaster} from "../BasePaymaster.sol";
-import {IOracleAggregator} from "./oracles/IOracleAggregator.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@account-abstraction/contracts/core/Helpers.sol" as Helpers;
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import "../utils/SafeTransferLib.sol";
 import {TokenPaymasterErrors} from "./TokenPaymasterErrors.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
-import "hardhat/console.sol";
+import {OracleAggregator} from "./oracles/OracleAggregator.sol";
+// import "hardhat/console.sol";
 
 // Biconomy Token Paymaster
 /**
@@ -31,10 +31,10 @@ import "hardhat/console.sol";
  * Optionally a safe guard deposit may be used in future versions.
  */
 
-// TODO // Use OracleAggregator/Helper as base class for this contract
-// TODO remove hardhta console logs 
+// TODO remove hardhat console logs 
 contract BiconomyTokenPaymaster is
     BasePaymaster,
+    OracleAggregator,
     ReentrancyGuard,
     TokenPaymasterErrors
 {
@@ -73,11 +73,11 @@ contract BiconomyTokenPaymaster is
     // receiver of withdrawn fee tokens
     address public feeReceiver;
 
-    // paymasterAndData: concat of [paymasterAddress(address), priceSource(enum 1 byte), abi.encode(validUntil, validAfter, feeToken, oracleAggregator, exchangeRate, priceMarkup): makes up 32*6 bytes, signature]
+    // paymasterAndData: concat of [paymasterAddress(address), priceSource(enum 1 byte), abi.encode(validUntil, validAfter, feeToken, exchangeRate, priceMarkup): makes up 32*5 bytes, signature]
     // PND offset is used to indicate offsets to decode, used along with Signature offset
     uint256 private constant VALID_PND_OFFSET = 21;
 
-    uint256 private constant SIGNATURE_OFFSET = 213;
+    uint256 private constant SIGNATURE_OFFSET = 181;
 
     /**
      * Designed to enable the community to track change in storage variable UNACCOUNTED_COST which is used
@@ -114,7 +114,6 @@ contract BiconomyTokenPaymaster is
         address indexed sender,
         address indexed token,
         uint256 indexed totalCharge,
-        address oracleAggregator,
         uint32 priceMarkup,
         bytes32 userOpHash,
         uint256 exchangeRate,
@@ -136,7 +135,7 @@ contract BiconomyTokenPaymaster is
         address _owner,
         IEntryPoint _entryPoint,
         address _verifyingSigner
-    ) payable BasePaymaster(_owner, _entryPoint) {
+    ) payable BasePaymaster(_owner, _entryPoint) OracleAggregator(_owner) {
         if (_owner == address(0)) revert OwnerCannotBeZero();
         if (address(_entryPoint) == address(0)) revert EntryPointCannotBeZero();
         if (_verifyingSigner == address(0))
@@ -227,23 +226,11 @@ contract BiconomyTokenPaymaster is
     /**
      * @dev Returns the exchange price of the token in wei.
      * @param _token ERC20 token address
-     * @param _oracleAggregator oracle aggregator address
      */
     function exchangePrice(
-        address _token,
-        address _oracleAggregator
-    ) internal view virtual returns (uint256) {
-        uint256 gas = gasleft();
-        try
-            IOracleAggregator(_oracleAggregator).getTokenValueOfOneNativeToken(
-                _token
-            )
-        returns (uint256 exchangeRate) {
-            console.log("gas used for exchangePrice: %s", gas - gasleft());
-            return exchangeRate;
-        } catch {
-            return 0;
-        }
+        address _token
+    ) internal view virtual returns (uint256 exchangeRate) {
+        exchangeRate = getTokenValueOfOneNativeToken(_token);
     }
 
     /**
@@ -333,7 +320,7 @@ contract BiconomyTokenPaymaster is
     function calldataKeccak(
         bytes calldata data
     ) internal pure returns (bytes32 ret) {
-        assembly {
+        assembly ("memory-safe") {
             let mem := mload(0x40)
             let len := data.length
             calldatacopy(mem, data.offset, len)
@@ -354,7 +341,6 @@ contract BiconomyTokenPaymaster is
         uint48 validUntil,
         uint48 validAfter,
         address feeToken,
-        address oracleAggregator,
         uint256 exchangeRate,
         uint32 priceMarkup
     ) public view returns (bytes32) {
@@ -377,7 +363,6 @@ contract BiconomyTokenPaymaster is
                     validUntil,
                     validAfter,
                     feeToken,
-                    oracleAggregator,
                     exchangeRate,
                     priceMarkup
                 )
@@ -394,7 +379,6 @@ contract BiconomyTokenPaymaster is
             uint48 validUntil,
             uint48 validAfter,
             address feeToken,
-            address oracleAggregator,
             uint256 exchangeRate,
             uint32 priceMarkup,
             bytes calldata signature
@@ -414,12 +398,11 @@ contract BiconomyTokenPaymaster is
             validUntil,
             validAfter,
             feeToken,
-            oracleAggregator,
             exchangeRate,
             priceMarkup
         ) = abi.decode(
             paymasterAndData[VALID_PND_OFFSET:SIGNATURE_OFFSET],
-            (uint48, uint48, address, address, uint256, uint32)
+            (uint48, uint48, address, uint256, uint32)
         );
         signature = paymasterAndData[SIGNATURE_OFFSET:];
     }
@@ -440,7 +423,7 @@ contract BiconomyTokenPaymaster is
     /**
      * @dev Verify that an external signer signed the paymaster data of a user operation.
      * The paymaster data is expected to be the paymaster address, request data and a signature over the entire request parameters.
-     * paymasterAndData: hexConcat([paymasterAddress, priceSource, abi.encode(validUntil, validAfter, feeToken, oracleAggregator, exchangeRate, priceMarkup), signature])
+     * paymasterAndData: hexConcat([paymasterAddress, priceSource, abi.encode(validUntil, validAfter, feeToken, exchangeRate, priceMarkup), signature])
      * @param userOp The UserOperation struct that represents the current user operation.
      * userOpHash The hash of the UserOperation struct.
      * @param requiredPreFund The required amount of pre-funding for the paymaster.
@@ -459,31 +442,29 @@ contract BiconomyTokenPaymaster is
     {
         (requiredPreFund);
 
-        uint256 gas = gasleft();
+        // uint256 gas = gasleft();
         (
             ExchangeRateSource priceSource,
             uint48 validUntil,
             uint48 validAfter,
             address feeToken,
-            address oracleAggregator,
             uint256 exchangeRate,
             uint32 priceMarkup,
             bytes calldata signature
         ) = parsePaymasterAndData(userOp.paymasterAndData);
-        console.log("gas used for parsePmd: %s", gas - gasleft());
+        // console.log("gas used for parsePmd: %s", gas - gasleft());
 
-        gas = gasleft();
+        // gas = gasleft();
         bytes32 _hash = getHash(
             userOp,
             priceSource,
             validUntil,
             validAfter,
             feeToken,
-            oracleAggregator,
             exchangeRate,
             priceMarkup
         ).toEthSignedMessageHash();
-        console.log("gas used for getHash: %s", gas - gasleft());
+        // console.log("gas used for getHash: %s", gas - gasleft());
 
         //don't revert on signature failure: return SIG_VALIDATION_FAILED
         if (verifyingSigner != _hash.recover(signature)) {
@@ -510,21 +491,19 @@ contract BiconomyTokenPaymaster is
             "BTPM: account does not have enough token balance"
         );
 
-        gas = gasleft();
+        // gas = gasleft();
         context = abi.encode(
             account,
             feeToken,
-            oracleAggregator,
             priceSource,
             exchangeRate,
             priceMarkup,
             userOpHash
         );
-        console.log("gas used for context encode: %s", gas - gasleft());
+        // console.log("gas used for context encode: %s", gas - gasleft());
 
         // console.log("account: %s", account);
         // console.log("feeToken: %s", address(feeToken));
-        // console.log("oracleAggregator: %s", oracleAggregator);
         // console.log("priceSource: %s", uint8(priceSource));
         // console.log("exchangeRate: %s", exchangeRate);
         // console.log("priceMarkup: %s", priceMarkup);
@@ -547,11 +526,10 @@ contract BiconomyTokenPaymaster is
         bytes calldata context,
         uint256 actualGasCost
     ) internal virtual override {
-        uint256 gas = gasleft();
+        // uint256 gas = gasleft();
         // (
         //     address account,
         //     IERC20 feeToken,
-        //     address oracleAggregator,
         //     ExchangeRateSource priceSource,
         //     uint256 exchangeRate,
         //     uint32 priceMarkup,
@@ -570,7 +548,6 @@ contract BiconomyTokenPaymaster is
         //     );
         address account;
         IERC20 feeToken;
-        address oracleAggregator;
         ExchangeRateSource priceSource;
         uint256 exchangeRate;
         uint32 priceMarkup;
@@ -584,9 +561,6 @@ contract BiconomyTokenPaymaster is
             feeToken := calldataload(offset)
             offset := add(offset, 0x20)
 
-            oracleAggregator := calldataload(offset)
-            offset := add(offset, 0x20)
-
             priceSource := calldataload(offset)
             offset := add(offset, 0x20)
 
@@ -598,11 +572,10 @@ contract BiconomyTokenPaymaster is
 
             userOpHash := calldataload(offset)
         }
-        console.log("gas used for context decode: %s", gas - gasleft());
+        // console.log("gas used for context decode: %s", gas - gasleft());
 
         // console.log("account: %s", account);
         // console.log("feeToken: %s", address(feeToken));
-        // console.log("oracleAggregator: %s", oracleAggregator);
         // console.log("priceSource: %s", uint8(priceSource));
         // console.log("exchangeRate: %s", exchangeRate);
         // console.log("priceMarkup: %s", priceMarkup);
@@ -611,10 +584,9 @@ contract BiconomyTokenPaymaster is
         uint256 effectiveExchangeRate = exchangeRate;
 
         if (
-            priceSource == ExchangeRateSource.ORACLE_BASED &&
-            oracleAggregator != address(0)
+            priceSource == ExchangeRateSource.ORACLE_BASED 
         ) {
-            uint256 result = exchangePrice(address(feeToken), oracleAggregator);
+            uint256 result = exchangePrice(address(feeToken));
             if (result != 0) effectiveExchangeRate = result;
         }
 
@@ -638,7 +610,6 @@ contract BiconomyTokenPaymaster is
                 account,
                 address(feeToken),
                 charge,
-                oracleAggregator,
                 priceMarkup,
                 userOpHash,
                 effectiveExchangeRate,
@@ -660,7 +631,7 @@ contract BiconomyTokenPaymaster is
                 // Do nothing else here to not revert the whole bundle and harm reputation
             }
         }
-        console.log("gas used for postop: %s", gas - gasleft());
+        // console.log("gas used for postop: %s", gas - gasleft());
     }
 
     function _withdrawERC20(

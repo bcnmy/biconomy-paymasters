@@ -6,8 +6,6 @@ import {Utilities} from "../../utils/Utilities.sol";
 import {console2} from "forge-std/console2.sol";
 import {Vm} from "forge-std/Vm.sol";
 
-import {ChainlinkOracleAggregator} from "../../../contracts/token/oracles/ChainlinkOracleAggregator.sol";
-import {IOracleAggregator} from "../../../contracts/token/oracles/IOracleAggregator.sol";
 import {BiconomyTokenPaymaster} from "../../../contracts/token/BiconomyTokenPaymaster.sol";
 import "../../BytesLib.sol";
 import "../../../contracts/test/helpers/TestCounter.sol";
@@ -35,7 +33,6 @@ contract TokenPaymasterTest is SATestBase {
     uint256 internal keyUser;
     uint256 internal keyVerifyingSigner;
 
-    ChainlinkOracleAggregator public _oa1;
     BiconomyTokenPaymaster public _btpm;
     MockToken usdc;
     MockPriceFeed usdcMaticFeed;
@@ -60,7 +57,6 @@ contract TokenPaymasterTest is SATestBase {
         keyVerifyingSigner = bob.privateKey;
 
         _btpm = new BiconomyTokenPaymaster(alice.addr, entryPoint, bob.addr);
-        _oa1 = new ChainlinkOracleAggregator(alice.addr);
         usdc = new MockToken();
         usdcMaticFeed = new MockPriceFeed();
         counter = new TestCounter();
@@ -70,28 +66,31 @@ contract TokenPaymasterTest is SATestBase {
             FeedInterface.getThePrice.selector
         );
 
-        vm.prank(alice.addr);
+        vm.startPrank(alice.addr);
         // could also make a .call using selector and handle success
-        _oa1.setTokenOracle(
+        _btpm.setTokenOracle(
             address(usdc),
-            address(usdcMaticFeed),
             18,
-            _data
+            usdc.decimals(),
+            address(usdcMaticFeed),
+            true
         );
+        vm.stopPrank();
 
-        uint256 priceToLog = _oa1.getTokenValueOfOneNativeToken(
+        uint256 priceToLog = _btpm.getTokenValueOfOneNativeToken(
             (address(usdc))
         );
         console2.log(priceToLog);
 
         address accountAddress = address(sa);
 
-        vm.prank(charlie.addr);
+        vm.startPrank(charlie.addr);
         entryPoint.depositTo{value: 2 ether}(address(_btpm));
 
         // mint tokens to addresses
         usdc.mint(charlie.addr, 100e6);
         usdc.mint(accountAddress, 100e6);
+        vm.stopPrank();
         vm.warp(1680509051);
     }
 
@@ -201,7 +200,6 @@ contract TokenPaymasterTest is SATestBase {
                 validUntil,
                 validAfter,
                 address(usdc),
-                address(_oa1),
                 exchangeRate,
                 priceMarkup
             ),
@@ -309,7 +307,6 @@ contract TokenPaymasterTest is SATestBase {
                 validUntil,
                 validAfter,
                 address(usdc),
-                address(_oa1),
                 exchangeRate,
                 priceMarkup
             ),
@@ -360,7 +357,6 @@ contract TokenPaymasterTest is SATestBase {
                 validUntil,
                 validAfter,
                 address(usdc),
-                address(_oa1),
                 exchangeRate,
                 priceMarkup
             ),
@@ -405,7 +401,6 @@ contract TokenPaymasterTest is SATestBase {
             validUntil,
             validAfter,
             address(usdc),
-            address(_oa1),
             exchangeRate,
             priceMarkup
         );
@@ -422,7 +417,6 @@ contract TokenPaymasterTest is SATestBase {
                 validUntil,
                 validAfter,
                 address(usdc),
-                address(_oa1),
                 exchangeRate,
                 priceMarkup
             ),
@@ -461,7 +455,6 @@ contract TokenPaymasterTest is SATestBase {
             validUntil,
             validAfter,
             address(usdc),
-            address(_oa1),
             exchangeRate,
             priceMarkup
         );
