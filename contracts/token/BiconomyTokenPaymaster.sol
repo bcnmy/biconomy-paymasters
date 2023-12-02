@@ -224,16 +224,6 @@ contract BiconomyTokenPaymaster is
     }
 
     /**
-     * @dev Returns the exchange price of the token in wei.
-     * @param _token ERC20 token address
-     */
-    function exchangePrice(
-        address _token
-    ) internal view virtual returns (uint256 exchangeRate) {
-        exchangeRate = getTokenValueOfOneNativeToken(_token);
-    }
-
-    /**
      * @dev pull tokens out of paymaster in case they were sent to the paymaster at any point.
      * @param token the token deposit to withdraw
      * @param target address to send to
@@ -572,22 +562,16 @@ contract BiconomyTokenPaymaster is
 
             userOpHash := calldataload(offset)
         }
-        // console.log("gas used for context decode: %s", gas - gasleft());
-
-        // console.log("account: %s", account);
-        // console.log("feeToken: %s", address(feeToken));
-        // console.log("priceSource: %s", uint8(priceSource));
-        // console.log("exchangeRate: %s", exchangeRate);
-        // console.log("priceMarkup: %s", priceMarkup);
-        // console.log("userOpHash: %s", uint256(userOpHash));
 
         uint256 effectiveExchangeRate = exchangeRate;
 
         if (
             priceSource == ExchangeRateSource.ORACLE_BASED 
         ) {
-            uint256 result = exchangePrice(address(feeToken));
-            if (result != 0) effectiveExchangeRate = result;
+            effectiveExchangeRate = getTokenValueOfOneNativeToken(address(feeToken));
+            // uint256 result = getTokenValueOfOneNativeToken(address(feeToken));
+            // Review
+            // if (result != 0) effectiveExchangeRate = result;
         }
 
         // We could either touch the state for BASEFEE and calculate based on maxPriorityFee passed (to be added in context along with maxFeePerGas) or just use tx.gasprice

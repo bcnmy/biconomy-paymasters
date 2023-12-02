@@ -268,19 +268,27 @@ abstract contract SATestBase is Test {
         TestAccount memory _signer,
         bytes memory _pnd
     ) internal view returns (UserOperation memory op) {
+        {
         op = UserOperation({
             sender: address(_sa),
             nonce: entryPoint.getNonce(address(_sa), _nonceKey),
             initCode: bytes(""),
             callData: _calldata,
-            callGasLimit: gasleft() / 100,
-            verificationGasLimit: gasleft() / 100,
-            preVerificationGas: defaultPreVerificationGas,
-            maxFeePerGas: tx.gasprice,
-            maxPriorityFeePerGas: tx.gasprice - block.basefee,
+            // Review: If left to this some test fail
+            // callGasLimit: gasleft() / 100,
+            // verificationGasLimit: gasleft() / 100,
+            // preVerificationGas: defaultPreVerificationGas,
+            // maxFeePerGas: tx.gasprice,
+            // maxPriorityFeePerGas: tx.gasprice - block.basefee,
+            callGasLimit: 100000,
+            verificationGasLimit: 200000,
+            preVerificationGas: 50000,
+            maxFeePerGas: 100000000000,
+            maxPriorityFeePerGas: 40000000000,
             paymasterAndData: _pnd,
             signature: bytes("")
         });
+        }
 
         // Sign the UserOp
         bytes32 userOpHash = entryPoint.getUserOpHash(op);

@@ -11,6 +11,7 @@ import "../../BytesLib.sol";
 import "../../../contracts/test/helpers/TestCounter.sol";
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IEntryPoint} from "@account-abstraction/contracts/interfaces/IEntryPoint.sol";
 import {UserOperation} from "@account-abstraction/contracts/interfaces/UserOperation.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
@@ -28,17 +29,19 @@ error SetupIncomplete();
 using ECDSA for bytes32;
 
 contract TokenPaymasterTest is SATestBase {
-    SmartAccount sa;
+    SmartAccount public sa;
 
     uint256 internal keyUser;
     uint256 internal keyVerifyingSigner;
 
+    address internal usdcMaticFeed = 0x000005ABaE3DEAdbe1FBD12105F950efbA9eaec4;
     BiconomyTokenPaymaster public _btpm;
-    MockToken usdc;
-    MockPriceFeed usdcMaticFeed;
-    TestCounter counter;
+    IERC20 public usdc = IERC20(0xdA5289fCAAF71d52a80A254da614a192b693e977);
+    TestCounter public counter;
 
     function setUp() public virtual override {
+        uint256 forkId = vm.createFork("https://polygon-mumbai.g.alchemy.com/v2/zX14dLXhTQqeK4LG2pNUsk7Gcet8iPXJ");
+        vm.selectFork(forkId);
         super.setUp();
 
         // Deploy Smart Account with default module
@@ -52,27 +55,21 @@ contract TokenPaymasterTest is SATestBase {
             smartAccountDeploymentIndex,
             "aliceSA"
         );
+        console2.log("SA address", address(sa));
 
         keyUser = alice.privateKey;
         keyVerifyingSigner = bob.privateKey;
 
         _btpm = new BiconomyTokenPaymaster(alice.addr, entryPoint, bob.addr);
-        usdc = new MockToken();
-        usdcMaticFeed = new MockPriceFeed();
         counter = new TestCounter();
-
-        // setting price oracle for token
-        bytes memory _data = abi.encodeWithSelector(
-            FeedInterface.getThePrice.selector
-        );
 
         vm.startPrank(alice.addr);
         // could also make a .call using selector and handle success
         _btpm.setTokenOracle(
             address(usdc),
             18,
-            usdc.decimals(),
-            address(usdcMaticFeed),
+            ERC20(address(usdc)).decimals(),
+            usdcMaticFeed,
             true
         );
         vm.stopPrank();
@@ -87,9 +84,6 @@ contract TokenPaymasterTest is SATestBase {
         vm.startPrank(charlie.addr);
         entryPoint.depositTo{value: 2 ether}(address(_btpm));
 
-        // mint tokens to addresses
-        usdc.mint(charlie.addr, 100e6);
-        usdc.mint(accountAddress, 100e6);
         vm.stopPrank();
         vm.warp(1680509051);
     }
@@ -122,7 +116,7 @@ contract TokenPaymasterTest is SATestBase {
 
     function testWithdrawERC20(uint256 _amount) external {
         vm.assume(_amount < usdc.totalSupply());
-        usdc.mint(address(_btpm), _amount);
+        deal(address(usdc), address(_btpm), _amount);
         vm.startPrank(alice.addr);
         _btpm.withdrawERC20(usdc, dan.addr, _amount);
         assertEq(usdc.balanceOf(address(_btpm)), 0);
@@ -132,7 +126,7 @@ contract TokenPaymasterTest is SATestBase {
 
     function testWithdrawERC20FailNotOwner(uint256 _amount) external {
         vm.assume(_amount < usdc.totalSupply());
-        usdc.mint(address(_btpm), _amount);
+        deal(address(usdc), address(_btpm), _amount);
         vm.startPrank(dan.addr);
         vm.expectRevert("Ownable: caller is not the owner");
         _btpm.withdrawERC20(usdc, dan.addr, _amount);
@@ -142,6 +136,7 @@ contract TokenPaymasterTest is SATestBase {
     // sanity check for everything works without paymaster
     function testCall() external {
         vm.deal(address(sa), 1e18);
+        vm.deal(dan.addr, 1e18);
 
          bytes memory data = getSmartAccountExecuteCalldata(
             address(counter),
@@ -162,12 +157,17 @@ contract TokenPaymasterTest is SATestBase {
     // with token paymaster
     function testTokenPaymasterRefund() external {
         vm.deal(address(sa), 1e18);
-        usdc.mint(address(sa), 100e6); // 100 usdc;
-        usdc.mint(address(_btpm), 100e6); // 100 usdc;
+        deal(address(usdc), address(sa), 100e6);
+        deal(address(usdc), address(_btpm), 100e6);
         console2.log(
             "paymaster balance before ",
             usdc.balanceOf(address(_btpm))
         );
+        console2.log(
+            "SA token balance before ",
+            usdc.balanceOf(address(sa))
+        );
+        console2.log("nonce from EP", entryPoint.getNonce(address(sa), 0));
 
         bytes memory data = getSmartAccountExecuteCalldata(
             address(usdc),
@@ -221,8 +221,10 @@ contract TokenPaymasterTest is SATestBase {
 
     function testTokenPaymasterFailInvalidPaymasteDataLength() external {
         vm.deal(address(sa), 1e18);
-        usdc.mint(address(sa), 100e6); // 100 usdc;
-        usdc.mint(address(_btpm), 100e6); // 100 usdc;
+        deal(address(usdc), address(sa), 100e6);
+        deal(address(usdc), address(_btpm), 100e6);
+        
+        
         console2.log(
             "paymaster balance before ",
             usdc.balanceOf(address(_btpm))
@@ -245,8 +247,8 @@ contract TokenPaymasterTest is SATestBase {
 
     function test2TokenPaymasterFailInvalidPaymasteDataLength() external {
         vm.deal(address(sa), 1e18);
-        usdc.mint(address(sa), 100e6); // 100 usdc;
-        usdc.mint(address(_btpm), 100e6); // 100 usdc;
+        deal(address(usdc), address(_btpm), 100e6);
+        deal(address(usdc), address(sa), 100e6);
         console2.log(
             "paymaster balance before ",
             usdc.balanceOf(address(_btpm))
@@ -276,8 +278,8 @@ contract TokenPaymasterTest is SATestBase {
 
     function testTokenPaymasterFailInvalidPMSignature() external {
         vm.deal(address(sa), 1e18);
-        usdc.mint(address(sa), 100e6); // 100 usdc;
-        usdc.mint(address(_btpm), 100e6); // 100 usdc;
+        deal(address(usdc), address(_btpm), 100e6);
+        deal(address(usdc), address(sa), 100e6);
         console2.log(
             "paymaster balance before ",
             usdc.balanceOf(address(_btpm))
@@ -321,8 +323,8 @@ contract TokenPaymasterTest is SATestBase {
 
     function testTokenPaymasterFailWrongPMSignature() external {
         vm.deal(address(sa), 1e18);
-        usdc.mint(address(sa), 100e6); // 100 usdc;
-        usdc.mint(address(_btpm), 100e6); // 100 usdc;
+        deal(address(usdc), address(_btpm), 100e6);
+        deal(address(usdc), address(sa), 100e6);
         console2.log(
             "paymaster balance before ",
             usdc.balanceOf(address(_btpm))
@@ -373,8 +375,8 @@ contract TokenPaymasterTest is SATestBase {
 
     function testTokenPaymasterFailHighPriceMarkup() external {
         vm.deal(address(sa), 1e18);
-        usdc.mint(address(sa), 100e6); // 100 usdc;
-        usdc.mint(address(_btpm), 100e6); // 100 usdc;
+        deal(address(usdc), address(_btpm), 100e6);
+        deal(address(usdc), address(sa), 100e6);
         console2.log(
             "paymaster balance before ",
             usdc.balanceOf(address(_btpm))

@@ -341,6 +341,7 @@ describe("Biconomy Token Paymaster", function () {
       const postBalance = await token.balanceOf(paymasterAddress);
 
       const postTokenBalanceForAccount = await token.balanceOf(walletAddress);
+      expect(postTokenBalanceForAccount).to.be.lt(preTokenBalanceForAccount);
 
       const ev = await getUserOpEvent(entryPoint);
       expect(ev.args.success).to.be.true;
