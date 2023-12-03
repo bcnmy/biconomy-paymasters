@@ -1,7 +1,8 @@
 # biconomy-paymasters
 
-### Playground for ERC4337 Paymasters built with :heart_eyes: by Biconomy 
-#### Some examples 
+### Playground for ERC4337 Paymasters built with :heart_eyes: by Biconomy
+
+#### Some examples
 
 1. Singleton Verifying Paymaster: Acts as a sponsorship paymaster and lets Dapps manage deposit without deploying a new one for each Dapp.
 
@@ -15,13 +16,12 @@ Deposit Paymaster
 
 Custom versions of above Verifying (allow Dapp deposit sponsorship in different tokens) and Token Paymaster (acts as deposit paymaster also)
 
-
-
 # How to run the project
 
-#### You're going to need to place a private key in a .env file in the root. ####
+#### You're going to need to place a private key in a .env file in the root.
 
-#### In order to add/udpate git submodule account-abstraction: ####
+#### In order to add/udpate git submodule account-abstraction:
+
 .gitmodules file is already added. two submodules are being used in this project
 
 git submodule update --init (This command will initialize and fetch the submodules listed in the .gitmodules file.)
@@ -32,13 +32,15 @@ you can also alternatively run forge install (or forge install <repo_url>)
 
 If you encounter any issues during the submodule update process, you can try deleting the submodules directory and then running the git submodule update --init command again.
 
-#### If you face below error, make sure typechain artifacts are generated in account-abstraction folder. ####
+#### If you face below error, make sure typechain artifacts are generated in account-abstraction folder.
+
 Error: Cannot find module '../typechain'
 
 cd lib/account-abstraction
-yarn
-npx hardhat compile
 
+yarn
+
+npx hardhat compile
 
 This project demonstrates an advanced Hardhat use case, integrating other tools commonly used alongside Hardhat in the ecosystem. Foundry support is also added.
 
@@ -84,4 +86,3 @@ npx hardhat verify --network polygon_mumbai DEPLOYED_CONTRACT_ADDRESS "Hello, Ha
 # Performance optimizations
 
 For faster runs of your tests and scripts, consider skipping ts-node's type checking by setting the environment variable `TS_NODE_TRANSPILE_ONLY` to `1` in hardhat's environment. For more details see [the documentation](https://hardhat.org/guides/typescript.html#performance-optimizations).
-
