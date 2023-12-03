@@ -24,9 +24,9 @@ Custom versions of above Verifying (allow Dapp deposit sponsorship in different 
 
 .gitmodules file is already added. two submodules are being used in this project
 
-git submodule update --init (This command will initialize and fetch the submodules listed in the .gitmodules file.)
+1. git submodule update --init (This command will initialize and fetch the submodules listed in the .gitmodules file.)
 
-git submodule update --remote (This will update the submodules to the latest commit in their respective repositories.)
+2. git submodule update --remote (This will update the submodules to the latest commit in their respective repositories.)
 
 you can also alternatively run forge install (or forge install <repo_url>)
 
@@ -36,11 +36,11 @@ If you encounter any issues during the submodule update process, you can try del
 
 Error: Cannot find module '../typechain'
 
-cd lib/account-abstraction
+1. cd lib/account-abstraction
 
-yarn
+2. yarn
 
-npx hardhat compile
+3. npx hardhat compile
 
 This project demonstrates an advanced Hardhat use case, integrating other tools commonly used alongside Hardhat in the ecosystem. Foundry support is also added.
 
