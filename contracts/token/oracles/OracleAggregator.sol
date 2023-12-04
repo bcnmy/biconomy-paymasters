@@ -3,12 +3,15 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./IOracleAggregator.sol";
-import "./IPriceOracle.sol";
 import "./FeedInterface.sol";
 
 abstract contract OracleAggregator is Ownable, IOracleAggregator {
 
     error MismatchInBaseAndQuoteDecimals();
+    error InvalidPriceFromRound();
+    error LatestRoundIncomplete();
+    error PriceFeedStale();
+    error OracleAddressCannotBeZero();
 
      struct TokenInfo {
         uint8 tokenDecimals;
@@ -30,18 +33,15 @@ abstract contract OracleAggregator is Ownable, IOracleAggregator {
         address nativeOracle,
         bool isDerivedFeed
     ) external onlyOwner {
-        require(
-            tokenOracle != address(0),
-            "feed address can not be zero"
-        );
-        require(
-            nativeOracle != address(0),
-            "feed address can not be zero"
-        );
+        if(tokenOracle == address(0)) revert OracleAddressCannotBeZero();
+        if(nativeOracle == address(0)) revert OracleAddressCannotBeZero();
         require(
             token != address(0),
             "token address can not be zero"
         );
+        uint8 decimals1 = FeedInterface(nativeOracle).decimals();
+        uint8 decimals2 = FeedInterface(tokenOracle).decimals();
+        if (decimals1 != decimals2) revert MismatchInBaseAndQuoteDecimals();
         tokensInfo[token].tokenOracle = tokenOracle;
         tokensInfo[token].nativeOracle = nativeOracle;
         tokensInfo[token].tokenDecimals = tokenDecimals;
@@ -78,19 +78,13 @@ abstract contract OracleAggregator is Ownable, IOracleAggregator {
         tokenDecimals = tokenInfo.tokenDecimals;
 
         if (tokenInfo.isDerivedFeed) {
-            //uint8 decimals1 = FeedInterface(tokenInfo.nativeOracle).decimals();
-            //uint8 decimals2 = FeedInterface(tokenInfo.tokenOracle).decimals();
-            //if (decimals1 != decimals2) revert MismatchInBaseAndQuoteDecimals();
-
-            uint256 price1 = fetchPrice(IPriceOracle(tokenInfo.nativeOracle));
-
-            uint256 price2 = fetchPrice(IPriceOracle(tokenInfo.tokenOracle));
-
+            uint256 price1 = fetchPrice(FeedInterface(tokenInfo.nativeOracle));
+            uint256 price2 = fetchPrice(FeedInterface(tokenInfo.tokenOracle));
             tokenPrice = (price2 * (10 ** 18)) / price1;
             tokenOracleDecimals = 18;
         } else {
              tokenPrice = 
-                fetchPrice(IPriceOracle(tokenInfo.tokenOracle));
+                fetchPrice(FeedInterface(tokenInfo.tokenOracle));
              tokenOracleDecimals = FeedInterface(tokenInfo.tokenOracle).decimals();
         }
     }
@@ -99,7 +93,7 @@ abstract contract OracleAggregator is Ownable, IOracleAggregator {
     /// @dev This function is used to get the latest price from the tokenOracle or nativeOracle.
     /// @param _oracle The Oracle contract to fetch the price from.
     /// @return price The latest price fetched from the Oracle.
-    function fetchPrice(IPriceOracle _oracle) internal view returns (uint256 price) {
+    function fetchPrice(FeedInterface _oracle) internal view returns (uint256 price) {
         (
             uint80 roundId,
             int256 answer,
@@ -107,13 +101,14 @@ abstract contract OracleAggregator is Ownable, IOracleAggregator {
             uint256 updatedAt,
             uint80 answeredInRound
         ) = _oracle.latestRoundData();
-        require(answer > 0, "BTPM: Chainlink price <= 0");
+
+        // validateRound
+        if (answer <= 0) revert InvalidPriceFromRound();
         // 2 days old price is considered stale since the price is updated every 24 hours
-        require(
-            updatedAt >= block.timestamp - 60 * 60 * 24 * 2,
-            "BTPM: Incomplete round"
-        );
-        require(answeredInRound >= roundId, "BTPM: Stale price");
+        if (updatedAt < block.timestamp - 60 * 60 * 24 * 2)
+            revert PriceFeedStale();
+        if (answeredInRound < roundId) revert PriceFeedStale();
+
         price = uint256(answer);
     }    
 }
