@@ -110,7 +110,7 @@ contract BiconomyTokenPaymaster is
      * Designed to enable tracking how much fees were charged from the sender and in which ERC20 token
      * More information can be emitted like exchangeRate used, what was the source of exchangeRate etc*/
     // priceMarkup = Multiplier value to calculate markup, 1e6 means 1x multiplier = No markup
-    /*event TokenPaymasterOperation(
+    event TokenPaymasterOperation(
         address indexed sender,
         address indexed token,
         uint256 indexed totalCharge,
@@ -118,15 +118,16 @@ contract BiconomyTokenPaymaster is
         bytes32 userOpHash,
         uint256 exchangeRate,
         ExchangeRateSource priceSource
-    );*/
+    );
 
-    // Review can add exchangeRate
-    event UserOperationSponsored(
+    // Review can replace with this event // can add exchangeRate
+    // saves 1000 gas
+    /*event UserOperationSponsored(
         address indexed sender,
         address indexed token,
         uint256 indexed totalCharge,
         uint256 actualGasCost
-    );
+    );*/
 
     /**
      * Notify in case paymaster failed to withdraw tokens from sender
@@ -495,8 +496,8 @@ contract BiconomyTokenPaymaster is
             feeToken,
             priceSource,
             exchangeRate,
-            priceMarkup //,
-            // userOpHash
+            priceMarkup,
+            userOpHash
         );
 
         return (
@@ -521,7 +522,7 @@ contract BiconomyTokenPaymaster is
         ExchangeRateSource priceSource;
         uint256 exchangeRate;
         uint32 priceMarkup;
-       // bytes32 userOpHash;
+        bytes32 userOpHash;
         assembly ("memory-safe") {
             let offset := context.offset
 
@@ -538,9 +539,9 @@ contract BiconomyTokenPaymaster is
             offset := add(offset, 0x20)
 
             priceMarkup := calldataload(offset)
-            // offset := add(offset, 0x20)
+            offset := add(offset, 0x20)
 
-            // userOpHash := calldataload(offset)
+            userOpHash := calldataload(offset)
         }
 
         uint256 effectiveExchangeRate = exchangeRate;
@@ -570,7 +571,7 @@ contract BiconomyTokenPaymaster is
                 feeReceiver,
                 charge
             );
-            /*emit TokenPaymasterOperation(
+            emit TokenPaymasterOperation(
                 account,
                 address(feeToken),
                 charge,
@@ -578,8 +579,8 @@ contract BiconomyTokenPaymaster is
                 userOpHash,
                 effectiveExchangeRate,
                 priceSource
-            );*/
-            emit UserOperationSponsored(account, address(feeToken), charge, actualGasCost);
+            );
+            // emit UserOperationSponsored(account, address(feeToken), charge, actualGasCost);
         } else {
             // In case transferFrom failed in first handlePostOp call, attempt to charge the tokens again
             bytes memory _data = abi.encodeWithSelector(
