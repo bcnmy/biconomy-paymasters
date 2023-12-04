@@ -19,7 +19,8 @@ import {EcdsaOwnershipRegistryModule} from "@biconomy-devx/account-contracts-v2/
 
 
 import {MockToken} from "../../../contracts/test/helpers/MockToken.sol";
-import {MockPriceFeed} from "../../../contracts/test/helpers/MockPriceFeed.sol";
+// import {MockPriceFeed} from "../../../contracts/test/helpers/MockPriceFeed.sol";
+import {MockOracle} from "../../../contracts/test/helpers/MockOracle.sol";
 import {FeedInterface} from "../../../contracts/token/oracles/FeedInterface.sol";
 import {SATestBase} from "../base/SATestBase.sol";
 
@@ -35,11 +36,15 @@ contract TokenPaymasterTest is SATestBase {
 
     BiconomyTokenPaymaster public _btpm;
     MockToken usdc;
-    MockPriceFeed usdcMaticFeed;
+    MockOracle nativeOracle;
+    MockOracle tokenOracle;
     TestCounter counter;
 
     function setUp() public virtual override {
         super.setUp();
+
+        vm.warp(1680509051);
+        console2.log("current block timestamp ", block.timestamp);
 
         // Deploy Smart Account with default module
         uint256 smartAccountDeploymentIndex = 0;
@@ -58,7 +63,8 @@ contract TokenPaymasterTest is SATestBase {
 
         _btpm = new BiconomyTokenPaymaster(alice.addr, entryPoint, bob.addr);
         usdc = new MockToken();
-        usdcMaticFeed = new MockPriceFeed();
+        nativeOracle = new MockOracle(82843594,"MATIC/USD");
+        tokenOracle = new MockOracle(100000000,"USDC/USD");
         counter = new TestCounter();
 
         // setting price oracle for token
@@ -70,9 +76,9 @@ contract TokenPaymasterTest is SATestBase {
         // could also make a .call using selector and handle success
         _btpm.setTokenOracle(
             address(usdc),
-            18,
             usdc.decimals(),
-            address(usdcMaticFeed),
+            address(tokenOracle),
+            address(nativeOracle),
             true
         );
         vm.stopPrank();
@@ -80,7 +86,7 @@ contract TokenPaymasterTest is SATestBase {
         uint256 priceToLog = _btpm.getTokenValueOfOneNativeToken(
             (address(usdc))
         );
-        console2.log(priceToLog);
+        // console2.log(priceToLog);
 
         address accountAddress = address(sa);
 
@@ -91,7 +97,6 @@ contract TokenPaymasterTest is SATestBase {
         usdc.mint(charlie.addr, 100e6);
         usdc.mint(accountAddress, 100e6);
         vm.stopPrank();
-        vm.warp(1680509051);
     }
 
     function testDeploy() external {

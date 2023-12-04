@@ -14,6 +14,7 @@ import {
   BiconomyTokenPaymaster__factory,
   MockPriceFeed__factory,
   MockToken,
+  MockOracle__factory,
 } from "../../../typechain-types";
 import {
   EcdsaOwnershipRegistryModule,
@@ -134,6 +135,15 @@ describe("Biconomy Token Paymaster (with Bundler)", function () {
       usdcMaticPriceFeedMock.address
     );
 
+    const nativeOracle = await new MockOracle__factory(deployer).deploy(
+      82843594,
+      "MATIC/USD"
+    );
+    const tokenOracle = await new MockOracle__factory(deployer).deploy(
+      100000000,
+      "USDC/USD"
+    );
+
     sampleTokenPaymaster = await new BiconomyTokenPaymaster__factory(
       deployer
     ).deploy(
@@ -144,9 +154,9 @@ describe("Biconomy Token Paymaster (with Bundler)", function () {
 
     await sampleTokenPaymaster.setTokenOracle(
       token.address,
-      18,
       await token.decimals(),
-      usdcMaticPriceFeedMock.address,
+      tokenOracle.address,
+      nativeOracle.address,
       true
     );
 

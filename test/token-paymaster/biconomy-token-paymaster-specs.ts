@@ -15,6 +15,7 @@ import {
   MockPriceFeed,
   MockPriceFeed__factory,
   MockToken,
+  MockOracle__factory,
 } from "../../typechain-types";
 
 // Review: Could import from scw-contracts submodules to be consistent and without copying files
@@ -94,7 +95,6 @@ describe("Biconomy Token Paymaster", function () {
   let offchainSigner: Signer, deployer: Signer;
 
   let sampleTokenPaymaster: BiconomyTokenPaymaster;
-  let mockPriceFeed: MockPriceFeed;
 
   // Note: Could also use published package or added submodule (for Account Implementation and Factory)
   let smartWalletImp: BiconomyAccountImplementation;
@@ -132,8 +132,14 @@ describe("Biconomy Token Paymaster", function () {
       usdcMaticPriceFeedMock.address
     );
 
-    const priceFeedTxUsdc: any =
-      await priceFeedUsdc.populateTransaction.getThePrice();
+    const nativeOracle = await new MockOracle__factory(deployer).deploy(
+      82843594,
+      "MATIC/USD"
+    );
+    const tokenOracle = await new MockOracle__factory(deployer).deploy(
+      100000000,
+      "USDC/USD"
+    );
 
     sampleTokenPaymaster = await new BiconomyTokenPaymaster__factory(
       deployer
@@ -145,9 +151,9 @@ describe("Biconomy Token Paymaster", function () {
 
     await sampleTokenPaymaster.setTokenOracle(
       token.address,
-      18,
       await token.decimals(),
-      usdcMaticPriceFeedMock.address,
+      tokenOracle.address,
+      nativeOracle.address,
       true
     );
 
@@ -341,6 +347,7 @@ describe("Biconomy Token Paymaster", function () {
       const postBalance = await token.balanceOf(paymasterAddress);
 
       const postTokenBalanceForAccount = await token.balanceOf(walletAddress);
+      expect(postTokenBalanceForAccount).to.be.lt(preTokenBalanceForAccount);
 
       const ev = await getUserOpEvent(entryPoint);
       expect(ev.args.success).to.be.true;

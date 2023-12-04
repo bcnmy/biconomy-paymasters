@@ -15,6 +15,7 @@ import {
   MockPriceFeed,
   MockPriceFeed__factory,
   MockToken,
+  MockOracle__factory,
 } from "../../typechain-types";
 
 // Review: Could import from scw-contracts submodules to be consistent
@@ -141,6 +142,15 @@ describe("Biconomy Token Paymaster", function () {
     const priceFeedTxUsdc: any =
       await priceFeedUsdc.populateTransaction.getThePrice();
 
+    const nativeOracle = await new MockOracle__factory(deployer).deploy(
+      82843594,
+      "MATIC/USD"
+    );
+    const tokenOracle = await new MockOracle__factory(deployer).deploy(
+      100000000,
+      "USDC/USD"
+    );
+
     sampleTokenPaymaster = await new BiconomyTokenPaymaster__factory(
       deployer
     ).deploy(
@@ -151,9 +161,9 @@ describe("Biconomy Token Paymaster", function () {
 
     await sampleTokenPaymaster.setTokenOracle(
       token.address,
-      18,
       await token.decimals(),
-      usdcMaticPriceFeedMock.address,
+      tokenOracle.address,
+      nativeOracle.address,
       true
     );
 
