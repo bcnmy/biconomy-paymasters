@@ -55,7 +55,7 @@ abstract contract OracleAggregator is Ownable, IOracleAggregator {
      */
     function getTokenValueOfOneNativeToken(
         address token
-    ) public view returns (uint256 exchangeRate) {
+    ) public view returns (uint128 exchangeRate) {
         // we'd actually want eth / token
         (
             uint256 tokenPrice,
@@ -63,8 +63,8 @@ abstract contract OracleAggregator is Ownable, IOracleAggregator {
             uint8 tokenDecimals
         ) = _getTokenPriceAndDecimals(token);
         exchangeRate =
-            10 ** (tokenOracleDecimals + tokenDecimals) /
-            tokenPrice;
+            uint128(10 ** (tokenOracleDecimals + tokenDecimals) /
+            tokenPrice);
     }
 
     function _getTokenPriceAndDecimals(

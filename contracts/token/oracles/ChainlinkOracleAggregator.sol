@@ -80,15 +80,15 @@ contract ChainlinkOracleAggregator is Ownable, IOracleAggregator {
      */
     function getTokenValueOfOneNativeToken(
         address token
-    ) external view virtual returns (uint256 exchangeRate) {
+    ) external view virtual returns (uint128 exchangeRate) {
         // we'd actually want eth / token
         (
             uint256 tokenPrice,
             uint8 tokenOracleDecimals
         ) = _getTokenPriceAndDecimals(token);
         exchangeRate =
-            10 ** (tokenOracleDecimals + IERC20Metadata(token).decimals()) /
-            tokenPrice;
+            uint128(10 ** (tokenOracleDecimals + IERC20Metadata(token).decimals()) /
+            tokenPrice);
     }
 
     function _getTokenPriceAndDecimals(
