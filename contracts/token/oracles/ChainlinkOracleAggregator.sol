@@ -41,11 +41,11 @@ contract ChainlinkOracleAggregator is Ownable, IOracleAggregator {
         bool signed
     ) external onlyOwner {
         require(
-            callAddress.code.length > 0,
+            callAddress.code.length != 0,
             "ChainlinkOracleAggregator:: Invalid contract call address"
         );
         require(
-            token.code.length > 0,
+            token.code.length != 0,
             "ChainlinkOracleAggregator:: Invalid contract token address"
         );
         tokensInfo[token].callAddress = callAddress;
