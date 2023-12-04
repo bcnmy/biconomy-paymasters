@@ -8,34 +8,26 @@ import {
   BiconomyAccountImplementation__factory,
   BiconomyAccountFactory,
   BiconomyAccountFactory__factory,
-  VerifyingSingletonPaymasterV2,
-  VerifyingSingletonPaymasterV2__factory,
+  SponsorshipPaymaster,
+  SponsorshipPaymaster__factory,
 } from "../../../typechain-types";
 import { fillAndSign } from "../../utils/userOp";
-import { UserOperation } from "../../../lib/account-abstraction/test/UserOperation";
-import {
-  createAccount,
-  simulationResultCatch,
-} from "../../../lib/account-abstraction/test/testutils";
 import {
   EntryPoint,
   EntryPoint__factory,
-  SimpleAccount,
-  TestToken,
-  TestToken__factory,
 } from "../../../lib/account-abstraction/typechain";
 import {
   EcdsaOwnershipRegistryModule,
   EcdsaOwnershipRegistryModule__factory,
 } from "@biconomy-devx/account-contracts-v2/dist/types";
 import { arrayify, hexConcat, parseEther } from "ethers/lib/utils";
-import { BigNumber, BigNumberish, Contract, Signer } from "ethers";
+import { BigNumber, Signer } from "ethers";
 import {
   BundlerTestEnvironment,
   EthSendUserOperationResult,
   UserOperationSubmissionError,
 } from "../environment/bundlerEnvironment";
-import { getUserOpEvent, parseEvent } from "../../utils/testUtils";
+import { parseEvent } from "../../utils/testUtils";
 
 export const AddressZero = ethers.constants.AddressZero;
 
@@ -55,19 +47,16 @@ export async function deployEntryPoint(
 
 describe("EntryPoint with VerifyingPaymaster Singleton", function () {
   let entryPoint: EntryPoint;
-  let entryPointStatic: EntryPoint;
-  let depositorSigner: Signer;
   let walletOwner: Signer;
   let walletAddress: string, paymasterAddress: string;
   let ethersSigner;
 
   let offchainSigner: Signer, deployer: Signer, feeCollector: Signer;
 
-  let verifyingSingletonPaymaster: VerifyingSingletonPaymasterV2;
+  let sponsorshipPaymaster: SponsorshipPaymaster;
   let smartWalletImp: BiconomyAccountImplementation;
   let ecdsaModule: EcdsaOwnershipRegistryModule;
   let walletFactory: BiconomyAccountFactory;
-  const abi = ethers.utils.defaultAbiCoder;
 
   let environment: BundlerTestEnvironment;
 
@@ -81,11 +70,9 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
 
     ethersSigner = await ethers.getSigners();
     entryPoint = EntryPoint__factory.connect(process.env.ENTRYPOINT!, deployer);
-    entryPointStatic = entryPoint.connect(AddressZero);
 
     deployer = ethersSigner[0];
     offchainSigner = ethersSigner[1];
-    depositorSigner = ethersSigner[2];
     feeCollector = ethersSigner[3];
     walletOwner = deployer; // ethersSigner[0];
 
@@ -97,13 +84,14 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
       deployer
     ).deploy();
 
-    verifyingSingletonPaymaster =
-      await new VerifyingSingletonPaymasterV2__factory(deployer).deploy(
-        await deployer.getAddress(),
-        entryPoint.address,
-        offchainSignerAddress,
-        feeCollectorAddress
-      );
+    sponsorshipPaymaster = await new SponsorshipPaymaster__factory(
+      deployer
+    ).deploy(
+      await deployer.getAddress(),
+      entryPoint.address,
+      offchainSignerAddress,
+      feeCollectorAddress
+    );
 
     smartWalletImp = await new BiconomyAccountImplementation__factory(
       deployer
@@ -139,14 +127,14 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
     walletAddress = expected;
     console.log(" wallet address ", walletAddress);
 
-    paymasterAddress = verifyingSingletonPaymaster.address;
+    paymasterAddress = sponsorshipPaymaster.address;
     console.log("Paymaster address is ", paymasterAddress);
 
     await entryPoint
       .connect(deployer)
       .depositTo(paymasterAddress, { value: parseEther("1") });
 
-    await verifyingSingletonPaymaster.connect(deployer).addStake(86400, {
+    await sponsorshipPaymaster.connect(deployer).addStake(86400, {
       value: parseEther("10"),
     });
   });
@@ -177,7 +165,7 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
         "0x" + "00".repeat(65),
       ]);
 
-      const res = await verifyingSingletonPaymaster.parsePaymasterAndData(
+      const res = await sponsorshipPaymaster.parsePaymasterAndData(
         paymasterAndData
       );
 
@@ -189,19 +177,17 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
     });
 
     it("succeed with valid signature", async () => {
-      const feeCollectorBalanceBefore =
-        await verifyingSingletonPaymaster.getBalance(
-          await feeCollector.getAddress()
-        );
+      const feeCollectorBalanceBefore = await sponsorshipPaymaster.getBalance(
+        await feeCollector.getAddress()
+      );
       expect(feeCollectorBalanceBefore).to.be.equal(BigNumber.from(0));
-      const signer = await verifyingSingletonPaymaster.verifyingSigner();
+      const signer = await sponsorshipPaymaster.verifyingSigner();
       const offchainSignerAddress = await offchainSigner.getAddress();
       expect(signer).to.be.equal(offchainSignerAddress);
 
-      await verifyingSingletonPaymaster.depositFor(
-        await offchainSigner.getAddress(),
-        { value: ethers.utils.parseEther("1") }
-      );
+      await sponsorshipPaymaster.depositFor(await offchainSigner.getAddress(), {
+        value: ethers.utils.parseEther("1"),
+      });
       const userOp1 = await fillAndSign(
         {
           sender: walletAddress,
@@ -213,7 +199,7 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
         "nonce"
       );
 
-      const hash = await verifyingSingletonPaymaster.getHash(
+      const hash = await sponsorshipPaymaster.getHash(
         userOp1,
         await offchainSigner.getAddress(),
         MOCK_VALID_UNTIL,
@@ -272,27 +258,24 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
         entryPoint.handleOps([userOp], await offchainSigner.getAddress())
       ).to.be.reverted;
 
-      const feeCollectorBalanceAfter =
-        await verifyingSingletonPaymaster.getBalance(
-          await feeCollector.getAddress()
-        );
+      const feeCollectorBalanceAfter = await sponsorshipPaymaster.getBalance(
+        await feeCollector.getAddress()
+      );
       expect(feeCollectorBalanceAfter).to.be.greaterThan(BigNumber.from(0));
     });
 
     it("fails if verificationGasLimit is not enough", async () => {
-      const feeCollectorBalanceBefore =
-        await verifyingSingletonPaymaster.getBalance(
-          await feeCollector.getAddress()
-        );
+      const feeCollectorBalanceBefore = await sponsorshipPaymaster.getBalance(
+        await feeCollector.getAddress()
+      );
       expect(feeCollectorBalanceBefore).to.be.equal(BigNumber.from(0));
-      const signer = await verifyingSingletonPaymaster.verifyingSigner();
+      const signer = await sponsorshipPaymaster.verifyingSigner();
       const offchainSignerAddress = await offchainSigner.getAddress();
       expect(signer).to.be.equal(offchainSignerAddress);
 
-      await verifyingSingletonPaymaster.depositFor(
-        await offchainSigner.getAddress(),
-        { value: ethers.utils.parseEther("1") }
-      );
+      await sponsorshipPaymaster.depositFor(await offchainSigner.getAddress(), {
+        value: ethers.utils.parseEther("1"),
+      });
       const userOp1 = await fillAndSign(
         {
           sender: walletAddress,
@@ -304,7 +287,7 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
         "nonce"
       );
 
-      const hash = await verifyingSingletonPaymaster.getHash(
+      const hash = await sponsorshipPaymaster.getHash(
         userOp1,
         await offchainSigner.getAddress(),
         MOCK_VALID_UNTIL,
@@ -363,19 +346,17 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
     });
 
     it("fails if preVerificationGas is not enough", async () => {
-      const feeCollectorBalanceBefore =
-        await verifyingSingletonPaymaster.getBalance(
-          await feeCollector.getAddress()
-        );
+      const feeCollectorBalanceBefore = await sponsorshipPaymaster.getBalance(
+        await feeCollector.getAddress()
+      );
       expect(feeCollectorBalanceBefore).to.be.equal(BigNumber.from(0));
-      const signer = await verifyingSingletonPaymaster.verifyingSigner();
+      const signer = await sponsorshipPaymaster.verifyingSigner();
       const offchainSignerAddress = await offchainSigner.getAddress();
       expect(signer).to.be.equal(offchainSignerAddress);
 
-      await verifyingSingletonPaymaster.depositFor(
-        await offchainSigner.getAddress(),
-        { value: ethers.utils.parseEther("1") }
-      );
+      await sponsorshipPaymaster.depositFor(await offchainSigner.getAddress(), {
+        value: ethers.utils.parseEther("1"),
+      });
       const userOp1 = await fillAndSign(
         {
           sender: walletAddress,
@@ -387,7 +368,7 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
         "nonce"
       );
 
-      const hash = await verifyingSingletonPaymaster.getHash(
+      const hash = await sponsorshipPaymaster.getHash(
         userOp1,
         await offchainSigner.getAddress(),
         MOCK_VALID_UNTIL,

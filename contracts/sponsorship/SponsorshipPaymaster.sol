@@ -7,17 +7,30 @@ import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {UserOperation, UserOperationLib} from "@account-abstraction/contracts/interfaces/UserOperation.sol";
 import "../BasePaymaster.sol";
-import {VerifyingPaymasterErrors} from "../common/Errors.sol";
+import {SponsorshipPaymasterErrors} from "../common/Errors.sol";
 import {MathLib} from "../libs/MathLib.sol";
-import {IVerifyingSingletonPaymaster} from "../interfaces/paymasters/IVerifyingSingletonPaymaster.sol";
+import {AddressUtils} from "../libs/AddressUtils.sol";
+import {ISponsorshipPaymaster} from "../interfaces/paymasters/ISponsorshipPaymaster.sol";
 
-contract VerifyingSingletonPaymasterV2 is
+/**
+ * @title SponsorshipPaymaster
+ * @author livingrockrises<chirag@biconomy.io>
+ * @notice Based on Infinitism 'VerifyingPaymaster' contract
+ * @dev This contract is used to sponsor the transaction fees of the user operations
+ * Uses a verifying signer to provide the signature if predetermined conditions are met 
+ * regarding the user operation calldata. Also this paymaster is Singleton in nature which 
+ * means multiple Dapps/Wallet clients willing to sponsor the transactions can share this paymaster.
+ * Maintains it's own accounting of the gas balance for each Dapp/Wallet client 
+ * and Manages it's own deposit on the EntryPoint.
+ */
+contract SponsorshipPaymaster is
     BasePaymaster,
     ReentrancyGuard,
-    VerifyingPaymasterErrors,
-    IVerifyingSingletonPaymaster
+    SponsorshipPaymasterErrors,
+    ISponsorshipPaymaster
 {
     using ECDSA for bytes32;
+    using AddressUtils for address;
     using UserOperationLib for UserOperation;
 
     uint32 private constant PRICE_DENOMINATOR = 1e6;
@@ -61,11 +74,10 @@ contract VerifyingSingletonPaymasterV2 is
      * @param paymasterId dapp identifier for which deposit is being made
      */
     function depositFor(address paymasterId) external payable nonReentrant {
+        if(paymasterId.isContract()) revert PaymasterIdCannotBeContract();
         if (paymasterId == address(0)) revert PaymasterIdCannotBeZero();
         if (msg.value == 0) revert DepositCanNotBeZero();
-        paymasterIdBalances[paymasterId] =
-            paymasterIdBalances[paymasterId] +
-            msg.value;
+        paymasterIdBalances[paymasterId] += msg.value;
         entryPoint.depositTo{value: msg.value}(address(this));
         emit GasDeposited(paymasterId, msg.value);
     }
@@ -99,6 +111,7 @@ contract VerifyingSingletonPaymasterV2 is
     function setFeeCollector(
         address _newFeeCollector
     ) external payable onlyOwner {
+        if(_newFeeCollector.isContract()) revert FeeCollectorCannotBeContract();
         if (_newFeeCollector == address(0)) revert FeeCollectorCannotBeZero();
         address oldFeeCollector = feeCollector;
         assembly {
@@ -313,7 +326,6 @@ contract VerifyingSingletonPaymasterV2 is
         require(priceMarkup <= 2e6, "Verifying PM:high markup %");
 
         uint32 dynamicMarkup = MathLib.maxuint32(priceMarkup, fixedPriceMarkup);
-        require(dynamicMarkup >= 1e6, "Verifying PM:low markup %");
 
         uint256 effectiveCost = (requiredPreFund * dynamicMarkup) /
             PRICE_DENOMINATOR;
