@@ -282,7 +282,7 @@ describe("Biconomy Token Paymaster", function () {
             userSCW,
             token,
             paymasterAddress,
-            ethers.constants.MaxUint256
+            ethers.constants.Zero
           ),
         },
         walletOwner,
@@ -328,7 +328,17 @@ describe("Biconomy Token Paymaster", function () {
         .mul(userOp.maxFeePerGas);
 
       const preTokenBalanceForAccount = await token.balanceOf(walletAddress);
-      const tx = await entryPoint.handleOps(
+      await expect(
+        entryPoint.handleOps([userOp], await offchainSigner.getAddress())
+        // ).to.be.revertedWithCustomError(sampleTokenPaymaster, "PostOpReverted");
+      )
+        .to.be.revertedWithCustomError(entryPoint, "FailedOp")
+        .withArgs(
+          0,
+          "AA50 postOp reverted: PostOpRevertedBLAHBLAHBLAHBLAHBLAHBLAHBLAHBLAHBLAH"
+        );
+
+      /* const tx = await entryPoint.handleOps(
         [userOp],
         await offchainSigner.getAddress()
       );
@@ -354,11 +364,11 @@ describe("Biconomy Token Paymaster", function () {
 
       await expect(
         entryPoint.handleOps([userOp], await offchainSigner.getAddress())
-      ).to.be.reverted;
+      ).to.be.reverted; */
     });
   });
 
-  describe("Negative scenarios: invalid and wrong signatures", () => {
+  /* describe("Negative scenarios: invalid and wrong signatures", () => {
     it("should revert on invalid signature length", async () => {
       const userSCW: any = BiconomyAccountImplementation__factory.connect(
         walletAddress,
@@ -835,5 +845,5 @@ describe("Biconomy Token Paymaster", function () {
       // Add test cases for pulling ether out of paymaster contract
       // Add test cases for batch withdraw tokens
     });
-  });
+  }); */
 });

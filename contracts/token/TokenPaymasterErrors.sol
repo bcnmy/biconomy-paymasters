@@ -56,5 +56,5 @@ contract TokenPaymasterErrors {
 
     error CannotBeUnrealisticValue();
 
-    error DEXRouterCannotBeZero();
+    error PostOpRevertedBLAHBLAHBLAHBLAHBLAHBLAHBLAHBLAHBLAH();
 }
