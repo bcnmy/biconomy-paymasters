@@ -18,6 +18,7 @@ import { EntryPoint } from "../../typechain-types";
 import { UserOperation } from "./userOperation";
 import { Create2Factory } from "../../src/Create2Factory";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { userInfo } from "os";
 
 export function packUserOp(op: UserOperation, forSignature = true): string {
   if (forSignature) {
@@ -316,6 +317,12 @@ export async function fillAndSign(
   );
   op2.preVerificationGas =
     Number(op2.preVerificationGas) + extraPreVerificationGas;
+
+  console.log("user op max fee per gas ", op2.maxFeePerGas.toString());
+  console.log(
+    "user op max priority fee per gas ",
+    op2.maxPriorityFeePerGas.toString()
+  );
 
   const chainId = await provider!.getNetwork().then((net) => net.chainId);
   const message = arrayify(getUserOpHash(op2, entryPoint!.address, chainId));

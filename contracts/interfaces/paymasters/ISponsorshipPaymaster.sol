@@ -36,7 +36,8 @@ interface ISponsorshipPaymaster {
     );
     event PremiumCollected(
         address indexed _paymasterId,
-        uint256 indexed _premium
+        uint256 indexed _premium,
+        uint256 indexed _paymasterDepositDeducted
     );
 
     /**

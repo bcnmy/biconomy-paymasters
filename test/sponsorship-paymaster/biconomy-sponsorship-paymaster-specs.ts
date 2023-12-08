@@ -230,11 +230,38 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
 
       const tx = await entryPoint.handleOps(
         [userOp],
-        await offchainSigner.getAddress()
+        await offchainSigner.getAddress(),
+        {
+          type: 2,
+          maxFeePerGas: userOp.maxFeePerGas,
+          maxPriorityFeePerGas: userOp.maxPriorityFeePerGas,
+        }
       );
       const receipt = await tx.wait();
+      console.log("effective gas price ", receipt.effectiveGasPrice.toString());
       console.log("gas used VPM V2 ", receipt.gasUsed.toString());
       console.log("gas price ", receipt.effectiveGasPrice.toString());
+
+      const chargedFromDappIncludingPremium = BigNumber.from(
+        receipt.logs[1].topics[2]
+      ).toString();
+      console.log(
+        "chargedFromDappIncludingPremium ",
+        chargedFromDappIncludingPremium
+      );
+
+      const premiumCollected = BigNumber.from(
+        receipt.logs[2].topics[2]
+      ).toString();
+      console.log("premiumCollected ", premiumCollected);
+
+      const paymasterDepositCollectedByEP = BigNumber.from(
+        receipt.logs[2].topics[3]
+      ).toString();
+      console.log(
+        "paymasterDepositCollectedByEP ",
+        paymasterDepositCollectedByEP
+      );
 
       const bundlerPaid = receipt.effectiveGasPrice.mul(receipt.gasUsed);
       console.log("bundler paid ", bundlerPaid.toString());

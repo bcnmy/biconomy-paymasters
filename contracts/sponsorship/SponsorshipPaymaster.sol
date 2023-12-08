@@ -279,8 +279,14 @@ contract SponsorshipPaymaster is
         // "collect" premium
         paymasterIdBalances[feeCollector] += actualPremium;
 
+        /*uint256 excessFunds = costIncludingPremium - actualGasCost;
+        if (excessFunds > 0) {
+            // return excess funds to paymaster
+            paymasterIdBalances[feeCollector] += excessFunds;
+        }*/
+
         emit GasBalanceDeducted(paymasterId, costIncludingPremium, userOpHash);
-        emit PremiumCollected(paymasterId, actualPremium);
+        emit PremiumCollected(paymasterId, actualPremium, actualGasCost);
     }
 
     /**
