@@ -168,7 +168,7 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
 
       await sponsorshipPaymaster
         .connect(deployer)
-        .setUnaccountedEPGasOverhead(24000);
+        .setUnaccountedEPGasOverhead(35500);
 
       await sponsorshipPaymaster.depositFor(fundingId, {
         value: ethers.utils.parseEther("1"),
@@ -244,24 +244,16 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
 
       const chargedFromDappIncludingPremium = BigNumber.from(
         receipt.logs[1].topics[2]
-      ).toString();
+      );
       console.log(
         "chargedFromDappIncludingPremium ",
-        chargedFromDappIncludingPremium
+        chargedFromDappIncludingPremium.toString()
       );
 
       const premiumCollected = BigNumber.from(
         receipt.logs[2].topics[2]
       ).toString();
       console.log("premiumCollected ", premiumCollected);
-
-      const paymasterDepositCollectedByEP = BigNumber.from(
-        receipt.logs[2].topics[3]
-      ).toString();
-      console.log(
-        "paymasterDepositCollectedByEP ",
-        paymasterDepositCollectedByEP
-      );
 
       const bundlerPaid = receipt.effectiveGasPrice.mul(receipt.gasUsed);
       console.log("bundler paid ", bundlerPaid.toString());
@@ -279,20 +271,12 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
       const paymasterFundsDiff = paymasterFundsBefore.sub(paymasterFundsAfter);
       console.log("paymasterFundsDiff ", paymasterFundsDiff.toString());
 
-      // Review
-      // 10/11 actual gas used
-      /* const paymasterIdBalanceDiffWithoutPremium = paymasterIdBalanceDiff
-        .mul(BigNumber.from(10))
-        .div(BigNumber.from(11));
-
-      console.log(
-        "paymasterIdBalanceDiffWithoutPremium ",
-        paymasterIdBalanceDiffWithoutPremium.toString()
-      ); */
-
-      expect(paymasterIdBalanceDiff.sub(paymasterFundsDiff)).to.be.greaterThan(
-        BigNumber.from(0)
-      );
+      // paymasterIdBalanceDiffWithoutPremium should be greater than paymaster funds diff (that means unaccounted overhead is right)
+      expect(
+        chargedFromDappIncludingPremium
+          .sub(premiumCollected)
+          .sub(paymasterFundsDiff)
+      ).to.be.greaterThan(BigNumber.from(0));
 
       await expect(
         entryPoint.handleOps([userOp], await offchainSigner.getAddress())
