@@ -51,6 +51,8 @@ contract SponsorshipPaymaster is
 
     address public feeCollector;
 
+    uint256 internal totalDeductables = 0;
+
     constructor(
         address _owner,
         IEntryPoint _entryPoint,
@@ -184,6 +186,14 @@ contract SponsorshipPaymaster is
         emit GasWithdrawn(msg.sender, withdrawAddress, amount);
     }
 
+    function withdrawExceessFunds(address payable withdrawAddress) public nonReentrant onlyOwner {
+        if (withdrawAddress == address(0)) revert CanNotWithdrawToZeroAddress();
+        uint256 excess = entryPoint.balanceOf(address(this)) - totalDeductables;
+        if (excess > 0) {
+            entryPoint.withdrawTo(withdrawAddress, excess);
+        }
+    }
+
     /**
      * @dev This method is called by the off-chain service, to sign the request.
      * It is called on-chain from the validatePaymasterUserOp, to validate the signature.
@@ -268,6 +278,8 @@ contract SponsorshipPaymaster is
         uint256 balToDeduct = actualGasCost +
             unaccountedEPGasOverhead *
             effectiveGasPrice;
+
+        totalDeductables += balToDeduct;
 
         uint256 costIncludingPremium = (balToDeduct * dynamicMarkup) /
             PRICE_DENOMINATOR;
