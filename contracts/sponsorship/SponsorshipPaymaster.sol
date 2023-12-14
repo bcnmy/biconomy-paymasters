@@ -67,7 +67,7 @@ contract SponsorshipPaymaster is
             sstore(verifyingSigner.slot, _verifyingSigner)
             sstore(feeCollector.slot, _feeCollector)
         }
-        unaccountedEPGasOverhead = 35500;
+        unaccountedEPGasOverhead = 23600;
         fixedPriceMarkup = 1100000; // 10%
     }
 
