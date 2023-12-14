@@ -44,6 +44,7 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
   let ethersSigner;
 
   let offchainSigner: Signer, deployer: Signer, feeCollector: Signer;
+  let secondFundingId: Signer;
 
   let sponsorshipPaymaster: SponsorshipPaymaster;
   let smartWalletImp: BiconomyAccountImplementation;
@@ -51,7 +52,7 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
   let walletFactory: BiconomyAccountFactory;
   const abi = ethers.utils.defaultAbiCoder;
 
-  beforeEach(async function () {
+  before(async function () {
     ethersSigner = await ethers.getSigners();
     entryPoint = await deployEntryPoint();
 
@@ -59,6 +60,7 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
     offchainSigner = ethersSigner[1];
     depositorSigner = ethersSigner[2];
     feeCollector = ethersSigner[3];
+    secondFundingId = ethersSigner[4];
     walletOwner = deployer; // ethersSigner[0];
 
     const offchainSignerAddress = await offchainSigner.getAddress();
@@ -158,6 +160,7 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
       console.log("paymaster Id ", paymasterId);
       const userOp = await getUserOpWithPaymasterInfo(paymasterId);
 
+      // Review: for catching custom errors in better ways
       await expect(
         entryPoint.callStatic.simulateValidation(userOp)
       ).to.be.revertedWithCustomError(entryPoint, "FailedOp");
@@ -292,6 +295,268 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
         paymasterIdBalanceDiff.mul(BigNumber.from(1)).div(BigNumber.from(11))
       );
     });
+
+    it("succeed with valid signature - second transaction ", async () => {
+      const fundingId = await offchainSigner.getAddress();
+
+      await sponsorshipPaymaster
+        .connect(deployer)
+        .setUnaccountedEPGasOverhead(18500);
+
+      await sponsorshipPaymaster.depositFor(fundingId, {
+        value: ethers.utils.parseEther("1"),
+      });
+
+      const paymasterFundsBefore = await entryPoint.balanceOf(paymasterAddress);
+      const paymasterIdBalanceBefore = await sponsorshipPaymaster.getBalance(
+        fundingId
+      );
+      const feeCollectorBalanceBefore = await sponsorshipPaymaster.getBalance(
+        await feeCollector.getAddress()
+      );
+      console.log("feeCollectorBalanceBefore ", feeCollectorBalanceBefore);
+      const signer = await sponsorshipPaymaster.verifyingSigner();
+      const offchainSignerAddress = await offchainSigner.getAddress();
+      expect(signer).to.be.equal(offchainSignerAddress);
+
+      const userOp1 = await fillAndSign(
+        {
+          sender: walletAddress,
+          verificationGasLimit: 200000,
+        },
+        walletOwner,
+        entryPoint,
+        "nonce"
+      );
+
+      const hash = await sponsorshipPaymaster.getHash(
+        userOp1,
+        fundingId,
+        MOCK_VALID_UNTIL,
+        MOCK_VALID_AFTER,
+        dynamicMarkup
+      );
+      const sig = await offchainSigner.signMessage(arrayify(hash));
+      const userOp = await fillAndSign(
+        {
+          ...userOp1,
+          paymasterAndData: hexConcat([
+            paymasterAddress,
+            ethers.utils.defaultAbiCoder.encode(
+              ["address", "uint48", "uint48", "uint32"],
+              [fundingId, MOCK_VALID_UNTIL, MOCK_VALID_AFTER, dynamicMarkup]
+            ),
+            sig,
+          ]),
+        },
+        walletOwner,
+        entryPoint,
+        "nonce"
+      );
+
+      const signatureWithModuleAddress = ethers.utils.defaultAbiCoder.encode(
+        ["bytes", "address"],
+        [userOp.signature, ecdsaModule.address]
+      );
+      userOp.signature = signatureWithModuleAddress;
+
+      const tx = await entryPoint.handleOps(
+        [userOp],
+        await offchainSigner.getAddress(),
+        {
+          type: 2,
+          maxFeePerGas: userOp.maxFeePerGas,
+          maxPriorityFeePerGas: userOp.maxPriorityFeePerGas,
+        }
+      );
+      const receipt = await tx.wait();
+      console.log("effective gas price ", receipt.effectiveGasPrice.toString());
+      console.log("gas used VPM V2 ", receipt.gasUsed.toString());
+      console.log("gas price ", receipt.effectiveGasPrice.toString());
+
+      const chargedFromDappIncludingPremium = BigNumber.from(
+        receipt.logs[1].topics[2]
+      );
+      console.log(
+        "chargedFromDappIncludingPremium ",
+        chargedFromDappIncludingPremium.toString()
+      );
+
+      const premiumCollected = BigNumber.from(
+        receipt.logs[2].topics[2]
+      ).toString();
+      console.log("premiumCollected ", premiumCollected);
+
+      const bundlerPaid = receipt.effectiveGasPrice.mul(receipt.gasUsed);
+      console.log("bundler paid ", bundlerPaid.toString());
+
+      const paymasterFundsAfter = await entryPoint.balanceOf(paymasterAddress);
+      const paymasterIdBalanceAfter = await sponsorshipPaymaster.getBalance(
+        fundingId
+      );
+
+      const paymasterIdBalanceDiff = paymasterIdBalanceBefore.sub(
+        paymasterIdBalanceAfter
+      );
+      console.log("paymasterIdBalanceDiff ", paymasterIdBalanceDiff.toString());
+
+      const paymasterFundsDiff = paymasterFundsBefore.sub(paymasterFundsAfter);
+      console.log("paymasterFundsDiff ", paymasterFundsDiff.toString());
+
+      // paymasterIdBalanceDiffWithoutPremium should be greater than paymaster funds diff (that means unaccounted overhead is right)
+      expect(
+        chargedFromDappIncludingPremium
+          .sub(premiumCollected)
+          .sub(paymasterFundsDiff)
+      ).to.be.greaterThan(BigNumber.from(0));
+
+      await expect(
+        entryPoint.handleOps([userOp], await offchainSigner.getAddress())
+      ).to.be.reverted;
+
+      const feeCollectorBalanceAfter = await sponsorshipPaymaster.getBalance(
+        await feeCollector.getAddress()
+      );
+      expect(feeCollectorBalanceAfter).to.be.greaterThan(BigNumber.from(0));
+
+      // 0.1 / 1.1 = actual gas used * 0.1
+      expect(
+        feeCollectorBalanceAfter.sub(feeCollectorBalanceBefore)
+      ).to.be.equal(
+        paymasterIdBalanceDiff.mul(BigNumber.from(1)).div(BigNumber.from(11))
+      );
+    });
+
+    it("succeed with valid signature - same account - different funding id ", async () => {
+      const fundingId = await secondFundingId.getAddress();
+
+      await sponsorshipPaymaster
+        .connect(deployer)
+        .setUnaccountedEPGasOverhead(18500);
+
+      await sponsorshipPaymaster.depositFor(fundingId, {
+        value: ethers.utils.parseEther("1"),
+      });
+
+      const paymasterFundsBefore = await entryPoint.balanceOf(paymasterAddress);
+      const paymasterIdBalanceBefore = await sponsorshipPaymaster.getBalance(
+        fundingId
+      );
+      const feeCollectorBalanceBefore = await sponsorshipPaymaster.getBalance(
+        await feeCollector.getAddress()
+      );
+      console.log("feeCollectorBalanceBefore ", feeCollectorBalanceBefore);
+      const signer = await sponsorshipPaymaster.verifyingSigner();
+      const offchainSignerAddress = await offchainSigner.getAddress();
+      expect(signer).to.be.equal(offchainSignerAddress);
+
+      const userOp1 = await fillAndSign(
+        {
+          sender: walletAddress,
+          verificationGasLimit: 200000,
+        },
+        walletOwner,
+        entryPoint,
+        "nonce"
+      );
+
+      const hash = await sponsorshipPaymaster.getHash(
+        userOp1,
+        fundingId,
+        MOCK_VALID_UNTIL,
+        MOCK_VALID_AFTER,
+        dynamicMarkup
+      );
+      const sig = await offchainSigner.signMessage(arrayify(hash));
+      const userOp = await fillAndSign(
+        {
+          ...userOp1,
+          paymasterAndData: hexConcat([
+            paymasterAddress,
+            ethers.utils.defaultAbiCoder.encode(
+              ["address", "uint48", "uint48", "uint32"],
+              [fundingId, MOCK_VALID_UNTIL, MOCK_VALID_AFTER, dynamicMarkup]
+            ),
+            sig,
+          ]),
+        },
+        walletOwner,
+        entryPoint,
+        "nonce"
+      );
+
+      const signatureWithModuleAddress = ethers.utils.defaultAbiCoder.encode(
+        ["bytes", "address"],
+        [userOp.signature, ecdsaModule.address]
+      );
+      userOp.signature = signatureWithModuleAddress;
+
+      const tx = await entryPoint.handleOps(
+        [userOp],
+        await offchainSigner.getAddress(),
+        {
+          type: 2,
+          maxFeePerGas: userOp.maxFeePerGas,
+          maxPriorityFeePerGas: userOp.maxPriorityFeePerGas,
+        }
+      );
+      const receipt = await tx.wait();
+      console.log("effective gas price ", receipt.effectiveGasPrice.toString());
+      console.log("gas used VPM V2 ", receipt.gasUsed.toString());
+      console.log("gas price ", receipt.effectiveGasPrice.toString());
+
+      const chargedFromDappIncludingPremium = BigNumber.from(
+        receipt.logs[1].topics[2]
+      );
+      console.log(
+        "chargedFromDappIncludingPremium ",
+        chargedFromDappIncludingPremium.toString()
+      );
+
+      const premiumCollected = BigNumber.from(
+        receipt.logs[2].topics[2]
+      ).toString();
+      console.log("premiumCollected ", premiumCollected);
+
+      const bundlerPaid = receipt.effectiveGasPrice.mul(receipt.gasUsed);
+      console.log("bundler paid ", bundlerPaid.toString());
+
+      const paymasterFundsAfter = await entryPoint.balanceOf(paymasterAddress);
+      const paymasterIdBalanceAfter = await sponsorshipPaymaster.getBalance(
+        fundingId
+      );
+
+      const paymasterIdBalanceDiff = paymasterIdBalanceBefore.sub(
+        paymasterIdBalanceAfter
+      );
+      console.log("paymasterIdBalanceDiff ", paymasterIdBalanceDiff.toString());
+
+      const paymasterFundsDiff = paymasterFundsBefore.sub(paymasterFundsAfter);
+      console.log("paymasterFundsDiff ", paymasterFundsDiff.toString());
+
+      // paymasterIdBalanceDiffWithoutPremium should be greater than paymaster funds diff (that means unaccounted overhead is right)
+      expect(
+        chargedFromDappIncludingPremium
+          .sub(premiumCollected)
+          .sub(paymasterFundsDiff)
+      ).to.be.greaterThan(BigNumber.from(0));
+
+      await expect(
+        entryPoint.handleOps([userOp], await offchainSigner.getAddress())
+      ).to.be.reverted;
+
+      const feeCollectorBalanceAfter = await sponsorshipPaymaster.getBalance(
+        await feeCollector.getAddress()
+      );
+      expect(feeCollectorBalanceAfter).to.be.greaterThan(BigNumber.from(0));
+
+      // 0.1 / 1.1 = actual gas used * 0.1
+      expect(
+        feeCollectorBalanceAfter.sub(feeCollectorBalanceBefore)
+      ).to.be.equal(
+        paymasterIdBalanceDiff.mul(BigNumber.from(1)).div(BigNumber.from(11))
+      );
+    });
   });
 
   describe("Verifying Paymaster - read methods and state checks", () => {
@@ -380,7 +645,7 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
       );
     });
 
-    it("Reverts when paymasterIdBalance is not enough", async () => {
+    it("Reverts withdraw when paymasterIdBalance is not enough", async () => {
       const paymasterId = await depositorSigner.getAddress();
 
       await expect(
