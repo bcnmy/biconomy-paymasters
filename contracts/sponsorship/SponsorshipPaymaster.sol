@@ -177,8 +177,7 @@ contract SponsorshipPaymaster is
     ) public override nonReentrant {
         if (withdrawAddress == address(0)) revert CanNotWithdrawToZeroAddress();
         uint256 currentBalance = paymasterIdBalances[msg.sender];
-        if (amount > currentBalance)
-            revert InsufficientBalance(amount, currentBalance);
+        require(amount <= currentBalance, "Sponsorship Paymaster: Insufficient withdrawable funds");
         paymasterIdBalances[msg.sender] = currentBalance - amount;
         entryPoint.withdrawTo(withdrawAddress, amount);
         emit GasWithdrawn(msg.sender, withdrawAddress, amount);
@@ -336,6 +335,7 @@ contract SponsorshipPaymaster is
                 effectiveCost,
                 paymasterIdBalances[paymasterId]
             );
+        // require(effectiveCost <= paymasterIdBalances[paymasterId], "BTPM: account does not have enough token balance");
 
         context = abi.encode(
             paymasterId,

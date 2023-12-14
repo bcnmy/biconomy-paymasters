@@ -158,9 +158,12 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
       console.log("paymaster Id ", paymasterId);
       const userOp = await getUserOpWithPaymasterInfo(paymasterId);
 
-      await expect(
-        entryPoint.callStatic.simulateValidation(userOp)
-      ).to.be.revertedWithCustomError(entryPoint, "FailedOp");
+      // Review
+      // We would like it to be reverted with proper revert reason
+      // TODO: look into it why it goes into OOG in EP
+      await expect(entryPoint.callStatic.simulateValidation(userOp))
+        .to.be.revertedWithCustomError(entryPoint, "FailedOp")
+        .withArgs(0, "AA23 reverted (or OOG)");
     });
 
     it("succeed with valid signature", async () => {
@@ -387,9 +390,8 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
         sponsorshipPaymaster
           .connect(depositorSigner)
           .withdrawTo(paymasterId, parseEther("1.1"))
-      ).to.be.revertedWithCustomError(
-        sponsorshipPaymaster,
-        "InsufficientBalance"
+      ).to.be.revertedWith(
+        "Sponsorship Paymaster: Insufficient withdrawable funds"
       );
     });
   });
