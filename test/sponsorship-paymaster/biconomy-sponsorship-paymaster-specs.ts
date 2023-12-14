@@ -296,64 +296,6 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
       expect(feeCollectorBalanceAfter).to.be.equal(
         paymasterIdBalanceDiff.mul(BigNumber.from(1)).div(BigNumber.from(11))
       );
-
-      // Second transaction same funding id
-      /* const userOp2 = await fillAndSign(
-        {
-          sender: walletAddress,
-          verificationGasLimit: 200000,
-        },
-        walletOwner,
-        entryPoint,
-        "nonce"
-      );
-
-      const hash2 = await sponsorshipPaymaster.getHash(
-        userOp2,
-        fundingId,
-        MOCK_VALID_UNTIL,
-        MOCK_VALID_AFTER,
-        dynamicMarkup
-      );
-      const sig2 = await offchainSigner.signMessage(arrayify(hash2));
-      const userOp3 = await fillAndSign(
-        {
-          ...userOp2,
-          paymasterAndData: hexConcat([
-            paymasterAddress,
-            ethers.utils.defaultAbiCoder.encode(
-              ["address", "uint48", "uint48", "uint32"],
-              [fundingId, MOCK_VALID_UNTIL, MOCK_VALID_AFTER, dynamicMarkup]
-            ),
-            sig2,
-          ]),
-        },
-        walletOwner,
-        entryPoint,
-        "nonce"
-      );
-
-      const signatureWithModuleAddress2 = ethers.utils.defaultAbiCoder.encode(
-        ["bytes", "address"],
-        [userOp3.signature, ecdsaModule.address]
-      );
-      userOp3.signature = signatureWithModuleAddress2;
-
-      const tx2 = await entryPoint.handleOps(
-        [userOp3],
-        await offchainSigner.getAddress(),
-        {
-          type: 2,
-          maxFeePerGas: userOp3.maxFeePerGas,
-          maxPriorityFeePerGas: userOp3.maxPriorityFeePerGas,
-        }
-      );
-      const receipt2 = await tx2.wait();
-      console.log(
-        "effective gas price ",
-        receipt2.effectiveGasPrice.toString()
-      );
-      console.log("gas used VPM V2 ", receipt2.gasUsed.toString()); */
     });
 
     it("succeed with valid signature - second transaction ", async () => {
