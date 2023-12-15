@@ -328,7 +328,7 @@ const config: HardhatUserConfig = {
       coreDaoMainnet: process.env.COREDAO_MAINNET_API_KEY || "",
       mantaMainnet: "PLACEHOLDER_STRING",
       mantaTestnet: "PLACEHOLDER_STRING",
-      arbitrumSepolia: "PLACEHOLDER_STRING",
+      arbitrumSepolia: process.env.ARBITRUM_API_KEY || "",
     },
     customChains: [
       {
