@@ -296,6 +296,26 @@ const config: HardhatUserConfig = {
       accounts: hardhatAccounts,
       chainId: 91715,
     },
+    meterTestnet: {
+      url: process.env.METER_TESTNET_URL || "",
+      accounts: hardhatAccounts,
+      chainId: 83,
+    },
+    meterMainnet: {
+      url: process.env.METER_MAINNET_URL || "",
+      accounts: hardhatAccounts,
+      chainId: 82,
+    },
+    arbitrumSepoliaTestnet: {
+      url: process.env.ARBITRUM_SEPOLIA_TESTNET_URL || "",
+      accounts: hardhatAccounts,
+      chainId: 421614,
+    },
+    comboMainnet: {
+      url: process.env.COMBO_MAINNET_URL || "",
+      accounts: hardhatAccounts,
+      chainId: 9980,
+    },
   },
   gasReporter: {
     enabled: process.env.REPORT_GAS !== undefined,
@@ -328,9 +348,11 @@ const config: HardhatUserConfig = {
       mantleTestnet: "PLACEHOLDER_STRING",
       mantleMainnet: "PLACEHOLDER_STRING",
       comboTestnet: process.env.COMBO_API_KEY || "",
+      comboMainnet: process.env.COMBO_API_KEY || "",
       zkEVMMainnet: process.env.ZKEVM_API_KEY || "",
       zkEVMGoerli: process.env.ZKEVM_API_KEY || "",
       arbitrumNova: process.env.ARBITRUM_NOVA_API_KEY || "",
+      arbitrumSepolia: process.env.ARBITRUM_API_KEY || "",
     },
     customChains: [
       {
@@ -422,6 +444,14 @@ const config: HardhatUserConfig = {
         },
       },
       {
+        network: "comboMainnet",
+        chainId: 9980,
+        urls: {
+          apiURL: `https://open-platform.nodereal.io/${process.env.COMBO_API_KEY}/combotrace/contract/`,
+          browserURL: "https://combotrace.nodereal.io/",
+        },
+      },
+      {
         network: "arbitrumNova",
         chainId: 42170,
         urls: {
@@ -443,6 +473,14 @@ const config: HardhatUserConfig = {
         urls: {
           apiURL: "https://api-testnet-zkevm.polygonscan.com/api",
           browserURL: "https://testnet-zkevm.polygonscan.com",
+        },
+      },
+      {
+        network: "arbitrumSepolia",
+        chainId: 421614,
+        urls: {
+          apiURL: "https://api-sepolia.arbiscan.io/api",
+          browserURL: "https://sepolia.arbiscan.io",
         },
       },
     ],
