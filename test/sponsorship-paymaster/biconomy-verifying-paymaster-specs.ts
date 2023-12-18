@@ -46,14 +46,13 @@ export async function deployEntryPoint(
 
 describe("EntryPoint with VerifyingPaymaster Singleton", function () {
   let entryPoint: EntryPoint;
-  let entryPointStatic: EntryPoint;
   let depositorSigner: Signer;
   let walletOwner: Signer;
-  let proxyPaymaster: Contract;
   let walletAddress: string, paymasterAddress: string;
   let ethersSigner;
 
   let offchainSigner: Signer, deployer: Signer;
+  let secondFundingId: Signer;
 
   let verifyingSingletonPaymaster: VerifyingSingletonPaymaster;
   // Could also use published package or added submodule (for Account Implementation and Factory)
@@ -62,15 +61,15 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
   let walletFactory: BiconomyAccountFactory;
   const abi = ethers.utils.defaultAbiCoder;
 
-  beforeEach(async function () {
+  before(async function () {
     ethersSigner = await ethers.getSigners();
     entryPoint = await deployEntryPoint();
-    entryPointStatic = entryPoint.connect(AddressZero);
 
     deployer = ethersSigner[0];
     offchainSigner = ethersSigner[1];
     depositorSigner = ethersSigner[2];
-    walletOwner = deployer; // ethersSigner[3];
+    secondFundingId = ethersSigner[3];
+    walletOwner = deployer; // ethersSigner[0];
 
     const offchainSignerAddress = await offchainSigner.getAddress();
     const walletOwnerAddress = await walletOwner.getAddress();
@@ -180,14 +179,24 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
     });
 
     it("succeed with valid signature", async () => {
+      const fundingId = await offchainSigner.getAddress();
       const signer = await verifyingSingletonPaymaster.verifyingSigner();
+
       const offchainSignerAddress = await offchainSigner.getAddress();
       expect(signer).to.be.equal(offchainSignerAddress);
 
-      await verifyingSingletonPaymaster.depositFor(
-        await offchainSigner.getAddress(),
-        { value: ethers.utils.parseEther("1") }
-      );
+      await verifyingSingletonPaymaster
+        .connect(deployer)
+        .setUnaccountedEPGasOverhead(9700);
+
+      await verifyingSingletonPaymaster.depositFor(fundingId, {
+        value: ethers.utils.parseEther("1"),
+      });
+
+      const paymasterFundsBefore = await entryPoint.balanceOf(paymasterAddress);
+      const paymasterIdBalanceBefore =
+        await verifyingSingletonPaymaster.getBalance(fundingId);
+
       const userOp1 = await fillAndSign(
         {
           sender: walletAddress,
@@ -200,7 +209,7 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
 
       const hash = await verifyingSingletonPaymaster.getHash(
         userOp1,
-        await offchainSigner.getAddress(),
+        fundingId,
         MOCK_VALID_UNTIL,
         MOCK_VALID_AFTER
       );
@@ -212,12 +221,7 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
             paymasterAddress,
             ethers.utils.defaultAbiCoder.encode(
               ["address", "uint48", "uint48", "bytes"],
-              [
-                await offchainSigner.getAddress(),
-                MOCK_VALID_UNTIL,
-                MOCK_VALID_AFTER,
-                sig,
-              ]
+              [fundingId, MOCK_VALID_UNTIL, MOCK_VALID_AFTER, sig]
             ),
           ]),
         },
@@ -233,7 +237,248 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
 
       userOp.signature = signatureWithModuleAddress;
 
-      await entryPoint.handleOps([userOp], await offchainSigner.getAddress());
+      const tx = await entryPoint.handleOps(
+        [userOp],
+        await offchainSigner.getAddress(),
+        {
+          type: 2,
+          maxFeePerGas: userOp.maxFeePerGas,
+          maxPriorityFeePerGas: userOp.maxPriorityFeePerGas,
+        }
+      );
+      console.log("userop nonce ", userOp.nonce.toString());
+      const receipt = await tx.wait();
+      console.log("effective gas price ", receipt.effectiveGasPrice.toString());
+      console.log("gas used VPM V1.1.0", receipt.gasUsed.toString());
+      console.log("gas price", receipt.effectiveGasPrice.toString());
+
+      const totalBalDeducted = BigNumber.from(receipt.logs[1].topics[2]);
+
+      const bundlerPaid = receipt.effectiveGasPrice.mul(receipt.gasUsed);
+      console.log("bundler paid ", bundlerPaid.toString());
+
+      const paymasterFundsAfter = await entryPoint.balanceOf(paymasterAddress);
+      const paymasterIdBalanceAfter =
+        await verifyingSingletonPaymaster.getBalance(fundingId);
+
+      const paymasterIdBalanceDiff = paymasterIdBalanceBefore.sub(
+        paymasterIdBalanceAfter
+      );
+      console.log("paymasterIdBalanceDiff ", paymasterIdBalanceDiff.toString());
+
+      expect(paymasterIdBalanceDiff).to.be.equal(totalBalDeducted);
+
+      const paymasterFundsDiff = paymasterFundsBefore.sub(paymasterFundsAfter);
+      console.log("paymasterFundsDiff ", paymasterFundsDiff.toString());
+
+      expect(paymasterIdBalanceDiff.sub(paymasterFundsDiff)).to.be.greaterThan(
+        BigNumber.from(0)
+      );
+
+      await expect(
+        entryPoint.handleOps([userOp], await offchainSigner.getAddress())
+      ).to.be.reverted;
+    });
+
+    it("succeed with valid signature - second transaction", async () => {
+      const fundingId = await offchainSigner.getAddress();
+      const signer = await verifyingSingletonPaymaster.verifyingSigner();
+
+      const offchainSignerAddress = await offchainSigner.getAddress();
+      expect(signer).to.be.equal(offchainSignerAddress);
+
+      await verifyingSingletonPaymaster
+        .connect(deployer)
+        .setUnaccountedEPGasOverhead(9700);
+
+      await verifyingSingletonPaymaster.depositFor(fundingId, {
+        value: ethers.utils.parseEther("1"),
+      });
+
+      const paymasterFundsBefore = await entryPoint.balanceOf(paymasterAddress);
+      const paymasterIdBalanceBefore =
+        await verifyingSingletonPaymaster.getBalance(fundingId);
+
+      const userOp1 = await fillAndSign(
+        {
+          sender: walletAddress,
+          verificationGasLimit: 200000,
+        },
+        walletOwner,
+        entryPoint,
+        "nonce"
+      );
+
+      const hash = await verifyingSingletonPaymaster.getHash(
+        userOp1,
+        fundingId,
+        MOCK_VALID_UNTIL,
+        MOCK_VALID_AFTER
+      );
+      const sig = await offchainSigner.signMessage(arrayify(hash));
+      const userOp = await fillAndSign(
+        {
+          ...userOp1,
+          paymasterAndData: hexConcat([
+            paymasterAddress,
+            ethers.utils.defaultAbiCoder.encode(
+              ["address", "uint48", "uint48", "bytes"],
+              [fundingId, MOCK_VALID_UNTIL, MOCK_VALID_AFTER, sig]
+            ),
+          ]),
+        },
+        walletOwner,
+        entryPoint,
+        "nonce"
+      );
+
+      const signatureWithModuleAddress = ethers.utils.defaultAbiCoder.encode(
+        ["bytes", "address"],
+        [userOp.signature, ecdsaModule.address]
+      );
+
+      userOp.signature = signatureWithModuleAddress;
+
+      const tx = await entryPoint.handleOps(
+        [userOp],
+        await offchainSigner.getAddress(),
+        {
+          type: 2,
+          maxFeePerGas: userOp.maxFeePerGas,
+          maxPriorityFeePerGas: userOp.maxPriorityFeePerGas,
+        }
+      );
+      console.log("userop nonce ", userOp.nonce.toString());
+      const receipt = await tx.wait();
+      console.log("effective gas price ", receipt.effectiveGasPrice.toString());
+      console.log("gas used VPM V1.1.0", receipt.gasUsed.toString());
+      console.log("gas price", receipt.effectiveGasPrice.toString());
+
+      const totalBalDeducted = BigNumber.from(receipt.logs[1].topics[2]);
+
+      const bundlerPaid = receipt.effectiveGasPrice.mul(receipt.gasUsed);
+      console.log("bundler paid ", bundlerPaid.toString());
+
+      const paymasterFundsAfter = await entryPoint.balanceOf(paymasterAddress);
+      const paymasterIdBalanceAfter =
+        await verifyingSingletonPaymaster.getBalance(fundingId);
+
+      const paymasterIdBalanceDiff = paymasterIdBalanceBefore.sub(
+        paymasterIdBalanceAfter
+      );
+      console.log("paymasterIdBalanceDiff ", paymasterIdBalanceDiff.toString());
+
+      expect(paymasterIdBalanceDiff).to.be.equal(totalBalDeducted);
+
+      const paymasterFundsDiff = paymasterFundsBefore.sub(paymasterFundsAfter);
+      console.log("paymasterFundsDiff ", paymasterFundsDiff.toString());
+
+      expect(paymasterIdBalanceDiff.sub(paymasterFundsDiff)).to.be.greaterThan(
+        BigNumber.from(0)
+      );
+
+      await expect(
+        entryPoint.handleOps([userOp], await offchainSigner.getAddress())
+      ).to.be.reverted;
+    });
+
+    it("succeed with valid signature - same account - different funding id ", async () => {
+      const fundingId = await secondFundingId.getAddress();
+      const signer = await verifyingSingletonPaymaster.verifyingSigner();
+
+      const offchainSignerAddress = await offchainSigner.getAddress();
+      expect(signer).to.be.equal(offchainSignerAddress);
+
+      await verifyingSingletonPaymaster
+        .connect(deployer)
+        .setUnaccountedEPGasOverhead(9700);
+
+      await verifyingSingletonPaymaster.depositFor(fundingId, {
+        value: ethers.utils.parseEther("1"),
+      });
+
+      const paymasterFundsBefore = await entryPoint.balanceOf(paymasterAddress);
+      const paymasterIdBalanceBefore =
+        await verifyingSingletonPaymaster.getBalance(fundingId);
+
+      const userOp1 = await fillAndSign(
+        {
+          sender: walletAddress,
+          verificationGasLimit: 200000,
+        },
+        walletOwner,
+        entryPoint,
+        "nonce"
+      );
+
+      const hash = await verifyingSingletonPaymaster.getHash(
+        userOp1,
+        fundingId,
+        MOCK_VALID_UNTIL,
+        MOCK_VALID_AFTER
+      );
+      const sig = await offchainSigner.signMessage(arrayify(hash));
+      const userOp = await fillAndSign(
+        {
+          ...userOp1,
+          paymasterAndData: hexConcat([
+            paymasterAddress,
+            ethers.utils.defaultAbiCoder.encode(
+              ["address", "uint48", "uint48", "bytes"],
+              [fundingId, MOCK_VALID_UNTIL, MOCK_VALID_AFTER, sig]
+            ),
+          ]),
+        },
+        walletOwner,
+        entryPoint,
+        "nonce"
+      );
+
+      const signatureWithModuleAddress = ethers.utils.defaultAbiCoder.encode(
+        ["bytes", "address"],
+        [userOp.signature, ecdsaModule.address]
+      );
+
+      userOp.signature = signatureWithModuleAddress;
+
+      const tx = await entryPoint.handleOps(
+        [userOp],
+        await offchainSigner.getAddress(),
+        {
+          type: 2,
+          maxFeePerGas: userOp.maxFeePerGas,
+          maxPriorityFeePerGas: userOp.maxPriorityFeePerGas,
+        }
+      );
+      console.log("userop nonce ", userOp.nonce.toString());
+      const receipt = await tx.wait();
+      console.log("effective gas price ", receipt.effectiveGasPrice.toString());
+      console.log("gas used VPM V1.1.0", receipt.gasUsed.toString());
+      console.log("gas price", receipt.effectiveGasPrice.toString());
+
+      const totalBalDeducted = BigNumber.from(receipt.logs[1].topics[2]);
+
+      const bundlerPaid = receipt.effectiveGasPrice.mul(receipt.gasUsed);
+      console.log("bundler paid ", bundlerPaid.toString());
+
+      const paymasterFundsAfter = await entryPoint.balanceOf(paymasterAddress);
+      const paymasterIdBalanceAfter =
+        await verifyingSingletonPaymaster.getBalance(fundingId);
+
+      const paymasterIdBalanceDiff = paymasterIdBalanceBefore.sub(
+        paymasterIdBalanceAfter
+      );
+      console.log("paymasterIdBalanceDiff ", paymasterIdBalanceDiff.toString());
+
+      expect(paymasterIdBalanceDiff).to.be.equal(totalBalDeducted);
+
+      const paymasterFundsDiff = paymasterFundsBefore.sub(paymasterFundsAfter);
+      console.log("paymasterFundsDiff ", paymasterFundsDiff.toString());
+
+      expect(paymasterIdBalanceDiff.sub(paymasterFundsDiff)).to.be.greaterThan(
+        BigNumber.from(0)
+      );
+
       await expect(
         entryPoint.handleOps([userOp], await offchainSigner.getAddress())
       ).to.be.reverted;
