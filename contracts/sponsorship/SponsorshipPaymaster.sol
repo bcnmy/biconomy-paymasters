@@ -186,7 +186,7 @@ contract SponsorshipPaymaster is
         emit GasWithdrawn(msg.sender, withdrawAddress, amount);
     }
 
-    function withdrawExceessFunds(address payable withdrawAddress) public nonReentrant onlyOwner {
+    function withdrawExcessFunds(address payable withdrawAddress) public nonReentrant onlyOwner {
         if (withdrawAddress == address(0)) revert CanNotWithdrawToZeroAddress();
         uint256 excess = entryPoint.balanceOf(address(this)) - totalDeductables;
         if (excess > 0) {
@@ -279,6 +279,8 @@ contract SponsorshipPaymaster is
             unaccountedEPGasOverhead *
             effectiveGasPrice;
 
+        // Note: required to calculate excess funds
+        // Review if it should be refunded back to the users and how
         totalDeductables += balToDeduct;
 
         uint256 costIncludingPremium = (balToDeduct * dynamicMarkup) /

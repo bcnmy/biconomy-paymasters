@@ -633,7 +633,7 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
 
       await sponsorshipPaymaster
         .connect(deployer)
-        .withdrawExceessFunds(withdrawAddress);
+        .withdrawExcessFunds(withdrawAddress);
 
       const balanceAfter = await ethers.provider.getBalance(withdrawAddress);
 
