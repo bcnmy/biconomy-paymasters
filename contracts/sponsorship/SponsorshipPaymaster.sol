@@ -280,7 +280,7 @@ contract SponsorshipPaymaster is
             effectiveGasPrice;
 
         // Note: required to calculate excess funds
-        // Review if it should be refunded back to the users and how
+        // Review if excess funds should be refunded back to the users and how
         totalDeductables += balToDeduct;
 
         uint256 costIncludingPremium = (balToDeduct * dynamicMarkup) /
