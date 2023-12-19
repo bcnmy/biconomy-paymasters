@@ -162,6 +162,7 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
       console.log("paymaster Id ", paymasterId);
       const userOp = await getUserOpWithPaymasterInfo(paymasterId);
 
+      // Review: for catching custom errors in better ways
       await expect(
         entryPoint.callStatic.simulateValidation(userOp)
       ).to.be.revertedWithCustomError(entryPoint, "FailedOp");
@@ -669,7 +670,7 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
       );
     });
 
-    it("Reverts when paymasterIdBalance is not enough", async () => {
+    it("Reverts withdraw when paymasterIdBalance is not enough", async () => {
       const paymasterId = await depositorSigner.getAddress();
 
       await expect(
