@@ -65,7 +65,7 @@ contract SponsorshipPaymaster is
             sstore(verifyingSigner.slot, _verifyingSigner)
             sstore(feeCollector.slot, _feeCollector)
         }
-        unaccountedEPGasOverhead = 24000;
+        unaccountedEPGasOverhead = 18500;
         fixedPriceMarkup = 1100000; // 10%
     }
 
@@ -280,6 +280,7 @@ contract SponsorshipPaymaster is
         paymasterIdBalances[feeCollector] += actualPremium;
 
         emit GasBalanceDeducted(paymasterId, costIncludingPremium, userOpHash);
+        // Review if we should emit balToDeduct as well
         emit PremiumCollected(paymasterId, actualPremium);
     }
 
