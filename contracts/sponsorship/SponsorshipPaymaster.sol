@@ -186,6 +186,14 @@ contract SponsorshipPaymaster is
         emit GasWithdrawn(msg.sender, withdrawAddress, amount);
     }
 
+    /**
+     * @dev Withdraws the excess funds from the paymaster's balance on EP and transfers them to the specified address.
+     * @notice Excess funds referred as dust balance collected in paymaster's name on EP. 
+     * none of the dapps would be able to withdraw this
+     * @notice Since there is no withdraw method for the paymaster owner, this is mechanism to withdraw 
+     * any dust balance stuck on Entry point. 
+     * @param withdrawAddress The address to which the gas tokens should be transferred.
+     */
     function withdrawExcessFunds(address payable withdrawAddress) public nonReentrant onlyOwner {
         if (withdrawAddress == address(0)) revert CanNotWithdrawToZeroAddress();
         uint256 excess = entryPoint.balanceOf(address(this)) - totalDeductables;
