@@ -341,6 +341,7 @@ describe("Biconomy Token Paymaster", function () {
         entryPoint,
         "nonce"
       );
+      console.log("pnd ", userOp.paymasterAndData);
 
       console.log("pnd ", userOp.paymasterAndData);
 
