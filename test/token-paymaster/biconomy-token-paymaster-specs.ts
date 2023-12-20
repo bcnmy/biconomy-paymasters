@@ -15,6 +15,7 @@ import {
   MockPriceFeed,
   MockPriceFeed__factory,
   MockToken,
+  MockOracle__factory,
 } from "../../typechain-types";
 
 // Review: Could import from scw-contracts submodules to be consistent and without copying files
@@ -49,16 +50,16 @@ export async function deployEntryPoint(
   return new EntryPoint__factory(provider.getSigner()).deploy();
 }
 
-export const encodePaymasterData = (
-  feeToken = ethers.constants.AddressZero,
-  exchangeRate: BigNumberish = ethers.constants.Zero,
-  priceMarkup: BigNumberish = ethers.constants.Zero
-) => {
-  return ethers.utils.defaultAbiCoder.encode(
-    ["uint48", "uint48", "address", "uint256", "uint32"],
-    [MOCK_VALID_UNTIL, MOCK_VALID_AFTER, feeToken, exchangeRate, priceMarkup]
-  );
-};
+// export const encodePaymasterData = (
+//   feeToken = ethers.constants.AddressZero,
+//   exchangeRate: BigNumberish = ethers.constants.Zero,
+//   priceMarkup: BigNumberish = ethers.constants.Zero
+// ) => {
+//   return ethers.utils.defaultAbiCoder.encode(
+//     ["uint48", "uint48", "address", "uint256", "uint32"],
+//     [MOCK_VALID_UNTIL, MOCK_VALID_AFTER, feeToken, exchangeRate, priceMarkup]
+//   );
+// };
 
 export async function getUserOpEvent(ep: EntryPoint) {
   const [log] = await ep.queryFilter(
@@ -94,7 +95,6 @@ describe("Biconomy Token Paymaster", function () {
   let offchainSigner: Signer, deployer: Signer;
 
   let sampleTokenPaymaster: BiconomyTokenPaymaster;
-  let mockPriceFeed: MockPriceFeed;
 
   // Note: Could also use published package or added submodule (for Account Implementation and Factory)
   let smartWalletImp: BiconomyAccountImplementation;
@@ -132,8 +132,14 @@ describe("Biconomy Token Paymaster", function () {
       usdcMaticPriceFeedMock.address
     );
 
-    const priceFeedTxUsdc: any =
-      await priceFeedUsdc.populateTransaction.getThePrice();
+    const nativeOracle = await new MockOracle__factory(deployer).deploy(
+      82843594,
+      "MATIC/USD"
+    );
+    const tokenOracle = await new MockOracle__factory(deployer).deploy(
+      100000000,
+      "USDC/USD"
+    );
 
     sampleTokenPaymaster = await new BiconomyTokenPaymaster__factory(
       deployer
@@ -145,9 +151,9 @@ describe("Biconomy Token Paymaster", function () {
 
     await sampleTokenPaymaster.setTokenOracle(
       token.address,
-      18,
       await token.decimals(),
-      usdcMaticPriceFeedMock.address,
+      tokenOracle.address,
+      nativeOracle.address,
       true
     );
 
@@ -201,10 +207,18 @@ describe("Biconomy Token Paymaster", function () {
 
   describe("Token Payamster read methods and state checks", () => {
     it("Should parse data properly", async () => {
+      const numVU = ethers.BigNumber.from(MOCK_VALID_UNTIL);
+      const numVA = ethers.BigNumber.from(MOCK_VALID_AFTER);
+      const numER = ethers.BigNumber.from(MOCK_FX);
+
       const paymasterAndData = ethers.utils.hexConcat([
         paymasterAddress,
         ethers.utils.hexlify(1).slice(0, 4),
-        encodePaymasterData(token.address, MOCK_FX, DEFAULT_FEE_MARKUP),
+        ethers.utils.hexZeroPad(ethers.utils.hexlify(numVU.toNumber()), 6), // 6 byte
+        ethers.utils.hexZeroPad(ethers.utils.hexlify(numVA.toNumber()), 6), // 6 byte
+        ethers.utils.hexZeroPad(token.address, 20), // 20 byte
+        ethers.utils.hexZeroPad(ethers.utils.hexlify(numER.toNumber()), 16), // 16 byte
+        ethers.utils.hexZeroPad(ethers.utils.hexlify(DEFAULT_FEE_MARKUP), 4), // 4 byte
         "0x" + "00".repeat(65),
       ]);
 
@@ -213,11 +227,18 @@ describe("Biconomy Token Paymaster", function () {
       );
 
       expect(res.priceSource).to.equal(1);
+
+      console.log(res.validUntil);
+
       expect(res.priceMarkup).to.equal(DEFAULT_FEE_MARKUP);
-      expect(res.validUntil).to.equal(ethers.BigNumber.from(MOCK_VALID_UNTIL));
-      expect(res.validAfter).to.equal(ethers.BigNumber.from(MOCK_VALID_AFTER));
+      expect(res.validUntil).to.equal(
+        ethers.BigNumber.from(MOCK_VALID_UNTIL).toNumber()
+      );
+      expect(res.validAfter).to.equal(
+        ethers.BigNumber.from(MOCK_VALID_AFTER).toNumber()
+      );
       expect(res.feeToken).to.equal(token.address);
-      expect(res.exchangeRate).to.equal(MOCK_FX);
+      expect(res.exchangeRate).to.equal(BigNumber.from(MOCK_FX).toNumber());
       expect(res.signature).to.equal("0x" + "00".repeat(65));
     });
 
@@ -294,13 +315,25 @@ describe("Biconomy Token Paymaster", function () {
         DEFAULT_FEE_MARKUP
       );
       const sig = await offchainSigner.signMessage(arrayify(hash));
+
+      const numVU = ethers.BigNumber.from(MOCK_VALID_UNTIL);
+      const numVA = ethers.BigNumber.from(MOCK_VALID_AFTER);
+      const numER = ethers.BigNumber.from(MOCK_FX);
+
       const userOp = await fillAndSign(
         {
           ...userOp1,
           paymasterAndData: ethers.utils.hexConcat([
             paymasterAddress,
             ethers.utils.hexlify(1).slice(0, 4),
-            encodePaymasterData(token.address, MOCK_FX, DEFAULT_FEE_MARKUP),
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(numVU.toNumber()), 6), // 6 byte
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(numVA.toNumber()), 6), // 6 byte
+            ethers.utils.hexZeroPad(token.address, 20), // 20 byte
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(numER.toNumber()), 16), // 16 byte
+            ethers.utils.hexZeroPad(
+              ethers.utils.hexlify(DEFAULT_FEE_MARKUP),
+              4
+            ), // 4 byte
             sig,
           ]),
         },
@@ -308,6 +341,9 @@ describe("Biconomy Token Paymaster", function () {
         entryPoint,
         "nonce"
       );
+      console.log("pnd ", userOp.paymasterAndData);
+
+      console.log("pnd ", userOp.paymasterAndData);
 
       const signatureWithModuleAddress = ethers.utils.defaultAbiCoder.encode(
         ["bytes", "address"],
@@ -328,6 +364,7 @@ describe("Biconomy Token Paymaster", function () {
       );
       const receipt = await tx.wait();
 
+      console.log("paymaster and data length", userOp.paymasterAndData.length);
       const gasUsed = receipt.gasUsed.toNumber();
       console.log("gas used token paymaster", gasUsed);
       console.log(
@@ -335,12 +372,10 @@ describe("Biconomy Token Paymaster", function () {
         receipt.effectiveGasPrice.mul(receipt.gasUsed).toString()
       );
 
-      console.log("gas used ");
-      console.log(receipt.gasUsed.toNumber());
-
       const postBalance = await token.balanceOf(paymasterAddress);
 
       const postTokenBalanceForAccount = await token.balanceOf(walletAddress);
+      expect(postTokenBalanceForAccount).to.be.lt(preTokenBalanceForAccount);
 
       const ev = await getUserOpEvent(entryPoint);
       expect(ev.args.success).to.be.true;
@@ -358,6 +393,10 @@ describe("Biconomy Token Paymaster", function () {
         deployer
       );
 
+      const numVU = ethers.BigNumber.from(MOCK_VALID_UNTIL);
+      const numVA = ethers.BigNumber.from(MOCK_VALID_AFTER);
+      const numER = ethers.BigNumber.from(MOCK_FX);
+
       const userOp = await fillAndSign(
         {
           sender: walletAddress,
@@ -373,7 +412,15 @@ describe("Biconomy Token Paymaster", function () {
           paymasterAndData: ethers.utils.hexConcat([
             paymasterAddress,
             ethers.utils.hexlify(1).slice(0, 4),
-            encodePaymasterData(token.address, MOCK_FX),
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(numVU.toNumber()), 6), // 6 byte
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(numVA.toNumber()), 6), // 6 byte
+            ethers.utils.hexZeroPad(token.address, 20), // 20 byte
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(numER.toNumber()), 16), // 16 byte
+            ethers.utils.hexZeroPad(
+              ethers.utils.hexlify(DEFAULT_FEE_MARKUP),
+              4
+            ), // 4 byte
+
             "0x1234",
           ]),
         },
@@ -480,6 +527,10 @@ describe("Biconomy Token Paymaster", function () {
         deployer
       );
 
+      const numVU = ethers.BigNumber.from(MOCK_VALID_UNTIL);
+      const numVA = ethers.BigNumber.from(MOCK_VALID_AFTER);
+      const numER = ethers.BigNumber.from(MOCK_FX);
+
       const userOp = await fillAndSign(
         {
           sender: walletAddress,
@@ -495,7 +546,14 @@ describe("Biconomy Token Paymaster", function () {
           paymasterAndData: ethers.utils.hexConcat([
             paymasterAddress,
             ethers.utils.hexlify(1).slice(0, 4),
-            encodePaymasterData(token.address, MOCK_FX),
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(numVU.toNumber()), 6), // 6 byte
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(numVA.toNumber()), 6), // 6 byte
+            ethers.utils.hexZeroPad(token.address, 20), // 20 byte
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(numER.toNumber()), 16), // 16 byte
+            ethers.utils.hexZeroPad(
+              ethers.utils.hexlify(DEFAULT_FEE_MARKUP),
+              4
+            ), // 4 byte
             "0x" + "00".repeat(65),
           ]),
         },
@@ -526,6 +584,10 @@ describe("Biconomy Token Paymaster", function () {
         ethers.utils.arrayify("0xdead")
       );
 
+      const numVU = ethers.BigNumber.from(MOCK_VALID_UNTIL);
+      const numVA = ethers.BigNumber.from(MOCK_VALID_AFTER);
+      const numER = ethers.BigNumber.from(MOCK_FX);
+
       const wrongUserOp = await fillAndSign(
         {
           sender: walletAddress,
@@ -541,7 +603,14 @@ describe("Biconomy Token Paymaster", function () {
           paymasterAndData: ethers.utils.hexConcat([
             paymasterAddress,
             ethers.utils.hexlify(1).slice(0, 4),
-            encodePaymasterData(token.address, MOCK_FX),
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(numVU.toNumber()), 6), // 6 byte
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(numVA.toNumber()), 6), // 6 byte
+            ethers.utils.hexZeroPad(token.address, 20), // 20 byte
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(numER.toNumber()), 16), // 16 byte
+            ethers.utils.hexZeroPad(
+              ethers.utils.hexlify(DEFAULT_FEE_MARKUP),
+              4
+            ), // 4 byte
             sig,
           ]),
         },
@@ -612,6 +681,9 @@ describe("Biconomy Token Paymaster", function () {
         MOCK_FX,
         DEFAULT_FEE_MARKUP
       );
+      const numVU = ethers.BigNumber.from(MOCK_VALID_UNTIL);
+      const numVA = ethers.BigNumber.from(MOCK_VALID_AFTER);
+      const numER = ethers.BigNumber.from(MOCK_FX);
       const sig = await offchainSigner.signMessage(arrayify(hash));
       const userOp = await fillAndSign(
         {
@@ -619,7 +691,14 @@ describe("Biconomy Token Paymaster", function () {
           paymasterAndData: ethers.utils.hexConcat([
             paymasterAddress,
             ethers.utils.hexlify(1).slice(0, 4),
-            encodePaymasterData(token.address, MOCK_FX, DEFAULT_FEE_MARKUP),
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(numVU.toNumber()), 6), // 6 byte
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(numVA.toNumber()), 6), // 6 byte
+            ethers.utils.hexZeroPad(token.address, 20), // 20 byte
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(numER.toNumber()), 16), // 16 byte
+            ethers.utils.hexZeroPad(
+              ethers.utils.hexlify(DEFAULT_FEE_MARKUP),
+              4
+            ), // 4 byte
             sig,
           ]),
         },
@@ -686,6 +765,9 @@ describe("Biconomy Token Paymaster", function () {
         MOCK_FX,
         2200000 // > 2x!
       );
+      const numVU = ethers.BigNumber.from(MOCK_VALID_UNTIL);
+      const numVA = ethers.BigNumber.from(MOCK_VALID_AFTER);
+      const numER = ethers.BigNumber.from(MOCK_FX);
       const sig = await offchainSigner.signMessage(arrayify(hash));
       const userOp = await fillAndSign(
         {
@@ -693,7 +775,11 @@ describe("Biconomy Token Paymaster", function () {
           paymasterAndData: ethers.utils.hexConcat([
             paymasterAddress,
             ethers.utils.hexlify(1).slice(0, 4),
-            encodePaymasterData(token.address, MOCK_FX, 2200000),
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(numVU.toNumber()), 6), // 6 byte
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(numVA.toNumber()), 6), // 6 byte
+            ethers.utils.hexZeroPad(token.address, 20), // 20 byte
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(numER.toNumber()), 16), // 16 byte
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(2200000), 4), // 4 byte
             sig,
           ]),
         },

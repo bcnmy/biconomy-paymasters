@@ -15,6 +15,7 @@ import {
   MockPriceFeed,
   MockPriceFeed__factory,
   MockToken,
+  MockOracle__factory,
 } from "../../typechain-types";
 
 import { fillAndSign } from "../../lib/account-abstraction/test/UserOp";
@@ -58,22 +59,16 @@ function delay(ms: number) {
   });
 }
 
-export const encodePaymasterData = (
-  feeToken = ethers.constants.AddressZero,
-  exchangeRate: BigNumberish = ethers.constants.Zero,
-  priceMarkup: BigNumberish = ethers.constants.Zero
-) => {
-  return ethers.utils.defaultAbiCoder.encode(
-    ["uint48", "uint48", "address", "address", "uint256", "uint32"],
-    [
-      MOCK_VALID_UNTIL,
-      MOCK_VALID_AFTER,
-      feeToken,
-      exchangeRate,
-      priceMarkup,
-    ]
-  );
-};
+// export const encodePaymasterData = (
+//   feeToken = ethers.constants.AddressZero,
+//   exchangeRate: BigNumberish = ethers.constants.Zero,
+//   priceMarkup: BigNumberish = ethers.constants.Zero
+// ) => {
+//   return ethers.utils.defaultAbiCoder.encode(
+//     ["uint48", "uint48", "address", "address", "uint256", "uint32"],
+//     [MOCK_VALID_UNTIL, MOCK_VALID_AFTER, feeToken, exchangeRate, priceMarkup]
+//   );
+// };
 
 export async function getUserOpEvent(ep: EntryPoint) {
   const [log] = await ep.queryFilter(
@@ -142,6 +137,15 @@ describe("Biconomy Token Paymaster", function () {
       deployer
     ).deploy();
 
+    const nativeOracle = await new MockOracle__factory(deployer).deploy(
+      82843594,
+      "MATIC/USD"
+    );
+    const tokenOracle = await new MockOracle__factory(deployer).deploy(
+      100000000,
+      "USDC/USD"
+    );
+
     sampleTokenPaymaster = await new BiconomyTokenPaymaster__factory(
       deployer
     ).deploy(
@@ -152,9 +156,9 @@ describe("Biconomy Token Paymaster", function () {
 
     await sampleTokenPaymaster.setTokenOracle(
       token.address,
-      18,
       await token.decimals(),
-      usdcMaticPriceFeedMock.address,
+      tokenOracle.address,
+      nativeOracle.address,
       true
     );
 

@@ -73,11 +73,11 @@ contract BiconomyTokenPaymaster is
     // receiver of withdrawn fee tokens
     address public feeReceiver;
 
-    // paymasterAndData: concat of [paymasterAddress(address), priceSource(enum 1 byte), abi.encode(validUntil, validAfter, feeToken, exchangeRate, priceMarkup): makes up 32*5 bytes, signature]
+    // paymasterAndData: concat of [paymasterAddress(address), priceSource(enum 1 byte), validUntil(6 byte), validAfter(6 byte), feeToken(20 bytes), exchangeRate(16 bytes), priceMarkup(4 bytes), signature]
     // PND offset is used to indicate offsets to decode, used along with Signature offset
     uint256 private constant VALID_PND_OFFSET = 21;
 
-    uint256 private constant SIGNATURE_OFFSET = 181;
+    uint256 private constant SIGNATURE_OFFSET = 73;
 
     /**
      * Designed to enable the community to track change in storage variable UNACCOUNTED_COST which is used
@@ -116,9 +116,18 @@ contract BiconomyTokenPaymaster is
         uint256 indexed totalCharge,
         uint32 priceMarkup,
         bytes32 userOpHash,
-        uint256 exchangeRate,
+        uint128 exchangeRate,
         ExchangeRateSource priceSource
     );
+
+    // Review can replace with this event // can add exchangeRate
+    // saves 1000 gas
+    /*event UserOperationSponsored(
+        address indexed sender,
+        address indexed token,
+        uint256 indexed totalCharge,
+        uint256 actualGasCost
+    );*/
 
     /**
      * Notify in case paymaster failed to withdraw tokens from sender
@@ -331,7 +340,7 @@ contract BiconomyTokenPaymaster is
         uint48 validUntil,
         uint48 validAfter,
         address feeToken,
-        uint256 exchangeRate,
+        uint128 exchangeRate,
         uint32 priceMarkup
     ) public view returns (bytes32) {
         //can't use userOp.hash(), since it contains also the paymasterAndData itself.
@@ -369,7 +378,7 @@ contract BiconomyTokenPaymaster is
             uint48 validUntil,
             uint48 validAfter,
             address feeToken,
-            uint256 exchangeRate,
+            uint128 exchangeRate,
             uint32 priceMarkup,
             bytes calldata signature
         )
@@ -384,16 +393,11 @@ contract BiconomyTokenPaymaster is
                 bytes1(paymasterAndData[VALID_PND_OFFSET - 1:VALID_PND_OFFSET])
             )
         );
-        (
-            validUntil,
-            validAfter,
-            feeToken,
-            exchangeRate,
-            priceMarkup
-        ) = abi.decode(
-            paymasterAndData[VALID_PND_OFFSET:SIGNATURE_OFFSET],
-            (uint48, uint48, address, uint256, uint32)
-        );
+        validUntil = uint48(bytes6(paymasterAndData[21:27]));
+        validAfter = uint48(bytes6(paymasterAndData[27:33]));
+        feeToken = address(bytes20(paymasterAndData[33:53]));
+        exchangeRate = uint128(bytes16(paymasterAndData[53:69]));
+        priceMarkup = uint32(bytes4(paymasterAndData[69:73]));
         signature = paymasterAndData[SIGNATURE_OFFSET:];
     }
 
@@ -438,7 +442,7 @@ contract BiconomyTokenPaymaster is
             uint48 validUntil,
             uint48 validAfter,
             address feeToken,
-            uint256 exchangeRate,
+            uint128 exchangeRate,
             uint32 priceMarkup,
             bytes calldata signature
         ) = parsePaymasterAndData(userOp.paymasterAndData);
@@ -490,14 +494,6 @@ contract BiconomyTokenPaymaster is
             priceMarkup,
             userOpHash
         );
-        // console.log("gas used for context encode: %s", gas - gasleft());
-
-        // console.log("account: %s", account);
-        // console.log("feeToken: %s", address(feeToken));
-        // console.log("priceSource: %s", uint8(priceSource));
-        // console.log("exchangeRate: %s", exchangeRate);
-        // console.log("priceMarkup: %s", priceMarkup);
-        // console.log("userOpHash: %s", uint256(userOpHash));
 
         return (
             context,
@@ -516,30 +512,10 @@ contract BiconomyTokenPaymaster is
         bytes calldata context,
         uint256 actualGasCost
     ) internal virtual override {
-        // uint256 gas = gasleft();
-        // (
-        //     address account,
-        //     IERC20 feeToken,
-        //     ExchangeRateSource priceSource,
-        //     uint256 exchangeRate,
-        //     uint32 priceMarkup,
-        //     bytes32 userOpHash
-        // ) = abi.decode(
-        //         context,
-        //         (
-        //             address,
-        //             IERC20,
-        //             address,
-        //             ExchangeRateSource,
-        //             uint256,
-        //             uint32,
-        //             bytes32
-        //         )
-        //     );
         address account;
         IERC20 feeToken;
         ExchangeRateSource priceSource;
-        uint256 exchangeRate;
+        uint128 exchangeRate;
         uint32 priceMarkup;
         bytes32 userOpHash;
         assembly ("memory-safe") {
@@ -563,7 +539,7 @@ contract BiconomyTokenPaymaster is
             userOpHash := calldataload(offset)
         }
 
-        uint256 effectiveExchangeRate = exchangeRate;
+        uint128 effectiveExchangeRate = exchangeRate;
 
         if (
             priceSource == ExchangeRateSource.ORACLE_BASED 
@@ -599,6 +575,7 @@ contract BiconomyTokenPaymaster is
                 effectiveExchangeRate,
                 priceSource
             );
+            // emit UserOperationSponsored(account, address(feeToken), charge, actualGasCost);
         } else {
             // In case transferFrom failed in first handlePostOp call, attempt to charge the tokens again
             bytes memory _data = abi.encodeWithSelector(
