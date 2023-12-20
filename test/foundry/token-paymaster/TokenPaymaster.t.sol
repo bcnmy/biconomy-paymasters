@@ -195,19 +195,17 @@ contract TokenPaymasterTest is SATestBase {
                 .ORACLE_BASED;
         uint48 validUntil = 3735928559;
         uint48 validAfter = 4660;
-        uint256 exchangeRate = 977100;
+        uint128 exchangeRate = 977100;
         uint32 priceMarkup = 1100000;
 
         op.paymasterAndData = abi.encodePacked(
             address(_btpm),
             priceSource,
-            abi.encode(
-                validUntil,
-                validAfter,
-                address(usdc),
-                exchangeRate,
-                priceMarkup
-            ),
+            validUntil,
+            validAfter,
+            address(usdc),
+            exchangeRate,
+            priceMarkup,
             pmSig
         );
 
@@ -302,19 +300,17 @@ contract TokenPaymasterTest is SATestBase {
                 .ORACLE_BASED;
         uint48 validUntil = 3735928559;
         uint48 validAfter = 4660;
-        uint256 exchangeRate = 977100;
+        uint128 exchangeRate = 977100;
         uint32 priceMarkup = 1100000;
 
         op.paymasterAndData = abi.encodePacked(
             address(_btpm),
             priceSource,
-            abi.encode(
-                validUntil,
-                validAfter,
-                address(usdc),
-                exchangeRate,
-                priceMarkup
-            ),
+            validUntil,
+            validAfter,
+            address(usdc),
+            exchangeRate,
+            priceMarkup,
             pmSig
         );
         op.signature = signUserOp(op, keyUser);
@@ -352,19 +348,17 @@ contract TokenPaymasterTest is SATestBase {
                 .ORACLE_BASED;
         uint48 validUntil = 3735928559;
         uint48 validAfter = 4660;
-        uint256 exchangeRate = 977100;
+        uint128 exchangeRate = 977100;
         uint32 priceMarkup = 1100000;
 
         op.paymasterAndData = abi.encodePacked(
             address(_btpm),
             priceSource,
-            abi.encode(
-                validUntil,
-                validAfter,
-                address(usdc),
-                exchangeRate,
-                priceMarkup
-            ),
+            validUntil,
+            validAfter,
+            address(usdc),
+            exchangeRate,
+            priceMarkup,
             pmSig
         );
         op.signature = signUserOp(op, keyUser);
@@ -397,7 +391,7 @@ contract TokenPaymasterTest is SATestBase {
                 .ORACLE_BASED;
         uint48 validUntil = 3735928559;
         uint48 validAfter = 4660;
-        uint256 exchangeRate = 977100;
+        uint128 exchangeRate = 977100;
         uint32 priceMarkup = 2200000;
 
         bytes32 hash = _btpm.getHash(
@@ -418,13 +412,11 @@ contract TokenPaymasterTest is SATestBase {
         op.paymasterAndData = abi.encodePacked(
             address(_btpm),
             priceSource,
-            abi.encode(
-                validUntil,
-                validAfter,
-                address(usdc),
-                exchangeRate,
-                priceMarkup
-            ),
+            validUntil,
+            validAfter,
+            address(usdc),
+            exchangeRate,
+            priceMarkup,
             pmSig
         );
         op.signature = signUserOp(op, keyUser);
@@ -451,7 +443,7 @@ contract TokenPaymasterTest is SATestBase {
                 .ORACLE_BASED;
         uint48 validUntil = 3735928559;
         uint48 validAfter = 4660;
-        uint256 exchangeRate = 977100;
+        uint128 exchangeRate = 977100;
         uint32 priceMarkup = 1100000;
 
         bytes32 hash = _btpm.getHash(

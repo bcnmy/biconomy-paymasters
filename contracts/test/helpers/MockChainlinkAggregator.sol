@@ -83,14 +83,14 @@ contract MockChainlinkOracleAggregator is Ownable, IOracleAggregator {
      */
     function getTokenValueOfOneNativeToken(
         address token
-    ) external view virtual returns (uint256 exchangeRate) {
+    ) external view virtual returns (uint128 exchangeRate) {
         // we'd actually want eth / token
         uint256 tokenPriceUnadjusted = _getTokenPrice(token);
         uint8 _tokenOracleDecimals = tokensInfo[token].decimals;
         exchangeRate =
-            ((10 ** _tokenOracleDecimals) *
+            uint128(((10 ** _tokenOracleDecimals) *
                 (10 ** IERC20Metadata(token).decimals())) /
-            tokenPriceUnadjusted;
+            tokenPriceUnadjusted);
     }
 
     // Making explicit revert or make use of stale price feed which reverts
