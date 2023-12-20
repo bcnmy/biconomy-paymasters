@@ -201,13 +201,11 @@ contract TokenPaymasterTest is SATestBase {
         op.paymasterAndData = abi.encodePacked(
             address(_btpm),
             priceSource,
-            abi.encode(
-                validUntil,
-                validAfter,
-                address(usdc),
-                exchangeRate,
-                priceMarkup
-            ),
+            validUntil,
+            validAfter,
+            address(usdc),
+            exchangeRate,
+            priceMarkup,
             pmSig
         );
 
@@ -308,13 +306,11 @@ contract TokenPaymasterTest is SATestBase {
         op.paymasterAndData = abi.encodePacked(
             address(_btpm),
             priceSource,
-            abi.encode(
-                validUntil,
-                validAfter,
-                address(usdc),
-                exchangeRate,
-                priceMarkup
-            ),
+            validUntil,
+            validAfter,
+            address(usdc),
+            exchangeRate,
+            priceMarkup,
             pmSig
         );
         op.signature = signUserOp(op, keyUser);
@@ -358,13 +354,11 @@ contract TokenPaymasterTest is SATestBase {
         op.paymasterAndData = abi.encodePacked(
             address(_btpm),
             priceSource,
-            abi.encode(
-                validUntil,
-                validAfter,
-                address(usdc),
-                exchangeRate,
-                priceMarkup
-            ),
+            validUntil,
+            validAfter,
+            address(usdc),
+            exchangeRate,
+            priceMarkup,
             pmSig
         );
         op.signature = signUserOp(op, keyUser);
@@ -418,13 +412,11 @@ contract TokenPaymasterTest is SATestBase {
         op.paymasterAndData = abi.encodePacked(
             address(_btpm),
             priceSource,
-            abi.encode(
-                validUntil,
-                validAfter,
-                address(usdc),
-                exchangeRate,
-                priceMarkup
-            ),
+            validUntil,
+            validAfter,
+            address(usdc),
+            exchangeRate,
+            priceMarkup,
             pmSig
         );
         op.signature = signUserOp(op, keyUser);

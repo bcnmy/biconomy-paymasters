@@ -59,22 +59,16 @@ function delay(ms: number) {
   });
 }
 
-export const encodePaymasterData = (
-  feeToken = ethers.constants.AddressZero,
-  exchangeRate: BigNumberish = ethers.constants.Zero,
-  priceMarkup: BigNumberish = ethers.constants.Zero
-) => {
-  return ethers.utils.defaultAbiCoder.encode(
-    ["uint48", "uint48", "address", "address", "uint256", "uint32"],
-    [
-      MOCK_VALID_UNTIL,
-      MOCK_VALID_AFTER,
-      feeToken,
-      exchangeRate,
-      priceMarkup,
-    ]
-  );
-};
+// export const encodePaymasterData = (
+//   feeToken = ethers.constants.AddressZero,
+//   exchangeRate: BigNumberish = ethers.constants.Zero,
+//   priceMarkup: BigNumberish = ethers.constants.Zero
+// ) => {
+//   return ethers.utils.defaultAbiCoder.encode(
+//     ["uint48", "uint48", "address", "address", "uint256", "uint32"],
+//     [MOCK_VALID_UNTIL, MOCK_VALID_AFTER, feeToken, exchangeRate, priceMarkup]
+//   );
+// };
 
 export async function getUserOpEvent(ep: EntryPoint) {
   const [log] = await ep.queryFilter(
