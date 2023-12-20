@@ -314,6 +314,7 @@ describe("Biconomy Token Paymaster", function () {
         entryPoint,
         "nonce"
       );
+      console.log("pnd ", userOp.paymasterAndData);
 
       const signatureWithModuleAddress = ethers.utils.defaultAbiCoder.encode(
         ["bytes", "address"],
@@ -341,8 +342,7 @@ describe("Biconomy Token Paymaster", function () {
         receipt.effectiveGasPrice.mul(receipt.gasUsed).toString()
       );
 
-      console.log("gas used ");
-      console.log(receipt.gasUsed.toNumber());
+      console.log("paymaster data length ", userOp.paymasterAndData.length);
 
       const postBalance = await token.balanceOf(paymasterAddress);
 
