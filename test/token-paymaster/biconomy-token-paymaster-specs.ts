@@ -339,8 +339,6 @@ describe("Biconomy Token Paymaster", function () {
       );
       console.log("pnd ", userOp.paymasterAndData);
 
-      console.log("pnd ", userOp.paymasterAndData);
-
       const signatureWithModuleAddress = ethers.utils.defaultAbiCoder.encode(
         ["bytes", "address"],
         [userOp.signature, ecdsaModule.address]
