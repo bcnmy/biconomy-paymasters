@@ -38,6 +38,7 @@ import {
   EcdsaOwnershipRegistryModule,
   EcdsaOwnershipRegistryModule__factory,
 } from "@biconomy-devx/account-contracts-v2/dist/types";
+import { getUserOpEvent, parseEvent } from "../utils/testUtils";
 
 export const AddressZero = ethers.constants.AddressZero;
 const NATIVE_ADDRESS = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
@@ -49,6 +50,9 @@ const MOCK_ERC20_ADDR = "0x" + "01".repeat(20);
 const DEFAULT_FEE_MARKUP = 1100000;
 
 const MOCK_FX: BigNumberish = "977100"; // matic to usdc approx
+
+const UserOperationEventTopic =
+  "0x49628fd1471006c1482da88028e9ce4dbb080b815c9b0344d39e5a8e6ec1419f";
 
 export async function deployEntryPoint(
   provider = ethers.provider
@@ -66,14 +70,6 @@ export async function deployEntryPoint(
 //     [MOCK_VALID_UNTIL, MOCK_VALID_AFTER, feeToken, exchangeRate, priceMarkup]
 //   );
 // };
-
-export async function getUserOpEvent(ep: EntryPoint) {
-  const [log] = await ep.queryFilter(
-    ep.filters.UserOperationEvent(),
-    await ethers.provider.getBlockNumber()
-  );
-  return log;
-}
 
 export const encodeERC20Approval = (
   account: BiconomyAccountImplementation,
@@ -117,7 +113,7 @@ describe("Biconomy Token Paymaster", function () {
     deployer = ethersSigner[0];
     offchainSigner = ethersSigner[1];
     depositorSigner = ethersSigner[2];
-    walletOwner = deployer; // ethersSigner[3];
+    walletOwner = deployer; // ethersSigner[0];
 
     // const offchainSignerAddress = await deployer.getAddress();
     const walletOwnerAddress = await walletOwner.getAddress();
@@ -349,10 +345,17 @@ describe("Biconomy Token Paymaster", function () {
         await offchainSigner.getAddress()
       );
 
-      await tx.wait();
+      const receipt = await tx.wait();
 
-      const ev = await getUserOpEvent(entryPoint);
-      expect(ev.args.success).to.be.true;
+      const event = parseEvent(receipt, UserOperationEventTopic);
+
+      const eventLogsUserop = entryPoint.interface.decodeEventLog(
+        "UserOperationEvent",
+        event[0].data
+      );
+
+      // eslint-disable-next-line no-unused-expressions
+      expect(eventLogsUserop.success).to.be.true;
 
       await expect(
         entryPoint.handleOps([userOp], await offchainSigner.getAddress())

@@ -9,7 +9,7 @@ contract BasePaymasterErrors {
     error CallerIsNotAnEntryPoint(address caller);
 }
 
-contract VerifyingPaymasterErrors {
+contract SponsorshipPaymasterErrors {
     /**
      * @notice Throws when the Entrypoint address provided is address(0)
      */
@@ -19,6 +19,16 @@ contract VerifyingPaymasterErrors {
      * @notice Throws when the verifiying signer address provided is address(0)
      */
     error VerifyingSignerCannotBeZero();
+
+    /**
+     * @notice Throws when the paymaster id provided is a deployed contract   
+     */
+    error PaymasterIdCannotBeContract();
+
+    /**
+     * @notice Throws when the fee collector address provided is a deployed contract
+     */
+    error FeeCollectorCannotBeContract();
 
     /**
      * @notice Throws when the fee collector address provided is address(0)

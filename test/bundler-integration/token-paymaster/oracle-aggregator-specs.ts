@@ -32,6 +32,7 @@ import {
 import { arrayify, parseEther } from "ethers/lib/utils";
 import { BigNumber, BigNumberish, Contract, Signer } from "ethers";
 import { BundlerTestEnvironment } from "../environment/bundlerEnvironment";
+import { getUserOpEvent, parseEvent } from "../../utils/testUtils";
 
 export const AddressZero = ethers.constants.AddressZero;
 
@@ -51,14 +52,6 @@ const MOCK_FX: BigNumberish = "977100"; // matic to usdc approx
 //     [MOCK_VALID_UNTIL, MOCK_VALID_AFTER, feeToken, exchangeRate, priceMarkup]
 //   );
 // };
-
-export async function getUserOpEvent(ep: EntryPoint) {
-  const [log] = await ep.queryFilter(
-    ep.filters.UserOperationEvent(),
-    await ethers.provider.getBlockNumber()
-  );
-  return log;
-}
 
 export const encodeERC20Approval = (
   account: BiconomyAccountImplementation,
@@ -107,7 +100,7 @@ describe("Biconomy Token Paymaster (With Bundler)", function () {
     entryPoint = EntryPoint__factory.connect(process.env.ENTRYPOINT!, deployer);
 
     offchainSigner = ethersSigner[1];
-    walletOwner = deployer; // ethersSigner[3];
+    walletOwner = deployer; // ethersSigner[0];
 
     // const offchainSignerAddress = await deployer.getAddress();
     const walletOwnerAddress = await walletOwner.getAddress();
@@ -314,8 +307,15 @@ describe("Biconomy Token Paymaster (With Bundler)", function () {
         transactionHash
       );
 
-      const ev = await getUserOpEvent(entryPoint);
-      expect(ev.args.success).to.be.true;
+      const event = parseEvent(receipt, UserOperationEventTopic);
+
+      const eventLogsUserop = entryPoint.interface.decodeEventLog(
+        "UserOperationEvent",
+        event[0].data
+      );
+
+      // eslint-disable-next-line no-unused-expressions
+      expect(eventLogsUserop.success).to.be.true;
 
       const BiconomyTokenPaymaster = await ethers.getContractFactory(
         "BiconomyTokenPaymaster"
@@ -333,5 +333,8 @@ describe("Biconomy Token Paymaster (With Bundler)", function () {
         entryPoint.handleOps([userOp], await offchainSigner.getAddress())
       ).to.be.reverted;
     });
+
+    // TODO
+    // it("succeed with fallback exchange rate in case price feed reverts", async () => {
   });
 });

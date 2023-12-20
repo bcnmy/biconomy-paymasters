@@ -70,14 +70,6 @@ function delay(ms: number) {
 //   );
 // };
 
-export async function getUserOpEvent(ep: EntryPoint) {
-  const [log] = await ep.queryFilter(
-    ep.filters.UserOperationEvent(),
-    await ethers.provider.getBlockNumber()
-  );
-  return log;
-}
-
 export const encodeERC20Approval = (
   account: BiconomyAccountImplementation,
   token: TestToken,
@@ -120,7 +112,7 @@ describe("Biconomy Token Paymaster", function () {
     deployer = ethersSigner[0];
     offchainSigner = ethersSigner[1];
     depositorSigner = ethersSigner[2];
-    walletOwner = deployer; // ethersSigner[3];
+    walletOwner = deployer; // ethersSigner[0];
 
     // const offchainSignerAddress = await deployer.getAddress();
     const walletOwnerAddress = await walletOwner.getAddress();

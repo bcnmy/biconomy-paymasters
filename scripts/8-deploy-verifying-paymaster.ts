@@ -12,6 +12,7 @@ const entryPointAddress =
   process.env.ENTRY_POINT_ADDRESS ||
   "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
 const verifyingSigner = process.env.PAYMASTER_SIGNER_ADDRESS_PROD || "";
+const feeCollector = process.env.SPONSORSHIP_FEE_COLLECTOR_ADDRESS_PROD || "";
 const DEPLOYER_CONTRACT_ADDRESS =
   process.env.DEPLOYER_CONTRACT_ADDRESS_PROD || "";
 
@@ -23,60 +24,74 @@ function delay(ms: number) {
   });
 }
 
-async function deployVerifyingPaymasterContract(
+async function deploySponsorshipPaymasterContract(
   deployerInstance: Deployer,
   earlyOwnerAddress: string
 ): Promise<string | undefined> {
   try {
     const salt = ethers.utils.keccak256(
-      ethers.utils.toUtf8Bytes(DEPLOYMENT_SALTS.SINGELTON_PAYMASTER)
+      ethers.utils.toUtf8Bytes(DEPLOYMENT_SALTS.SPONSORSHIP_PAYMASTER)
     );
 
-    const BiconomyVerifyingPaymaster = await ethers.getContractFactory(
-      "VerifyingSingletonPaymaster"
+    const SponsorshipPaymaster = await ethers.getContractFactory(
+      "SponsorshipPaymaster"
     );
-    const verifyingPaymasterBytecode = `${
-      BiconomyVerifyingPaymaster.bytecode
+
+    const sponsorshipPaymasterBytecode = `${
+      SponsorshipPaymaster.bytecode
     }${encodeParam("address", earlyOwnerAddress).slice(2)}${encodeParam(
       "address",
       entryPointAddress
-    ).slice(2)}${encodeParam("address", verifyingSigner).slice(2)}`;
+    ).slice(2)}${encodeParam("address", verifyingSigner).slice(2)}${encodeParam(
+      "address",
+      feeCollector
+    ).slice(2)}`;
 
-    const verifyingPaymasterComputedAddr = await deployerInstance.addressOf(
+    const sponsorshipPaymasterComputedAddr = await deployerInstance.addressOf(
       salt
     );
     console.log(
-      "Verifying paymaster Computed Address: ",
-      verifyingPaymasterComputedAddr
+      "Sponsorship paymaster Computed Address: ",
+      sponsorshipPaymasterComputedAddr
     );
     const isContractDeployed = await isContract(
-      verifyingPaymasterComputedAddr,
+      sponsorshipPaymasterComputedAddr,
       provider
     );
     if (!isContractDeployed) {
       await deployContract(
-        DEPLOYMENT_SALTS.SINGELTON_PAYMASTER,
-        verifyingPaymasterComputedAddr,
+        DEPLOYMENT_SALTS.SPONSORSHIP_PAYMASTER,
+        sponsorshipPaymasterComputedAddr,
         salt,
-        verifyingPaymasterBytecode,
+        sponsorshipPaymasterBytecode,
         deployerInstance
       );
       await delay(5000);
       await run(`verify:verify`, {
-        address: verifyingPaymasterComputedAddr,
+        address: sponsorshipPaymasterComputedAddr,
         constructorArguments: [
           earlyOwnerAddress,
           entryPointAddress,
           verifyingSigner,
+          feeCollector,
         ],
       });
     } else {
+      await run(`verify:verify`, {
+        address: sponsorshipPaymasterComputedAddr,
+        constructorArguments: [
+          earlyOwnerAddress,
+          entryPointAddress,
+          verifyingSigner,
+          feeCollector,
+        ],
+      });
       console.log(
-        "Verifying Paymaster is Already deployed with address ",
-        verifyingPaymasterComputedAddr
+        "Sponsorship Paymaster is Already deployed with address ",
+        sponsorshipPaymasterComputedAddr
       );
     }
-    return verifyingPaymasterComputedAddr;
+    return sponsorshipPaymasterComputedAddr;
   } catch (err) {
     console.log(err);
   }
@@ -114,13 +129,13 @@ async function main() {
   console.log("=========================================");
 
   // Deploy Verifying paymaster
-  const verifyingPaymasterAddress = await deployVerifyingPaymasterContract(
+  const sponsorshipPaymasterAddress = await deploySponsorshipPaymasterContract(
     deployerInstance,
     earlyOwner
   );
   console.log(
-    "==================verifyingPaymasterAddress=======================",
-    verifyingPaymasterAddress
+    "==================sponsorshipPaymasterAddress=======================",
+    sponsorshipPaymasterAddress
   );
 }
 

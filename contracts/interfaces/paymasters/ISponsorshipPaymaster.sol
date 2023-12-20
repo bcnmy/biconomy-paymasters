@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-interface IVerifyingSingletonPaymaster {
+interface ISponsorshipPaymaster {
     event EPGasOverheadChanged(
         uint256 indexed _oldValue,
         uint256 indexed _newValue
