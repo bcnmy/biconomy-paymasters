@@ -30,7 +30,7 @@ error SetupIncomplete();
 
 using ECDSA for bytes32;
 
-contract TokenPaymasterTest is SATestBase {
+contract TokenPaymasterMumbaiTest is SATestBase {
     SmartAccount public sa;
 
     uint256 internal keyUser;
@@ -186,7 +186,7 @@ contract TokenPaymasterTest is SATestBase {
 
         BiconomyTokenPaymaster.ExchangeRateSource priceSource = BiconomyTokenPaymaster
                 .ExchangeRateSource
-                .ORACLE_BASED;
+                .EXTERNAL_EXCHANGE_RATE;
         uint48 validUntil = 3735928559;
         uint48 validAfter = 4660;
         uint128 exchangeRate = 977100;
@@ -295,7 +295,7 @@ contract TokenPaymasterTest is SATestBase {
 
         BiconomyTokenPaymaster.ExchangeRateSource priceSource = BiconomyTokenPaymaster
                 .ExchangeRateSource
-                .ORACLE_BASED;
+                .EXTERNAL_EXCHANGE_RATE;
         uint48 validUntil = 3735928559;
         uint48 validAfter = 4660;
         uint128 exchangeRate = 977100;
@@ -343,7 +343,7 @@ contract TokenPaymasterTest is SATestBase {
 
         BiconomyTokenPaymaster.ExchangeRateSource priceSource = BiconomyTokenPaymaster
                 .ExchangeRateSource
-                .ORACLE_BASED;
+                .EXTERNAL_EXCHANGE_RATE;
         uint48 validUntil = 3735928559;
         uint48 validAfter = 4660;
         uint128 exchangeRate = 977100;
@@ -386,7 +386,7 @@ contract TokenPaymasterTest is SATestBase {
 
         BiconomyTokenPaymaster.ExchangeRateSource priceSource = BiconomyTokenPaymaster
                 .ExchangeRateSource
-                .ORACLE_BASED;
+                .EXTERNAL_EXCHANGE_RATE;
         uint48 validUntil = 3735928559;
         uint48 validAfter = 4660;
         uint128 exchangeRate = 977100;
@@ -438,7 +438,7 @@ contract TokenPaymasterTest is SATestBase {
     ) public returns (bytes memory signature) {
         BiconomyTokenPaymaster.ExchangeRateSource priceSource = BiconomyTokenPaymaster
                 .ExchangeRateSource
-                .ORACLE_BASED;
+                .EXTERNAL_EXCHANGE_RATE;
         uint48 validUntil = 3735928559;
         uint48 validAfter = 4660;
         uint128 exchangeRate = 977100;
