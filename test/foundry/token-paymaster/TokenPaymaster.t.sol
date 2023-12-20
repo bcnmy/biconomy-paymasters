@@ -2,15 +2,15 @@
 pragma solidity >=0.8.0;
 
 import {stdStorage, StdStorage, Test} from "forge-std/Test.sol";
-import {Utilities} from "./utils/Utilities.sol";
+import {Utilities} from "../../utils/Utilities.sol";
 import {console2} from "forge-std/console2.sol";
 import {Vm} from "forge-std/Vm.sol";
 
-import {ChainlinkOracleAggregator} from "../contracts/token/oracles/ChainlinkOracleAggregator.sol";
-import {IOracleAggregator} from "../contracts/token/oracles/IOracleAggregator.sol";
-import {BiconomyTokenPaymaster} from "../contracts/token/BiconomyTokenPaymaster.sol";
-import "./BytesLib.sol";
-import "../contracts/test/helpers/TestCounter.sol";
+import {ChainlinkOracleAggregator} from "../../../contracts/token/oracles/ChainlinkOracleAggregator.sol";
+import {IOracleAggregator} from "../../../contracts/token/oracles/IOracleAggregator.sol";
+import {BiconomyTokenPaymaster} from "../../../contracts/token/BiconomyTokenPaymaster.sol";
+import "../../BytesLib.sol";
+import "../../../contracts/test/helpers/TestCounter.sol";
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IEntryPoint} from "@account-abstraction/contracts/interfaces/IEntryPoint.sol";
@@ -24,9 +24,9 @@ import {SmartAccount} from "@biconomy-devx/account-contracts-v2/contracts/smart-
 import {EcdsaOwnershipRegistryModule} from "@biconomy-devx/account-contracts-v2/contracts/smart-account/modules/EcdsaOwnershipRegistryModule.sol";
 
 
-import {MockToken} from "../contracts/test/helpers/MockToken.sol";
-import {MockPriceFeed} from "../contracts/test/helpers/MockPriceFeed.sol";
-import {FeedInterface} from "../contracts/token/oracles/FeedInterface.sol";
+import {MockToken} from "../../../contracts/test/helpers/MockToken.sol";
+import {MockPriceFeed} from "../../../contracts/test/helpers/MockPriceFeed.sol";
+import {FeedInterface} from "../../../contracts/token/oracles/FeedInterface.sol";
 
 error SetupIncomplete();
 
