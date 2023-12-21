@@ -584,6 +584,8 @@ contract BiconomyTokenPaymaster is
             // );
 
             // 2. force revert 
+            // Review
+            // Note: when you use revert with custom error EP throws AA 50 revert and not AA 50 reverted: <reseaonString>
             // revert PostOpFailedToChargeTokensReverted();
 
             // or this way
