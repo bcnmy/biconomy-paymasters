@@ -436,7 +436,6 @@ contract BiconomyTokenPaymaster is
     {
         (requiredPreFund);
 
-        // uint256 gas = gasleft();
         (
             ExchangeRateSource priceSource,
             uint48 validUntil,
@@ -446,9 +445,7 @@ contract BiconomyTokenPaymaster is
             uint32 priceMarkup,
             bytes calldata signature
         ) = parsePaymasterAndData(userOp.paymasterAndData);
-        // console.log("gas used for parsePmd: %s", gas - gasleft());
 
-        // gas = gasleft();
         bytes32 _hash = getHash(
             userOp,
             priceSource,
@@ -458,7 +455,6 @@ contract BiconomyTokenPaymaster is
             exchangeRate,
             priceMarkup
         ).toEthSignedMessageHash();
-        // console.log("gas used for getHash: %s", gas - gasleft());
 
         //don't revert on signature failure: return SIG_VALIDATION_FAILED
         if (verifyingSigner != _hash.recover(signature)) {
@@ -485,7 +481,6 @@ contract BiconomyTokenPaymaster is
             "BTPM: account does not have enough token balance"
         );
 
-        // gas = gasleft();
         context = abi.encode(
             account,
             feeToken,
@@ -578,21 +573,24 @@ contract BiconomyTokenPaymaster is
             // emit UserOperationSponsored(account, address(feeToken), charge, actualGasCost);
         } else {
             // In case transferFrom failed in first handlePostOp call, attempt to charge the tokens again
-            bytes memory _data = abi.encodeWithSelector(
-                feeToken.transferFrom.selector,
-                account,
-                feeReceiver,
-                charge
-            );
-            (bool success, ) = address(feeToken).call(_data);
-            if (!success) {
-                // In case above transferFrom failed, pay with deposit / notify at least
-                // Sender could be banned indefinitely or for certain period
-                emit TokenPaymentDue(address(feeToken), account, charge);
-                // Do nothing else here to not revert the whole bundle and harm reputation
-            }
+            
+            // 1. 
+            // but if it reverts, let it revert with "transfer amount exceeds allowance"
+            // SafeTransferLib.safeTransferFrom(
+            //     address(feeToken),
+            //     account,
+            //     feeReceiver,
+            //     charge
+            // );
+
+            // 2. force revert 
+            // revert PostOpFailedToChargeTokensReverted();
+
+            // or this way
+            require(0 == 1, "PostOpFailedToChargeTokensReverted");
+            // require(0 == 1, "PostOpRevertedBLAHBLAHBLAHBLAHBLAHBLAHBLAHBLAHBLAH");
+
         }
-        // console.log("gas used for postop: %s", gas - gasleft());
     }
 
     function _withdrawERC20(

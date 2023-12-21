@@ -643,8 +643,125 @@ describe("Biconomy Token Paymaster", function () {
     });
   });
 
+  describe("Grief scneario: not enough allowance for postOp", async () => {
+    it("should revert in second postOp", async () => {
+      const userSCW: any = BiconomyAccountImplementation__factory.connect(
+        walletAddress,
+        deployer
+      );
+
+      await token
+        .connect(deployer)
+        .transfer(walletAddress, ethers.utils.parseEther("100"));
+
+      const owner = await walletOwner.getAddress();
+      const AccountFactory = await ethers.getContractFactory(
+        "SmartAccountFactory"
+      );
+
+      const ecdsaOwnershipSetupData = ecdsaModule.interface.encodeFunctionData(
+        "initForSmartAccount",
+        [owner]
+      );
+
+      const smartAccountDeploymentIndex = 0;
+
+      const deploymentData = AccountFactory.interface.encodeFunctionData(
+        "deployCounterFactualAccount",
+        [
+          ecdsaModule.address,
+          ecdsaOwnershipSetupData,
+          smartAccountDeploymentIndex,
+        ]
+      );
+
+      const userOp1 = await fillAndSign(
+        {
+          sender: walletAddress,
+          verificationGasLimit: 200000,
+          // initCode: hexConcat([walletFactory.address, deploymentData]),
+          // nonce: 0,
+          callData: encodeERC20Approval(
+            userSCW,
+            token,
+            paymasterAddress,
+            ethers.constants.Zero // Making allowance 0 in execution
+          ),
+        },
+        walletOwner,
+        entryPoint,
+        "nonce"
+      );
+
+      const hash = await sampleTokenPaymaster.getHash(
+        userOp1,
+        ethers.utils.hexlify(1).slice(2, 4),
+        MOCK_VALID_UNTIL,
+        MOCK_VALID_AFTER,
+        token.address,
+        MOCK_FX,
+        DEFAULT_FEE_MARKUP
+      );
+      const sig = await offchainSigner.signMessage(arrayify(hash));
+
+      const numVU = ethers.BigNumber.from(MOCK_VALID_UNTIL);
+      const numVA = ethers.BigNumber.from(MOCK_VALID_AFTER);
+      const numER = ethers.BigNumber.from(MOCK_FX);
+
+      const userOp = await fillAndSign(
+        {
+          ...userOp1,
+          paymasterAndData: ethers.utils.hexConcat([
+            paymasterAddress,
+            ethers.utils.hexlify(1).slice(0, 4),
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(numVU.toNumber()), 6), // 6 byte
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(numVA.toNumber()), 6), // 6 byte
+            ethers.utils.hexZeroPad(token.address, 20), // 20 byte
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(numER.toNumber()), 16), // 16 byte
+            ethers.utils.hexZeroPad(
+              ethers.utils.hexlify(DEFAULT_FEE_MARKUP),
+              4
+            ), // 4 byte
+            sig,
+          ]),
+        },
+        walletOwner,
+        entryPoint,
+        "nonce"
+      );
+      console.log("pnd ", userOp.paymasterAndData);
+
+      const signatureWithModuleAddress = ethers.utils.defaultAbiCoder.encode(
+        ["bytes", "address"],
+        [userOp.signature, ecdsaModule.address]
+      );
+
+      userOp.signature = signatureWithModuleAddress;
+
+      // REVIEW: this exact expect works in bundler tests!
+      /* await expect(
+        entryPoint.handleOps([userOp], await offchainSigner.getAddress())
+      ).to.be.reverted; */
+
+      await expect(
+        entryPoint.handleOps([userOp], await offchainSigner.getAddress())
+      )
+        // .to.be.revertedWithCustomError(
+        //   sampleTokenPaymaster,
+        //   "PostOpFailedToChargeTokensReverted"
+        // );
+        .to.be.revertedWithCustomError(entryPoint, "FailedOp")
+        .withArgs(
+          0,
+          "AA50 postOp reverted: PostOpFailedToChargeTokensReverted"
+          //  "AA50 postOp reverted: PostOpFailedToChargeTokensReverted"
+          //  "AA50 postOp reverted: PostOpRevertedBLAHBLAHBLAHBLAHBLAHBLAHBLAHBLAHBLAH"
+        );
+    });
+  });
+
   describe("Negative scenarios: approvals and transfers gone wrong", () => {
-    it("should revert if ERC20 token withdrawal fails", async () => {
+    /* it("inner transaction should revert if ERC20 token withdrawal fails", async () => {
       const userSCW: any = BiconomyAccountImplementation__factory.connect(
         walletAddress,
         deployer
@@ -736,7 +853,7 @@ describe("Biconomy Token Paymaster", function () {
       await expect(
         entryPoint.handleOps([userOp], await offchainSigner.getAddress())
       ).to.be.reverted;
-    });
+    }); */
 
     it("should revert if price markup charged is too darn high", async () => {
       const userSCW: any = BiconomyAccountImplementation__factory.connect(

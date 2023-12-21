@@ -36,6 +36,9 @@ import { getUserOpEvent, parseEvent } from "../../utils/testUtils";
 
 export const AddressZero = ethers.constants.AddressZero;
 
+const UserOperationEventTopic =
+  "0x49628fd1471006c1482da88028e9ce4dbb080b815c9b0344d39e5a8e6ec1419f";
+
 const MOCK_VALID_UNTIL = "0x00000000deadbeef";
 const MOCK_VALID_AFTER = "0x0000000000001234";
 const DEFAULT_FEE_MARKUP = 1100000;
