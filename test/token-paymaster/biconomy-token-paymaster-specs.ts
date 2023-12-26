@@ -746,115 +746,15 @@ describe("Biconomy Token Paymaster", function () {
       await expect(
         entryPoint.handleOps([userOp], await offchainSigner.getAddress())
       )
-        // .to.be.revertedWithCustomError(
-        //   sampleTokenPaymaster,
-        //   "PostOpFailedToChargeTokensReverted"
-        // );
         .to.be.revertedWithCustomError(entryPoint, "FailedOp")
         .withArgs(
           0,
-          "AA50 postOp reverted: PostOpFailedToChargeTokensReverted"
-          //  "AA50 postOp reverted: PostOpFailedToChargeTokensReverted"
-          //  "AA50 postOp reverted: PostOpRevertedBLAHBLAHBLAHBLAHBLAHBLAHBLAHBLAHBLAH"
+          "AA50 postOp reverted: BTPM PostOpReverted: Failed to charge tokens"
         );
     });
   });
 
-  describe("Negative scenarios: approvals and transfers gone wrong", () => {
-    /* it("inner transaction should revert if ERC20 token withdrawal fails", async () => {
-      const userSCW: any = BiconomyAccountImplementation__factory.connect(
-        walletAddress,
-        deployer
-      );
-
-      await token
-        .connect(deployer)
-        .transfer(walletAddress, ethers.utils.parseEther("100"));
-
-      // We make transferFrom impossible by setting allowance to zero
-      const userOp1 = await fillAndSign(
-        {
-          sender: walletAddress,
-          verificationGasLimit: 200000,
-          // initCode: hexConcat([walletFactory.address, deploymentData]),
-          // nonce: 0,
-          callData: encodeERC20Approval(
-            userSCW,
-            token,
-            paymasterAddress,
-            ethers.constants.Zero
-          ),
-        },
-        walletOwner,
-        entryPoint,
-        "nonce"
-      );
-
-      const hash = await sampleTokenPaymaster.getHash(
-        userOp1,
-        ethers.utils.hexlify(1).slice(2, 4),
-        MOCK_VALID_UNTIL,
-        MOCK_VALID_AFTER,
-        token.address,
-        MOCK_FX,
-        DEFAULT_FEE_MARKUP
-      );
-      const numVU = ethers.BigNumber.from(MOCK_VALID_UNTIL);
-      const numVA = ethers.BigNumber.from(MOCK_VALID_AFTER);
-      const numER = ethers.BigNumber.from(MOCK_FX);
-      const sig = await offchainSigner.signMessage(arrayify(hash));
-      const userOp = await fillAndSign(
-        {
-          ...userOp1,
-          paymasterAndData: ethers.utils.hexConcat([
-            paymasterAddress,
-            ethers.utils.hexlify(1).slice(0, 4),
-            ethers.utils.hexZeroPad(ethers.utils.hexlify(numVU.toNumber()), 6), // 6 byte
-            ethers.utils.hexZeroPad(ethers.utils.hexlify(numVA.toNumber()), 6), // 6 byte
-            ethers.utils.hexZeroPad(token.address, 20), // 20 byte
-            ethers.utils.hexZeroPad(ethers.utils.hexlify(numER.toNumber()), 16), // 16 byte
-            ethers.utils.hexZeroPad(
-              ethers.utils.hexlify(DEFAULT_FEE_MARKUP),
-              4
-            ), // 4 byte
-            sig,
-          ]),
-        },
-        walletOwner,
-        entryPoint,
-        "nonce"
-      );
-
-      const signatureWithModuleAddress = ethers.utils.defaultAbiCoder.encode(
-        ["bytes", "address"],
-        [userOp.signature, ecdsaModule.address]
-      );
-
-      userOp.signature = signatureWithModuleAddress;
-
-      const tx = await entryPoint.handleOps(
-        [userOp],
-        await offchainSigner.getAddress()
-      );
-      const receipt = await tx.wait();
-
-      const postBalance = await token.balanceOf(paymasterAddress);
-
-      const event = parseEvent(receipt, UserOperationEventTopic);
-
-      const eventLogsUserop = entryPoint.interface.decodeEventLog(
-        "UserOperationEvent",
-        event[0].data
-      );
-
-      // eslint-disable-next-line no-unused-expressions
-      expect(eventLogsUserop.success).to.be.false;
-
-      await expect(
-        entryPoint.handleOps([userOp], await offchainSigner.getAddress())
-      ).to.be.reverted;
-    }); */
-
+  describe("Negative scenarios", () => {
     it("should revert if price markup charged is too darn high", async () => {
       const userSCW: any = BiconomyAccountImplementation__factory.connect(
         walletAddress,

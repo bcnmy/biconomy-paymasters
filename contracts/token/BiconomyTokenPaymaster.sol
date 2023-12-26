@@ -15,7 +15,6 @@ import "../utils/SafeTransferLib.sol";
 import {TokenPaymasterErrors} from "./TokenPaymasterErrors.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import {OracleAggregator} from "./oracles/OracleAggregator.sol";
-// import "hardhat/console.sol";
 
 // Biconomy Token Paymaster
 /**
@@ -575,7 +574,11 @@ contract BiconomyTokenPaymaster is
             // In case transferFrom failed in first handlePostOp call, attempt to charge the tokens again
             
             // 1. 
-            // but if it reverts, let it revert with "transfer amount exceeds allowance"
+            // but if it reverts, let it revert with ERC20: insufficient allowance
+            // safeTransferFrom => AA50 postOp revert
+            // transferFrom => AA50 postOp reverted: ERC20: insufficient allowance
+            
+            // Would be useful if paymaster already has allowance(not part of this op's exec)
             // SafeTransferLib.safeTransferFrom(
             //     address(feeToken),
             //     account,
@@ -584,13 +587,7 @@ contract BiconomyTokenPaymaster is
             // );
 
             // 2. force revert 
-            // Review
-            // Note: when you use revert with custom error EP throws AA 50 revert and not AA 50 reverted: <reseaonString>
-            // revert PostOpFailedToChargeTokensReverted();
-
-            // or this way
-            require(0 == 1, "PostOpFailedToChargeTokensReverted");
-            // require(0 == 1, "PostOpRevertedBLAHBLAHBLAHBLAHBLAHBLAHBLAHBLAHBLAH");
+            revert("BTPM PostOpReverted: Failed to charge tokens");
 
         }
     }
