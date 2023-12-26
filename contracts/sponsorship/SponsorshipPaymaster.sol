@@ -314,7 +314,7 @@ contract SponsorshipPaymaster is
         );
         uint256 sigLength = signature.length;
         // we only "require" it here so that the revert reason on invalid signature will be of "VerifyingPaymaster", and not "ECDSA"
-        if (sigLength != 65) revert InvalidPaymasterSignatureLength(sigLength);
+        require(sigLength == 65, "Sponsorship Paymaster:invalid signature length");
         //don't revert on signature failure: return SIG_VALIDATION_FAILED
         if (
             verifyingSigner != hash.toEthSignedMessageHash().recover(signature)
@@ -323,19 +323,14 @@ contract SponsorshipPaymaster is
             return (context, _packValidationData(true, validUntil, validAfter));
         }
 
-        require(priceMarkup <= 2e6, "Verifying PM:high markup %");
+        require(priceMarkup <= 2e6, "Sponsorship Paymaster: high markup %");
 
         uint32 dynamicMarkup = MathLib.maxuint32(priceMarkup, fixedPriceMarkup);
 
         uint256 effectiveCost = (requiredPreFund * dynamicMarkup) /
             PRICE_DENOMINATOR;
 
-        if (effectiveCost > paymasterIdBalances[paymasterId])
-            revert InsufficientBalance(
-                effectiveCost,
-                paymasterIdBalances[paymasterId]
-            );
-        // require(effectiveCost <= paymasterIdBalances[paymasterId], "BTPM: account does not have enough token balance");
+        require(effectiveCost <= paymasterIdBalances[paymasterId], "Sponsorship Paymaster: paymasterId does not have enough deposit");
 
         context = abi.encode(
             paymasterId,
