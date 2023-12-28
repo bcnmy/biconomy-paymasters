@@ -738,7 +738,6 @@ describe("Biconomy Token Paymaster", function () {
 
       userOp.signature = signatureWithModuleAddress;
 
-      // REVIEW: this exact expect works in bundler tests!
       /* await expect(
         entryPoint.handleOps([userOp], await offchainSigner.getAddress())
       ).to.be.reverted; */
