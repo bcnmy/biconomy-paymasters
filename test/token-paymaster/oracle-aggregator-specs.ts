@@ -18,6 +18,8 @@ import {
   MockPriceFeed__factory,
   MockToken,
   MockOracle__factory,
+  MockStaleOracle__factory,
+  MockStaleOracle,
 } from "../../typechain-types";
 
 // Review: Could import from scw-contracts submodules to be consistent
@@ -93,6 +95,8 @@ describe("Biconomy Token Paymaster", function () {
   let staleMockPriceFeed: MockStalePriceFeed;
   let ecdsaModule: EcdsaOwnershipRegistryModule;
   let smartWalletImp: BiconomyAccountImplementation;
+  let staleFeed: MockStaleOracle;
+  let nativeOracle: MockOracle;
 
   let walletFactory: BiconomyAccountFactory;
   const abi = ethers.utils.defaultAbiCoder;
@@ -119,29 +123,16 @@ describe("Biconomy Token Paymaster", function () {
 
     await token.deployed();
 
-    const usdcMaticPriceFeedMock = await new MockPriceFeed__factory(
-      deployer
-    ).deploy();
-
-    const priceFeedUsdc = await ethers.getContractAt(
-      "FeedInterface",
-      usdcMaticPriceFeedMock.address
-    );
-
-    const stalePriceFeedMock = await new MockStalePriceFeed__factory(
-      deployer
-    ).deploy();
-
-    const priceFeedStale = await ethers.getContractAt(
-      "FeedInterface",
-      stalePriceFeedMock.address
-    );
-
-    const nativeOracle = await new MockOracle__factory(deployer).deploy(
+    nativeOracle = await new MockOracle__factory(deployer).deploy(
       82843594,
       "MATIC/USD"
     );
     const tokenOracle = await new MockOracle__factory(deployer).deploy(
+      100000000,
+      "USDC/USD"
+    );
+
+    staleFeed = await new MockStaleOracle__factory(deployer).deploy(
       100000000,
       "USDC/USD"
     );
@@ -164,6 +155,8 @@ describe("Biconomy Token Paymaster", function () {
 
     const priceResult =
       await sampleTokenPaymaster.getTokenValueOfOneNativeToken(token.address);
+
+    console.log("priceResult ", priceResult.toString());
 
     smartWalletImp = await new BiconomyAccountImplementation__factory(
       deployer
@@ -210,7 +203,7 @@ describe("Biconomy Token Paymaster", function () {
     await entryPoint.depositTo(paymasterAddress, { value: parseEther("2") });
   });
 
-  describe("Token Payamster with good and bad oracle aggregator", () => {
+  describe("Token Payamster with good and bad price feed", () => {
     it("succeed with exchange rate based on price feed in case everything goes well", async () => {
       const userSCW: any = BiconomyAccountImplementation__factory.connect(
         walletAddress,
@@ -336,6 +329,120 @@ describe("Biconomy Token Paymaster", function () {
       ).to.be.reverted;
     });
 
-    // it("succeed with fallback exchange rate in case price feed reverts", async () => {
+    it("succeed with fallback exchange rate in case price feed reverts", async () => {
+      const userSCW: any = BiconomyAccountImplementation__factory.connect(
+        walletAddress,
+        deployer
+      );
+
+      await sampleTokenPaymaster.setTokenOracle(
+        token.address,
+        await token.decimals(),
+        staleFeed.address,
+        nativeOracle.address,
+        true
+      );
+
+      // this is not expected to revert
+      const feedResult =
+        await sampleTokenPaymaster.getTokenValueOfOneNativeToken(token.address);
+      expect(feedResult).to.be.equal(ethers.constants.Zero);
+
+      await token
+        .connect(deployer)
+        .transfer(walletAddress, ethers.utils.parseEther("100"));
+
+      const userOp1 = await fillAndSign(
+        {
+          sender: walletAddress,
+          verificationGasLimit: 400000,
+          callData: encodeERC20Approval(
+            userSCW,
+            token,
+            paymasterAddress,
+            ethers.constants.MaxUint256
+          ),
+        },
+        walletOwner,
+        entryPoint,
+        "nonce"
+      );
+
+      const hash = await sampleTokenPaymaster.getHash(
+        userOp1,
+        ethers.utils.hexlify(1).slice(2, 4),
+        MOCK_VALID_UNTIL,
+        MOCK_VALID_AFTER,
+        token.address,
+        MOCK_FX,
+        DEFAULT_FEE_MARKUP
+      );
+      const sig = await offchainSigner.signMessage(arrayify(hash));
+      const numVU = ethers.BigNumber.from(MOCK_VALID_UNTIL);
+      const numVA = ethers.BigNumber.from(MOCK_VALID_AFTER);
+      const numER = ethers.BigNumber.from(MOCK_FX);
+      const userOp = await fillAndSign(
+        {
+          ...userOp1,
+          paymasterAndData: ethers.utils.hexConcat([
+            paymasterAddress,
+            ethers.utils.hexlify(1).slice(0, 4),
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(numVU.toNumber()), 6), // 6 byte
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(numVA.toNumber()), 6), // 6 byte
+            ethers.utils.hexZeroPad(token.address, 20), // 20 byte
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(numER.toNumber()), 16), // 16 byte
+            ethers.utils.hexZeroPad(
+              ethers.utils.hexlify(DEFAULT_FEE_MARKUP),
+              4
+            ), // 4 byte
+            sig,
+          ]),
+        },
+        walletOwner,
+        entryPoint,
+        "nonce"
+      );
+
+      const signatureWithModuleAddress = ethers.utils.defaultAbiCoder.encode(
+        ["bytes", "address"],
+        [userOp.signature, ecdsaModule.address]
+      );
+
+      userOp.signature = signatureWithModuleAddress;
+
+      console.log("userOp second case ", userOp);
+
+      const tx = await entryPoint.handleOps(
+        [userOp],
+        await offchainSigner.getAddress()
+      );
+      const receipt = await tx.wait();
+
+      const event = parseEvent(receipt, UserOperationEventTopic);
+
+      const eventLogsUserop = entryPoint.interface.decodeEventLog(
+        "UserOperationEvent",
+        event[0].data
+      );
+
+      // eslint-disable-next-line no-unused-expressions
+      expect(eventLogsUserop.success).to.be.true;
+
+      const BiconomyTokenPaymaster = await ethers.getContractFactory(
+        "BiconomyTokenPaymaster"
+      );
+
+      const eventLogs = BiconomyTokenPaymaster.interface.decodeEventLog(
+        "TokenPaymasterOperation",
+        receipt.logs[3].data
+      );
+
+      // Confirming that it's using backup (external) exchange rate in case oracle aggregator / price feed is stale / anything goes wrong
+      expect(eventLogs.exchangeRate).to.be.equal(MOCK_FX);
+
+      await expect(
+        entryPoint.handleOps([userOp], await offchainSigner.getAddress())
+      ).to.be.reverted;
+    });
   });
 });

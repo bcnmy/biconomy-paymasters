@@ -717,7 +717,7 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
           .connect(depositorSigner)
           .withdrawTo(paymasterId, parseEther("1.1"))
       ).to.be.revertedWith(
-        "Sponsorship Paymaster: Insufficient withdrawable funds"
+        "Sponsorship Paymaster: Insufficient funds to withdraw from gas tank"
       );
     });
   });

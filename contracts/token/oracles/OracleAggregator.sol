@@ -60,8 +60,10 @@ abstract contract OracleAggregator is Ownable, IOracleAggregator {
         (
             uint256 tokenPrice,
             uint8 tokenOracleDecimals,
-            uint8 tokenDecimals
+            uint8 tokenDecimals,
+            bool isError
         ) = _getTokenPriceAndDecimals(token);
+        if (isError) return 0;
         exchangeRate =
             uint128(10 ** (tokenOracleDecimals + tokenDecimals) /
             tokenPrice);
@@ -72,18 +74,20 @@ abstract contract OracleAggregator is Ownable, IOracleAggregator {
     )
         internal
         view
-        returns (uint256 tokenPrice, uint8 tokenOracleDecimals, uint8 tokenDecimals)
+        returns (uint256 tokenPrice, uint8 tokenOracleDecimals, uint8 tokenDecimals, bool isError)
     {
         TokenInfo storage tokenInfo = tokensInfo[token];
         tokenDecimals = tokenInfo.tokenDecimals;
 
         if (tokenInfo.isDerivedFeed) {
-            uint256 price1 = fetchPrice(FeedInterface(tokenInfo.nativeOracle));
-            uint256 price2 = fetchPrice(FeedInterface(tokenInfo.tokenOracle));
+            (uint256 price1, bool isError1) = fetchPrice(FeedInterface(tokenInfo.nativeOracle));
+            (uint256 price2, bool isError2) = fetchPrice(FeedInterface(tokenInfo.tokenOracle));
+            isError = isError1 || isError2;
+            if (isError) return (0, 0, 0, isError);
             tokenPrice = (price2 * (10 ** 18)) / price1;
             tokenOracleDecimals = 18;
         } else {
-             tokenPrice = 
+             (tokenPrice, isError) = 
                 fetchPrice(FeedInterface(tokenInfo.tokenOracle));
              tokenOracleDecimals = FeedInterface(tokenInfo.tokenOracle).decimals();
         }
@@ -93,22 +97,25 @@ abstract contract OracleAggregator is Ownable, IOracleAggregator {
     /// @dev This function is used to get the latest price from the tokenOracle or nativeOracle.
     /// @param _oracle The Oracle contract to fetch the price from.
     /// @return price The latest price fetched from the Oracle.
-    function fetchPrice(FeedInterface _oracle) internal view returns (uint256 price) {
-        (
+    function fetchPrice(FeedInterface _oracle) internal view returns (uint256 price, bool isError) {
+        try _oracle.latestRoundData() returns (
             uint80 roundId,
             int256 answer,
-            ,
+            uint256 startedAt,
             uint256 updatedAt,
             uint80 answeredInRound
-        ) = _oracle.latestRoundData();
-
-        // validateRound
-        if (answer <= 0) revert InvalidPriceFromRound();
-        // 2 days old price is considered stale since the price is updated every 24 hours
-        if (updatedAt < block.timestamp - 60 * 60 * 24 * 2)
-            revert PriceFeedStale();
-        if (answeredInRound < roundId) revert PriceFeedStale();
-
-        price = uint256(answer);
+        ) {
+           // validateRound
+           if (answer <= 0) return(0, true);
+           // 2 days old price is considered stale since the price is updated every 24 hours
+           if (updatedAt < block.timestamp - 60 * 60 * 24 * 2) return(0, true);
+           if (answeredInRound < roundId) return(0, true);
+           price = uint256(answer);
+           return (price, false);
+        } catch Error(string memory reason) {
+            return (0, true);     
+        } catch {
+            return (0, true);
+        }
     }    
 }

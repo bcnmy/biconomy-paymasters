@@ -538,10 +538,8 @@ contract BiconomyTokenPaymaster is
         if (
             priceSource == ExchangeRateSource.ORACLE_BASED 
         ) {
-            effectiveExchangeRate = getTokenValueOfOneNativeToken(address(feeToken));
-            // uint256 result = getTokenValueOfOneNativeToken(address(feeToken));
-            // Review
-            // if (result != 0) effectiveExchangeRate = result;
+            uint128 result = getTokenValueOfOneNativeToken(address(feeToken));
+            if (result != 0) effectiveExchangeRate = result;
         }
 
         // We could either touch the state for BASEFEE and calculate based on maxPriorityFee passed (to be added in context along with maxFeePerGas) or just use tx.gasprice
