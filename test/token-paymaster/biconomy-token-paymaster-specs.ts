@@ -337,7 +337,6 @@ describe("Biconomy Token Paymaster", function () {
         entryPoint,
         "nonce"
       );
-      console.log("pnd ", userOp.paymasterAndData);
 
       const signatureWithModuleAddress = ethers.utils.defaultAbiCoder.encode(
         ["bytes", "address"],
@@ -643,8 +642,8 @@ describe("Biconomy Token Paymaster", function () {
     });
   });
 
-  describe("Negative scenarios: approvals and transfers gone wrong", () => {
-    it("should revert if ERC20 token withdrawal fails", async () => {
+  describe("Grief scneario: not enough allowance for postOp", async () => {
+    it("should revert in second postOp", async () => {
       const userSCW: any = BiconomyAccountImplementation__factory.connect(
         walletAddress,
         deployer
@@ -654,7 +653,27 @@ describe("Biconomy Token Paymaster", function () {
         .connect(deployer)
         .transfer(walletAddress, ethers.utils.parseEther("100"));
 
-      // We make transferFrom impossible by setting allowance to zero
+      const owner = await walletOwner.getAddress();
+      const AccountFactory = await ethers.getContractFactory(
+        "SmartAccountFactory"
+      );
+
+      const ecdsaOwnershipSetupData = ecdsaModule.interface.encodeFunctionData(
+        "initForSmartAccount",
+        [owner]
+      );
+
+      const smartAccountDeploymentIndex = 0;
+
+      const deploymentData = AccountFactory.interface.encodeFunctionData(
+        "deployCounterFactualAccount",
+        [
+          ecdsaModule.address,
+          ecdsaOwnershipSetupData,
+          smartAccountDeploymentIndex,
+        ]
+      );
+
       const userOp1 = await fillAndSign(
         {
           sender: walletAddress,
@@ -665,7 +684,7 @@ describe("Biconomy Token Paymaster", function () {
             userSCW,
             token,
             paymasterAddress,
-            ethers.constants.Zero
+            ethers.constants.Zero // Making allowance 0 in execution
           ),
         },
         walletOwner,
@@ -682,10 +701,12 @@ describe("Biconomy Token Paymaster", function () {
         MOCK_FX,
         DEFAULT_FEE_MARKUP
       );
+      const sig = await offchainSigner.signMessage(arrayify(hash));
+
       const numVU = ethers.BigNumber.from(MOCK_VALID_UNTIL);
       const numVA = ethers.BigNumber.from(MOCK_VALID_AFTER);
       const numER = ethers.BigNumber.from(MOCK_FX);
-      const sig = await offchainSigner.signMessage(arrayify(hash));
+
       const userOp = await fillAndSign(
         {
           ...userOp1,
@@ -715,29 +736,18 @@ describe("Biconomy Token Paymaster", function () {
 
       userOp.signature = signatureWithModuleAddress;
 
-      const tx = await entryPoint.handleOps(
-        [userOp],
-        await offchainSigner.getAddress()
-      );
-      const receipt = await tx.wait();
-
-      const postBalance = await token.balanceOf(paymasterAddress);
-
-      const event = parseEvent(receipt, UserOperationEventTopic);
-
-      const eventLogsUserop = entryPoint.interface.decodeEventLog(
-        "UserOperationEvent",
-        event[0].data
-      );
-
-      // eslint-disable-next-line no-unused-expressions
-      expect(eventLogsUserop.success).to.be.false;
-
       await expect(
         entryPoint.handleOps([userOp], await offchainSigner.getAddress())
-      ).to.be.reverted;
+      )
+        .to.be.revertedWithCustomError(entryPoint, "FailedOp")
+        .withArgs(
+          0,
+          "AA50 postOp reverted: BTPM PostOpReverted: Failed to charge tokens"
+        );
     });
+  });
 
+  describe("Negative scenarios", () => {
     it("should revert if price markup charged is too darn high", async () => {
       const userSCW: any = BiconomyAccountImplementation__factory.connect(
         walletAddress,
