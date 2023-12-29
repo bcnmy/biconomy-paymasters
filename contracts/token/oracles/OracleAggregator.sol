@@ -123,6 +123,5 @@ abstract contract OracleAggregator is Ownable, IOracleAggregator {
         } catch {
             return (0, true);     
         }
-        // validateRound
     }    
 }
