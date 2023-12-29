@@ -43,8 +43,6 @@ contract SponsorshipPaymaster is
     // Gas used in EntryPoint._handlePostOp() method (including this#postOp() call)
     uint256 private unaccountedEPGasOverhead;
 
-    uint32 private fixedPriceMarkup;
-
     mapping(address => uint256) public paymasterIdBalances;
 
     address public verifyingSigner;
@@ -66,7 +64,6 @@ contract SponsorshipPaymaster is
             sstore(feeCollector.slot, _feeCollector)
         }
         unaccountedEPGasOverhead = 18500;
-        fixedPriceMarkup = 1100000; // 10%
     }
 
     /**
@@ -132,21 +129,6 @@ contract SponsorshipPaymaster is
         uint256 oldValue = unaccountedEPGasOverhead;
         unaccountedEPGasOverhead = value;
         emit EPGasOverheadChanged(oldValue, value);
-    }
-
-    /**
-     * @dev Set a new fixedPriceMarkup value.
-     * @param _markup The new value to be set as the fixedPriceMarkup.
-     * @notice only to be called by the owner of the contract.
-     * @notice The markup is in percentage, so 1100000 is 10%.
-     * @notice The markup can not be higher than 100%
-     */
-    function setFixedPriceMarkup(uint32 _markup) external payable onlyOwner {
-        require(_markup <= PRICE_DENOMINATOR * 2, "Markup too high");
-        require(_markup >= PRICE_DENOMINATOR, "Markup too low"); // if allowed that would mean discounted
-        uint32 oldValue = fixedPriceMarkup;
-        fixedPriceMarkup = _markup;
-        emit FixedPriceMarkupChanged(oldValue, _markup);
     }
 
     /**
@@ -323,18 +305,18 @@ contract SponsorshipPaymaster is
             return (context, _packValidationData(true, validUntil, validAfter));
         }
 
-        require(priceMarkup <= 2e6, "Sponsorship Paymaster: high markup %");
+        require(priceMarkup <= 2e6 && priceMarkup > 0, "Sponsorship Paymaster: Invalid markup %");
+        // Send 1e6 for No markup
+        // Send between 0 and 1e6 for discount
 
-        uint32 dynamicMarkup = MathLib.maxuint32(priceMarkup, fixedPriceMarkup);
-
-        uint256 effectiveCost = (requiredPreFund * dynamicMarkup) /
+        uint256 effectiveCost = (requiredPreFund * priceMarkup) /
             PRICE_DENOMINATOR;
 
         require(effectiveCost <= paymasterIdBalances[paymasterId], "Sponsorship Paymaster: paymasterId does not have enough deposit");
 
         context = abi.encode(
             paymasterId,
-            dynamicMarkup,
+            priceMarkup,
             userOp.maxFeePerGas,
             userOp.maxPriorityFeePerGas,
             userOpHash
