@@ -337,7 +337,6 @@ describe("Biconomy Token Paymaster", function () {
         entryPoint,
         "nonce"
       );
-      console.log("pnd ", userOp.paymasterAndData);
 
       const signatureWithModuleAddress = ethers.utils.defaultAbiCoder.encode(
         ["bytes", "address"],
@@ -729,7 +728,6 @@ describe("Biconomy Token Paymaster", function () {
         entryPoint,
         "nonce"
       );
-      console.log("pnd ", userOp.paymasterAndData);
 
       const signatureWithModuleAddress = ethers.utils.defaultAbiCoder.encode(
         ["bytes", "address"],
@@ -737,10 +735,6 @@ describe("Biconomy Token Paymaster", function () {
       );
 
       userOp.signature = signatureWithModuleAddress;
-
-      /* await expect(
-        entryPoint.handleOps([userOp], await offchainSigner.getAddress())
-      ).to.be.reverted; */
 
       await expect(
         entryPoint.handleOps([userOp], await offchainSigner.getAddress())

@@ -388,34 +388,15 @@ describe("Biconomy Token Paymaster (with Bundler)", function () {
 
       userOp.signature = signatureWithModuleAddress;
 
-      // await expect(
-      //   entryPoint.handleOps([userOp], await offchainSigner.getAddress())
-      // ).to.be.reverted;
-
       const result: EthSendUserOperationResult =
         await environment.sendUserOperation(userOp, entryPoint.address);
-
-      console.log("result from bundler", result);
 
       const receipt = (await environment.getUserOperationReceipt(result.result))
         .result;
 
-      console.log("receipt", receipt);
-
-      // const event = parseEvent(receipt.receipt, UserOperationEventTopic);
-
-      /* const eventLogs = entryPoint.interface.decodeEventLog(
-        "UserOperationEvent",
-        event[0].data
-      );
-
-      expect(eventLogs.success).to.be.false; */
-
       await expect(
         entryPoint.handleOps([userOp], await offchainSigner.getAddress())
       ).to.be.reverted;
-
-      // await entryPoint.handleOps([userOp], await offchainSigner.getAddress());
     });
   });
 });
