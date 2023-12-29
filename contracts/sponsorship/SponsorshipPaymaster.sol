@@ -177,7 +177,7 @@ contract SponsorshipPaymaster is
     ) public override nonReentrant {
         if (withdrawAddress == address(0)) revert CanNotWithdrawToZeroAddress();
         uint256 currentBalance = paymasterIdBalances[msg.sender];
-        require(amount <= currentBalance, "Sponsorship Paymaster: Insufficient withdrawable funds");
+        require(amount <= currentBalance, "Sponsorship Paymaster: Insufficient funds to withdraw from gas tank");
         paymasterIdBalances[msg.sender] = currentBalance - amount;
         entryPoint.withdrawTo(withdrawAddress, amount);
         emit GasWithdrawn(msg.sender, withdrawAddress, amount);
@@ -314,7 +314,7 @@ contract SponsorshipPaymaster is
         );
         uint256 sigLength = signature.length;
         // we only "require" it here so that the revert reason on invalid signature will be of "VerifyingPaymaster", and not "ECDSA"
-        require(sigLength == 65, "Sponsorship Paymaster:invalid signature length");
+        require(sigLength == 65, "Sponsorship Paymaster:invalid paymaster signature length");
         //don't revert on signature failure: return SIG_VALIDATION_FAILED
         if (
             verifyingSigner != hash.toEthSignedMessageHash().recover(signature)
