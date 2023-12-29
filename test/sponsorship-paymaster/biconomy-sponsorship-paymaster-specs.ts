@@ -44,7 +44,7 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
   let ethersSigner;
 
   let offchainSigner: Signer, deployer: Signer, feeCollector: Signer;
-  let secondFundingId: Signer;
+  let secondFundingId: Signer, thirdFundingId: Signer;
 
   let sponsorshipPaymaster: SponsorshipPaymaster;
   let smartWalletImp: BiconomyAccountImplementation;
@@ -61,6 +61,7 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
     depositorSigner = ethersSigner[2];
     feeCollector = ethersSigner[3];
     secondFundingId = ethersSigner[4];
+    thirdFundingId = ethersSigner[5];
     walletOwner = deployer; // ethersSigner[0];
 
     const offchainSignerAddress = await offchainSigner.getAddress();
@@ -156,6 +157,7 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
 
   describe("Verifying paymaster basic positive tests", () => {
     it("Should Fail when there is no deposit for paymaster id", async () => {
+      // Review
       const paymasterId = await depositorSigner.getAddress();
       console.log("paymaster Id ", paymasterId);
       const userOp = await getUserOpWithPaymasterInfo(paymasterId);
@@ -557,9 +559,71 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
         paymasterIdBalanceDiff.mul(BigNumber.from(1)).div(BigNumber.from(11))
       );
     });
+
+    it("fails for fundingId which does not have enough deposit", async () => {
+      const fundingId = await thirdFundingId.getAddress();
+
+      await sponsorshipPaymaster
+        .connect(deployer)
+        .setUnaccountedEPGasOverhead(18500);
+
+      // do not deposit
+
+      const signer = await sponsorshipPaymaster.verifyingSigner();
+      const offchainSignerAddress = await offchainSigner.getAddress();
+      expect(signer).to.be.equal(offchainSignerAddress);
+
+      const userOp1 = await fillAndSign(
+        {
+          sender: walletAddress,
+          verificationGasLimit: 200000,
+        },
+        walletOwner,
+        entryPoint,
+        "nonce"
+      );
+
+      const hash = await sponsorshipPaymaster.getHash(
+        userOp1,
+        fundingId,
+        MOCK_VALID_UNTIL,
+        MOCK_VALID_AFTER,
+        dynamicMarkup
+      );
+      const sig = await offchainSigner.signMessage(arrayify(hash));
+      const userOp = await fillAndSign(
+        {
+          ...userOp1,
+          paymasterAndData: hexConcat([
+            paymasterAddress,
+            ethers.utils.defaultAbiCoder.encode(
+              ["address", "uint48", "uint48", "uint32"],
+              [fundingId, MOCK_VALID_UNTIL, MOCK_VALID_AFTER, dynamicMarkup]
+            ),
+            sig,
+          ]),
+        },
+        walletOwner,
+        entryPoint,
+        "nonce"
+      );
+
+      const signatureWithModuleAddress = ethers.utils.defaultAbiCoder.encode(
+        ["bytes", "address"],
+        [userOp.signature, ecdsaModule.address]
+      );
+      userOp.signature = signatureWithModuleAddress;
+
+      await expect(entryPoint.callStatic.simulateValidation(userOp))
+        .to.be.revertedWithCustomError(entryPoint, "FailedOp")
+        .withArgs(
+          0,
+          "AA33 reverted: Sponsorship Paymaster: paymasterId does not have enough deposit"
+        );
+    });
   });
 
-  describe("Verifying Paymaster - read methods and state checks", () => {
+  describe("Sponsorship Paymaster - read methods and state checks", () => {
     it("Should parse data properly", async () => {
       const paymasterAndData = hexConcat([
         paymasterAddress,
@@ -607,7 +671,7 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
     });
   });
 
-  describe("Verifying Paymaster - deposit and withdraw tests", () => {
+  describe("Sponsorship Paymaster - deposit and withdraw tests", () => {
     it("Deposits into the specified address", async () => {
       const paymasterId = await depositorSigner.getAddress();
 
@@ -652,9 +716,8 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
         sponsorshipPaymaster
           .connect(depositorSigner)
           .withdrawTo(paymasterId, parseEther("1.1"))
-      ).to.be.revertedWithCustomError(
-        sponsorshipPaymaster,
-        "InsufficientBalance"
+      ).to.be.revertedWith(
+        "Sponsorship Paymaster: Insufficient withdrawable funds"
       );
     });
   });
