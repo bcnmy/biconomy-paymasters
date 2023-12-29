@@ -343,10 +343,10 @@ describe("Biconomy Token Paymaster", function () {
         true
       );
 
-      // Review
       // this is not expected to revert
-      /* const feedResult =
-        await sampleTokenPaymaster.getTokenValueOfOneNativeToken(token.address); */
+      const feedResult =
+        await sampleTokenPaymaster.getTokenValueOfOneNativeToken(token.address);
+      expect(feedResult).to.be.equal(ethers.constants.Zero);
 
       await token
         .connect(deployer)
@@ -412,37 +412,33 @@ describe("Biconomy Token Paymaster", function () {
 
       console.log("userOp second case ", userOp);
 
-      await expect(
-        entryPoint.handleOps([userOp], await offchainSigner.getAddress())
-      ).to.be.reverted;
+      const tx = await entryPoint.handleOps(
+        [userOp],
+        await offchainSigner.getAddress()
+      );
+      const receipt = await tx.wait();
 
-      // const tx = await entryPoint.handleOps(
-      //   [userOp],
-      //   await offchainSigner.getAddress()
-      // );
-      // const receipt = await tx.wait();
+      const event = parseEvent(receipt, UserOperationEventTopic);
 
-      // const event = parseEvent(receipt, UserOperationEventTopic);
+      const eventLogsUserop = entryPoint.interface.decodeEventLog(
+        "UserOperationEvent",
+        event[0].data
+      );
 
-      // const eventLogsUserop = entryPoint.interface.decodeEventLog(
-      //   "UserOperationEvent",
-      //   event[0].data
-      // );
+      // eslint-disable-next-line no-unused-expressions
+      expect(eventLogsUserop.success).to.be.true;
 
-      // // eslint-disable-next-line no-unused-expressions
-      // expect(eventLogsUserop.success).to.be.true;
+      const BiconomyTokenPaymaster = await ethers.getContractFactory(
+        "BiconomyTokenPaymaster"
+      );
 
-      // const BiconomyTokenPaymaster = await ethers.getContractFactory(
-      //   "BiconomyTokenPaymaster"
-      // );
+      const eventLogs = BiconomyTokenPaymaster.interface.decodeEventLog(
+        "TokenPaymasterOperation",
+        receipt.logs[3].data
+      );
 
-      // const eventLogs = BiconomyTokenPaymaster.interface.decodeEventLog(
-      //   "TokenPaymasterOperation",
-      //   receipt.logs[3].data
-      // );
-
-      // // Confirming that it's using backup (external) exchange rate in case oracle aggregator / price feed is stale / anything goes wrong
-      // expect(eventLogs.exchangeRate).to.be.equal(MOCK_FX);
+      // Confirming that it's using backup (external) exchange rate in case oracle aggregator / price feed is stale / anything goes wrong
+      expect(eventLogs.exchangeRate).to.be.equal(MOCK_FX);
 
       await expect(
         entryPoint.handleOps([userOp], await offchainSigner.getAddress())

@@ -98,14 +98,6 @@ abstract contract OracleAggregator is Ownable, IOracleAggregator {
     /// @param _oracle The Oracle contract to fetch the price from.
     /// @return price The latest price fetched from the Oracle.
     function fetchPrice(FeedInterface _oracle) internal view returns (uint256 price, bool isError) {
-        (
-            uint80 roundId,
-            int256 answer,
-            ,
-            uint256 updatedAt,
-            uint80 answeredInRound
-        ) = _oracle.latestRoundData();
-
         try _oracle.latestRoundData() returns (
             uint80 roundId,
             int256 answer,
@@ -120,8 +112,10 @@ abstract contract OracleAggregator is Ownable, IOracleAggregator {
            if (answeredInRound < roundId) return(0, true);
            price = uint256(answer);
            return (price, false);
-        } catch {
+        } catch Error(string memory reason) {
             return (0, true);     
+        } catch {
+            return (0, true);
         }
     }    
 }

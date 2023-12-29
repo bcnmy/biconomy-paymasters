@@ -3,8 +3,6 @@ pragma solidity ^0.8.20;
 
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
-error WrongPrice();
-
 contract MockStaleOracle is AggregatorV3Interface {
 
     uint256 internal priceToReturn;
@@ -58,6 +56,6 @@ contract MockStaleOracle is AggregatorV3Interface {
             uint80 answeredInRound
         )
     {
-        revert WrongPrice();
+        revert("MockStaleOracle::latestRoundData: stale price");
     }
 }
