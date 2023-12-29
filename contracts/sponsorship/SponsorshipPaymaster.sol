@@ -177,8 +177,7 @@ contract SponsorshipPaymaster is
     ) public override nonReentrant {
         if (withdrawAddress == address(0)) revert CanNotWithdrawToZeroAddress();
         uint256 currentBalance = paymasterIdBalances[msg.sender];
-        if (amount > currentBalance)
-            revert InsufficientBalance(amount, currentBalance);
+        require(amount <= currentBalance, "Sponsorship Paymaster: Insufficient funds to withdraw from gas tank");
         paymasterIdBalances[msg.sender] = currentBalance - amount;
         entryPoint.withdrawTo(withdrawAddress, amount);
         emit GasWithdrawn(msg.sender, withdrawAddress, amount);
@@ -315,7 +314,7 @@ contract SponsorshipPaymaster is
         );
         uint256 sigLength = signature.length;
         // we only "require" it here so that the revert reason on invalid signature will be of "VerifyingPaymaster", and not "ECDSA"
-        if (sigLength != 65) revert InvalidPaymasterSignatureLength(sigLength);
+        require(sigLength == 65, "Sponsorship Paymaster:invalid paymaster signature length");
         //don't revert on signature failure: return SIG_VALIDATION_FAILED
         if (
             verifyingSigner != hash.toEthSignedMessageHash().recover(signature)
@@ -324,18 +323,14 @@ contract SponsorshipPaymaster is
             return (context, _packValidationData(true, validUntil, validAfter));
         }
 
-        require(priceMarkup <= 2e6, "Verifying PM:high markup %");
+        require(priceMarkup <= 2e6, "Sponsorship Paymaster: high markup %");
 
         uint32 dynamicMarkup = MathLib.maxuint32(priceMarkup, fixedPriceMarkup);
 
         uint256 effectiveCost = (requiredPreFund * dynamicMarkup) /
             PRICE_DENOMINATOR;
 
-        if (effectiveCost > paymasterIdBalances[paymasterId])
-            revert InsufficientBalance(
-                effectiveCost,
-                paymasterIdBalances[paymasterId]
-            );
+        require(effectiveCost <= paymasterIdBalances[paymasterId], "Sponsorship Paymaster: paymasterId does not have enough deposit");
 
         context = abi.encode(
             paymasterId,
