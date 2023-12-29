@@ -314,5 +314,89 @@ describe("Biconomy Token Paymaster (with Bundler)", function () {
         entryPoint.handleOps([userOp], await offchainSigner.getAddress())
       ).to.be.reverted;
     });
+
+    it("catch postOp is going revert and (don't process transaction by bundler)", async () => {
+      const userSCW: any = BiconomyAccountImplementation__factory.connect(
+        walletAddress,
+        deployer
+      );
+
+      await token
+        .connect(deployer)
+        .transfer(walletAddress, ethers.utils.parseEther("100"));
+
+      const accountBalBefore = await token.balanceOf(walletAddress);
+      const feeReceiverBalBefore = await token.balanceOf(paymasterAddress);
+
+      const userOp1 = await fillAndSign(
+        {
+          sender: walletAddress,
+          verificationGasLimit: 200000,
+          callData: encodeERC20Approval(
+            userSCW,
+            token,
+            paymasterAddress,
+            ethers.constants.Zero // making allowance 0 in execution
+          ),
+          preVerificationGas: 55000,
+        },
+        walletOwner,
+        entryPoint,
+        "nonce"
+      );
+
+      const hash = await sampleTokenPaymaster.getHash(
+        userOp1,
+        ethers.utils.hexlify(1).slice(2, 4),
+        MOCK_VALID_UNTIL,
+        MOCK_VALID_AFTER,
+        token.address,
+        MOCK_FX,
+        DEFAULT_FEE_MARKUP
+      );
+      const sig = await offchainSigner.signMessage(arrayify(hash));
+      const numVU = ethers.BigNumber.from(MOCK_VALID_UNTIL);
+      const numVA = ethers.BigNumber.from(MOCK_VALID_AFTER);
+      const numER = ethers.BigNumber.from(MOCK_FX);
+      const userOp = await fillAndSign(
+        {
+          ...userOp1,
+          paymasterAndData: ethers.utils.hexConcat([
+            paymasterAddress,
+            ethers.utils.hexlify(1).slice(0, 4),
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(numVU.toNumber()), 6), // 6 byte
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(numVA.toNumber()), 6), // 6 byte
+            ethers.utils.hexZeroPad(token.address, 20), // 20 byte
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(numER.toNumber()), 16), // 16 byte
+            ethers.utils.hexZeroPad(
+              ethers.utils.hexlify(DEFAULT_FEE_MARKUP),
+              4
+            ), // 4 byte
+            sig,
+          ]),
+          preVerificationGas: 55000,
+        },
+        walletOwner,
+        entryPoint,
+        "nonce"
+      );
+
+      const signatureWithModuleAddress = ethers.utils.defaultAbiCoder.encode(
+        ["bytes", "address"],
+        [userOp.signature, ecdsaModule.address]
+      );
+
+      userOp.signature = signatureWithModuleAddress;
+
+      const result: EthSendUserOperationResult =
+        await environment.sendUserOperation(userOp, entryPoint.address);
+
+      const receipt = (await environment.getUserOperationReceipt(result.result))
+        .result;
+
+      await expect(
+        entryPoint.handleOps([userOp], await offchainSigner.getAddress())
+      ).to.be.reverted;
+    });
   });
 });
