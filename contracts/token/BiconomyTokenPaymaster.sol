@@ -6,6 +6,8 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.
 import {IEntryPoint} from "@account-abstraction/contracts/interfaces/IEntryPoint.sol";
 import {UserOperation} from "@account-abstraction/contracts/interfaces/UserOperation.sol";
 import {UserOperationLib} from "@account-abstraction/contracts/interfaces/UserOperation.sol";
+import {IBiconomyTokenPaymaster} from "../interfaces/paymasters/IBiconomyTokenPaymaster.sol";
+import {CalldataHelper} from "../libs/CalldataHelper.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {BasePaymaster} from "../BasePaymaster.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -30,41 +32,23 @@ import {OracleAggregator} from "./oracles/OracleAggregator.sol";
  * Optionally a safe guard deposit may be used in future versions.
  */
 
-// TODO remove hardhat console logs 
 contract BiconomyTokenPaymaster is
     BasePaymaster,
     OracleAggregator,
     ReentrancyGuard,
-    TokenPaymasterErrors
+    TokenPaymasterErrors,
+    IBiconomyTokenPaymaster
 {
     using ECDSA for bytes32;
     using Address for address;
     using UserOperationLib for UserOperation;
-
-    /**
-     * price source can be off-chain calculation or oracles
-     * for oracle based it can be based on chainlink feeds or TWAP oracles
-     * for ORACLE_BASED oracle aggregator address has to be passed in paymasterAndData
-     */
-    enum ExchangeRateSource {
-        EXTERNAL_EXCHANGE_RATE,
-        ORACLE_BASED
-    }
-
-    // 1. use mode and based on mode treat uint256 fee sent either as priceMarkup or flatFee
-    // 2. (no mode required) add extra value in paymasterandData so uint32 markup and uint224 flatFee both can be parsed
-    // 3. (no mode required) without extra value treat uint256 as packed uint32uint224 and use values accordingly
-    /*enum FeePremiumMode {
-        PERCENTAGE,
-        FLAT
-    }*/
 
     /// @notice All 'price' variable coming from outside are expected to be multiple of 1e6, and in actual calculation,
     /// final value is divided by PRICE_DENOMINATOR to avoid rounding up.
     uint32 private constant PRICE_DENOMINATOR = 1e6;
 
     // Gas used in EntryPoint._handlePostOp() method (including this#postOp() call)
-    uint256 public UNACCOUNTED_COST = 45000; // TBD
+    uint256 public unaccountedEPGasOverhead = 45000;
 
     // Always rely on verifyingSigner..
     address public verifyingSigner;
@@ -74,61 +58,8 @@ contract BiconomyTokenPaymaster is
 
     // paymasterAndData: concat of [paymasterAddress(address), priceSource(enum 1 byte), validUntil(6 byte), validAfter(6 byte), feeToken(20 bytes), exchangeRate(16 bytes), priceMarkup(4 bytes), signature]
     // PND offset is used to indicate offsets to decode, used along with Signature offset
-    uint256 private constant VALID_PND_OFFSET = 21;
-
+    uint256 private constant VALID_PND_OFFSET = 20;
     uint256 private constant SIGNATURE_OFFSET = 73;
-
-    /**
-     * Designed to enable the community to track change in storage variable UNACCOUNTED_COST which is used
-     * to maintain gas execution cost which can't be calculated within contract*/
-    event EPGasOverheadChanged(
-        uint256 indexed _oldOverheadCost,
-        uint256 indexed _newOverheadCost,
-        address indexed _actor
-    );
-
-    /**
-     * Designed to enable the community to track change in storage variable verifyingSigner which is used
-     * to authorize any operation for this paymaster (validation stage) and provides signature*/
-    event VerifyingSignerChanged(
-        address indexed _oldSigner,
-        address indexed _newSigner,
-        address indexed _actor
-    );
-
-    /**
-     * Designed to enable the community to track change in storage variable feeReceiver which is an address (self or other SCW/EOA)
-     * responsible for collecting all the tokens being withdrawn as fees*/
-    event FeeReceiverChanged(
-        address indexed _oldfeeReceiver,
-        address indexed _newfeeReceiver,
-        address indexed _actor
-    );
-
-    /**
-     * Designed to enable tracking how much fees were charged from the sender and in which ERC20 token
-     * More information can be emitted like exchangeRate used, what was the source of exchangeRate etc*/
-    // priceMarkup = Multiplier value to calculate markup, 1e6 means 1x multiplier = No markup
-    event TokenPaymasterOperation(
-        address indexed sender,
-        address indexed token,
-        uint256 indexed totalCharge,
-        uint32 priceMarkup,
-        bytes32 userOpHash,
-        uint128 exchangeRate,
-        ExchangeRateSource priceSource
-    );
-
-    /**
-     * Notify in case paymaster failed to withdraw tokens from sender
-     */
-    event TokenPaymentDue(
-        address indexed token,
-        address indexed account,
-        uint256 indexed charge
-    );
-
-    event Received(address indexed sender, uint256 value);
 
     constructor(
         address _owner,
@@ -194,9 +125,9 @@ contract BiconomyTokenPaymaster is
         uint256 _newOverheadCost
     ) external payable onlyOwner {
         if (_newOverheadCost > 200000) revert CannotBeUnrealisticValue();
-        uint256 oldValue = UNACCOUNTED_COST;
+        uint256 oldValue = unaccountedEPGasOverhead;
         assembly ("memory-safe") {
-            sstore(UNACCOUNTED_COST.slot, _newOverheadCost)
+            sstore(unaccountedEPGasOverhead.slot, _newOverheadCost)
         }
         emit EPGasOverheadChanged(oldValue, _newOverheadCost, msg.sender);
     }
@@ -305,18 +236,6 @@ contract BiconomyTokenPaymaster is
         if (!success) revert NativeTokensWithdrawalFailed();
     }
 
-    // TODO move to helpers library
-    function calldataKeccak(
-        bytes calldata data
-    ) internal pure returns (bytes32 ret) {
-        assembly ("memory-safe") {
-            let mem := mload(0x40)
-            let len := data.length
-            calldatacopy(mem, data.offset, len)
-            ret := keccak256(mem, len) 
-        }
-    }
-
     /**
      * @dev This method is called by the off-chain service, to sign the request.
      * It is called on-chain from the validatePaymasterUserOp, to validate the signature.
@@ -339,8 +258,8 @@ contract BiconomyTokenPaymaster is
                 abi.encode(
                     userOp.getSender(),
                     userOp.nonce,
-                    calldataKeccak(userOp.initCode),
-                    calldataKeccak(userOp.callData),
+                    CalldataHelper.calldataKeccak(userOp.initCode),
+                    CalldataHelper.calldataKeccak(userOp.callData),
                     userOp.callGasLimit,
                     userOp.verificationGasLimit,
                     userOp.preVerificationGas,
@@ -380,15 +299,15 @@ contract BiconomyTokenPaymaster is
         );
         priceSource = ExchangeRateSource(
             uint8(
-                bytes1(paymasterAndData[VALID_PND_OFFSET - 1:VALID_PND_OFFSET])
+                bytes1(paymasterAndData[VALID_PND_OFFSET:VALID_PND_OFFSET + 1])
             )
         );
-        validUntil = uint48(bytes6(paymasterAndData[21:27]));
-        validAfter = uint48(bytes6(paymasterAndData[27:33]));
-        feeToken = address(bytes20(paymasterAndData[33:53]));
-        exchangeRate = uint128(bytes16(paymasterAndData[53:69]));
-        priceMarkup = uint32(bytes4(paymasterAndData[69:73]));
-        signature = paymasterAndData[SIGNATURE_OFFSET:];
+        validUntil = uint48(bytes6(paymasterAndData[VALID_PND_OFFSET + 1:VALID_PND_OFFSET + 7]));
+        validAfter = uint48(bytes6(paymasterAndData[VALID_PND_OFFSET + 7:VALID_PND_OFFSET + 13]));
+        feeToken = address(bytes20(paymasterAndData[VALID_PND_OFFSET + 13:VALID_PND_OFFSET + 33]));
+        exchangeRate = uint128(bytes16(paymasterAndData[VALID_PND_OFFSET + 33:VALID_PND_OFFSET + 49]));
+        priceMarkup = uint32(bytes4(paymasterAndData[VALID_PND_OFFSET + 49:VALID_PND_OFFSET + 53]));
+        signature = paymasterAndData[VALID_PND_OFFSET + 53:];
     }
 
     function _getRequiredPrefund(
@@ -398,7 +317,7 @@ contract BiconomyTokenPaymaster is
             uint256 requiredGas = userOp.callGasLimit +
                 userOp.verificationGasLimit +
                 userOp.preVerificationGas +
-                UNACCOUNTED_COST;
+                unaccountedEPGasOverhead;
 
             requiredPrefund = requiredGas * userOp.maxFeePerGas;
         }
@@ -537,7 +456,7 @@ contract BiconomyTokenPaymaster is
         uint256 charge; // Final amount to be charged from user account
         {
             uint256 actualTokenCost = ((actualGasCost +
-                (UNACCOUNTED_COST * tx.gasprice)) * effectiveExchangeRate) /
+                (unaccountedEPGasOverhead * tx.gasprice)) * effectiveExchangeRate) /
                 1e18;
             charge = ((actualTokenCost * priceMarkup) / PRICE_DENOMINATOR);
         }

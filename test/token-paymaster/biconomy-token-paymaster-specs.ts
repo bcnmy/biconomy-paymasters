@@ -840,7 +840,8 @@ describe("Biconomy Token Paymaster", function () {
 
       let feeReceiver = await sampleTokenPaymaster.feeReceiver();
 
-      let unaccountedCost = await sampleTokenPaymaster.UNACCOUNTED_COST();
+      let unaccountedCost =
+        await sampleTokenPaymaster.unaccountedEPGasOverhead();
 
       let owner = await sampleTokenPaymaster.owner();
 
@@ -861,7 +862,7 @@ describe("Biconomy Token Paymaster", function () {
 
       feeReceiver = await sampleTokenPaymaster.feeReceiver();
 
-      unaccountedCost = await sampleTokenPaymaster.UNACCOUNTED_COST();
+      unaccountedCost = await sampleTokenPaymaster.unaccountedEPGasOverhead();
 
       owner = await sampleTokenPaymaster.owner();
 

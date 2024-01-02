@@ -7,6 +7,7 @@ import {console2} from "forge-std/console2.sol";
 import {Vm} from "forge-std/Vm.sol";
 
 import {BiconomyTokenPaymaster} from "../../../contracts/token/BiconomyTokenPaymaster.sol";
+import {IBiconomyTokenPaymaster} from "../../../contracts/interfaces/paymasters/IBiconomyTokenPaymaster.sol";
 import "../../BytesLib.sol";
 import "../../../contracts/test/helpers/TestCounter.sol";
 
@@ -184,7 +185,7 @@ contract TokenPaymasterMumbaiTest is SATestBase {
 
         bytes memory pmSig = signPaymasterSignature(op, keyVerifyingSigner);
 
-        BiconomyTokenPaymaster.ExchangeRateSource priceSource = BiconomyTokenPaymaster
+        IBiconomyTokenPaymaster.ExchangeRateSource priceSource = IBiconomyTokenPaymaster
                 .ExchangeRateSource
                 .EXTERNAL_EXCHANGE_RATE;
         uint48 validUntil = 3735928559;
@@ -293,7 +294,7 @@ contract TokenPaymasterMumbaiTest is SATestBase {
         bytes
             memory pmSig = "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
 
-        BiconomyTokenPaymaster.ExchangeRateSource priceSource = BiconomyTokenPaymaster
+        IBiconomyTokenPaymaster.ExchangeRateSource priceSource = IBiconomyTokenPaymaster
                 .ExchangeRateSource
                 .EXTERNAL_EXCHANGE_RATE;
         uint48 validUntil = 3735928559;
@@ -341,7 +342,7 @@ contract TokenPaymasterMumbaiTest is SATestBase {
         );
         bytes memory pmSig = abi.encodePacked(r, s, v);
 
-        BiconomyTokenPaymaster.ExchangeRateSource priceSource = BiconomyTokenPaymaster
+        IBiconomyTokenPaymaster.ExchangeRateSource priceSource = IBiconomyTokenPaymaster
                 .ExchangeRateSource
                 .EXTERNAL_EXCHANGE_RATE;
         uint48 validUntil = 3735928559;
@@ -384,7 +385,7 @@ contract TokenPaymasterMumbaiTest is SATestBase {
             abi.encodeWithSelector(ERC20.approve.selector, address(_btpm), 10e6)
         );
 
-        BiconomyTokenPaymaster.ExchangeRateSource priceSource = BiconomyTokenPaymaster
+        IBiconomyTokenPaymaster.ExchangeRateSource priceSource = IBiconomyTokenPaymaster
                 .ExchangeRateSource
                 .EXTERNAL_EXCHANGE_RATE;
         uint48 validUntil = 3735928559;
@@ -436,7 +437,7 @@ contract TokenPaymasterMumbaiTest is SATestBase {
         UserOperation memory op,
         uint256 _key
     ) public returns (bytes memory signature) {
-        BiconomyTokenPaymaster.ExchangeRateSource priceSource = BiconomyTokenPaymaster
+        IBiconomyTokenPaymaster.ExchangeRateSource priceSource = IBiconomyTokenPaymaster
                 .ExchangeRateSource
                 .EXTERNAL_EXCHANGE_RATE;
         uint48 validUntil = 3735928559;
