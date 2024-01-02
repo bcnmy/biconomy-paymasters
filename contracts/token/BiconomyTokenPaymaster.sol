@@ -61,15 +61,16 @@ contract BiconomyTokenPaymaster is
     uint256 private constant VALID_PND_OFFSET = 20;
     uint256 private constant SIGNATURE_OFFSET = 73;
 
-    constructor(
-        address _owner,
-        IEntryPoint _entryPoint,
-        address _verifyingSigner
-    ) payable BasePaymaster(_owner, _entryPoint) OracleAggregator(_owner) {
+    constructor(address _owner, IEntryPoint _entryPoint, address _verifyingSigner)
+        payable
+        BasePaymaster(_owner, _entryPoint)
+        OracleAggregator(_owner)
+    {
         if (_owner == address(0)) revert OwnerCannotBeZero();
         if (address(_entryPoint) == address(0)) revert EntryPointCannotBeZero();
-        if (_verifyingSigner == address(0))
+        if (_verifyingSigner == address(0)) {
             revert VerifyingSignerCannotBeZero();
+        }
         assembly ("memory-safe") {
             sstore(verifyingSigner.slot, _verifyingSigner)
             sstore(feeReceiver.slot, address()) // initialize with self (could also be _owner)
@@ -83,11 +84,10 @@ contract BiconomyTokenPaymaster is
      * @notice If _newVerifyingSigner is set to zero address, it will revert with an error.
      * After setting the new signer address, it will emit an event VerifyingSignerChanged.
      */
-    function setVerifyingSigner(
-        address _newVerifyingSigner
-    ) external payable onlyOwner {
-        if (_newVerifyingSigner == address(0))
+    function setVerifyingSigner(address _newVerifyingSigner) external payable onlyOwner {
+        if (_newVerifyingSigner == address(0)) {
             revert VerifyingSignerCannotBeZero();
+        }
         address oldSigner = verifyingSigner;
         assembly ("memory-safe") {
             sstore(verifyingSigner.slot, _newVerifyingSigner)
@@ -103,9 +103,7 @@ contract BiconomyTokenPaymaster is
      * @notice If _newFeeReceiver is set to zero address, it will revert with an error.
      * After setting the new address, it will emit an event FeeReceiverChanged.
      */
-    function setFeeReceiver(
-        address _newFeeReceiver
-    ) external payable onlyOwner {
+    function setFeeReceiver(address _newFeeReceiver) external payable onlyOwner {
         if (_newFeeReceiver == address(0)) revert FeeReceiverCannotBeZero();
         address oldFeeReceiver = feeReceiver;
         assembly ("memory-safe") {
@@ -121,9 +119,7 @@ contract BiconomyTokenPaymaster is
      * @notice If _newOverheadCost is set to very high value, it will revert with an error.
      * After setting the new value, it will emit an event EPGasOverheadChanged.
      */
-    function setUnaccountedEPGasOverhead(
-        uint256 _newOverheadCost
-    ) external payable onlyOwner {
+    function setUnaccountedEPGasOverhead(uint256 _newOverheadCost) external payable onlyOwner {
         if (_newOverheadCost > 200000) revert CannotBeUnrealisticValue();
         uint256 oldValue = unaccountedEPGasOverhead;
         assembly ("memory-safe") {
@@ -145,10 +141,7 @@ contract BiconomyTokenPaymaster is
      * @param withdrawAddress The address to which the gas tokens should be transferred.
      * @param amount The amount of gas tokens to withdraw.
      */
-    function withdrawTo(
-        address payable withdrawAddress,
-        uint256 amount
-    ) public override onlyOwner nonReentrant {
+    function withdrawTo(address payable withdrawAddress, uint256 amount) public override onlyOwner nonReentrant {
         if (withdrawAddress == address(0)) revert CanNotWithdrawToZeroAddress();
         entryPoint.withdrawTo(withdrawAddress, amount);
     }
@@ -159,11 +152,7 @@ contract BiconomyTokenPaymaster is
      * @param target address to send to
      * @param amount amount to withdraw
      */
-    function withdrawERC20(
-        IERC20 token,
-        address target,
-        uint256 amount
-    ) public payable onlyOwner nonReentrant {
+    function withdrawERC20(IERC20 token, address target, uint256 amount) public payable onlyOwner nonReentrant {
         _withdrawERC20(token, target, amount);
     }
 
@@ -172,10 +161,7 @@ contract BiconomyTokenPaymaster is
      * @param token the token deposit to withdraw
      * @param target address to send to
      */
-    function withdrawERC20Full(
-        IERC20 token,
-        address target
-    ) public payable onlyOwner nonReentrant {
+    function withdrawERC20Full(IERC20 token, address target) public payable onlyOwner nonReentrant {
         uint256 amount = token.balanceOf(address(this));
         _withdrawERC20(token, target, amount);
     }
@@ -186,15 +172,17 @@ contract BiconomyTokenPaymaster is
      * @param target address to send to
      * @param amount amounts to withdraw
      */
-    function withdrawMultipleERC20(
-        IERC20[] calldata token,
-        address target,
-        uint256[] calldata amount
-    ) public payable onlyOwner nonReentrant {
-        if (token.length != amount.length)
+    function withdrawMultipleERC20(IERC20[] calldata token, address target, uint256[] calldata amount)
+        public
+        payable
+        onlyOwner
+        nonReentrant
+    {
+        if (token.length != amount.length) {
             revert TokensAndAmountsLengthMismatch();
+        }
         unchecked {
-            for (uint256 i; i < token.length; ) {
+            for (uint256 i; i < token.length;) {
                 _withdrawERC20(token[i], target, amount[i]);
                 ++i;
             }
@@ -206,12 +194,9 @@ contract BiconomyTokenPaymaster is
      * @param token the tokens deposit to withdraw
      * @param target address to send to
      */
-    function withdrawMultipleERC20Full(
-        IERC20[] calldata token,
-        address target
-    ) public payable onlyOwner nonReentrant {
+    function withdrawMultipleERC20Full(IERC20[] calldata token, address target) public payable onlyOwner nonReentrant {
         unchecked {
-            for (uint256 i; i < token.length; ) {
+            for (uint256 i; i < token.length;) {
                 uint256 amount = token[i].balanceOf(address(this));
                 _withdrawERC20(token[i], target, amount);
                 ++i;
@@ -223,9 +208,7 @@ contract BiconomyTokenPaymaster is
      * @dev pull native tokens out of paymaster in case they were sent to the paymaster at any point
      * @param dest address to send to
      */
-    function withdrawAllNative(
-        address dest
-    ) public payable onlyOwner nonReentrant {
+    function withdrawAllNative(address dest) public payable onlyOwner nonReentrant {
         uint256 _balance = address(this).balance;
         if (_balance == 0) revert NativeTokenBalanceZero();
         if (dest == address(0)) revert CanNotWithdrawToZeroAddress();
@@ -253,33 +236,30 @@ contract BiconomyTokenPaymaster is
         uint32 priceMarkup
     ) public view returns (bytes32) {
         //can't use userOp.hash(), since it contains also the paymasterAndData itself.
-        return
-            keccak256(
-                abi.encode(
-                    userOp.getSender(),
-                    userOp.nonce,
-                    CalldataHelper.calldataKeccak(userOp.initCode),
-                    CalldataHelper.calldataKeccak(userOp.callData),
-                    userOp.callGasLimit,
-                    userOp.verificationGasLimit,
-                    userOp.preVerificationGas,
-                    userOp.maxFeePerGas,
-                    userOp.maxPriorityFeePerGas,
-                    block.chainid,
-                    address(this),
-                    priceSource,
-                    validUntil,
-                    validAfter,
-                    feeToken,
-                    exchangeRate,
-                    priceMarkup
-                )
-            );
+        return keccak256(
+            abi.encode(
+                userOp.getSender(),
+                userOp.nonce,
+                CalldataHelper.calldataKeccak(userOp.initCode),
+                CalldataHelper.calldataKeccak(userOp.callData),
+                userOp.callGasLimit,
+                userOp.verificationGasLimit,
+                userOp.preVerificationGas,
+                userOp.maxFeePerGas,
+                userOp.maxPriorityFeePerGas,
+                block.chainid,
+                address(this),
+                priceSource,
+                validUntil,
+                validAfter,
+                feeToken,
+                exchangeRate,
+                priceMarkup
+            )
+        );
     }
 
-    function parsePaymasterAndData(
-        bytes calldata paymasterAndData
-    )
+    function parsePaymasterAndData(bytes calldata paymasterAndData)
         public
         pure
         returns (
@@ -293,15 +273,8 @@ contract BiconomyTokenPaymaster is
         )
     {
         // paymasterAndData.length should be at least SIGNATURE_OFFSET + 65 (checked separate)
-        require(
-            paymasterAndData.length >= SIGNATURE_OFFSET,
-            "BTPM: Invalid length for paymasterAndData"
-        );
-        priceSource = ExchangeRateSource(
-            uint8(
-                bytes1(paymasterAndData[VALID_PND_OFFSET:VALID_PND_OFFSET + 1])
-            )
-        );
+        require(paymasterAndData.length >= SIGNATURE_OFFSET, "BTPM: Invalid length for paymasterAndData");
+        priceSource = ExchangeRateSource(uint8(bytes1(paymasterAndData[VALID_PND_OFFSET:VALID_PND_OFFSET + 1])));
         validUntil = uint48(bytes6(paymasterAndData[VALID_PND_OFFSET + 1:VALID_PND_OFFSET + 7]));
         validAfter = uint48(bytes6(paymasterAndData[VALID_PND_OFFSET + 7:VALID_PND_OFFSET + 13]));
         feeToken = address(bytes20(paymasterAndData[VALID_PND_OFFSET + 13:VALID_PND_OFFSET + 33]));
@@ -310,14 +283,10 @@ contract BiconomyTokenPaymaster is
         signature = paymasterAndData[VALID_PND_OFFSET + 53:];
     }
 
-    function _getRequiredPrefund(
-        UserOperation calldata userOp
-    ) internal view returns (uint256 requiredPrefund) {
+    function _getRequiredPrefund(UserOperation calldata userOp) internal view returns (uint256 requiredPrefund) {
         unchecked {
-            uint256 requiredGas = userOp.callGasLimit +
-                userOp.verificationGasLimit +
-                userOp.preVerificationGas +
-                unaccountedEPGasOverhead;
+            uint256 requiredGas =
+                userOp.callGasLimit + userOp.verificationGasLimit + userOp.preVerificationGas + unaccountedEPGasOverhead;
 
             requiredPrefund = requiredGas * userOp.maxFeePerGas;
         }
@@ -333,11 +302,7 @@ contract BiconomyTokenPaymaster is
      * @return context A context string returned by the entry point after successful validation.
      * @return validationData An integer returned by the entry point after successful validation.
      */
-    function _validatePaymasterUserOp(
-        UserOperation calldata userOp,
-        bytes32 userOpHash,
-        uint256 requiredPreFund
-    )
+    function _validatePaymasterUserOp(UserOperation calldata userOp, bytes32 userOpHash, uint256 requiredPreFund)
         internal
         view
         override
@@ -355,23 +320,13 @@ contract BiconomyTokenPaymaster is
             bytes calldata signature
         ) = parsePaymasterAndData(userOp.paymasterAndData);
 
-        bytes32 _hash = getHash(
-            userOp,
-            priceSource,
-            validUntil,
-            validAfter,
-            feeToken,
-            exchangeRate,
-            priceMarkup
-        ).toEthSignedMessageHash();
+        bytes32 _hash = getHash(userOp, priceSource, validUntil, validAfter, feeToken, exchangeRate, priceMarkup)
+            .toEthSignedMessageHash();
 
         //don't revert on signature failure: return SIG_VALIDATION_FAILED
         if (verifyingSigner != _hash.recover(signature)) {
             // empty context and sigFailed true
-            return (
-                context,
-                Helpers._packValidationData(true, validUntil, validAfter)
-            );
+            return (context, Helpers._packValidationData(true, validUntil, validAfter));
         }
 
         address account = userOp.getSender();
@@ -381,28 +336,16 @@ contract BiconomyTokenPaymaster is
 
         uint256 btpmRequiredPrefund = _getRequiredPrefund(userOp);
 
-        uint256 tokenRequiredPreFund = (btpmRequiredPrefund * exchangeRate) /
-            10 ** 18;
+        uint256 tokenRequiredPreFund = (btpmRequiredPrefund * exchangeRate) / 10 ** 18;
         require(priceMarkup <= 2e6, "BTPM: price markup percentage too high");
         require(
-            IERC20(feeToken).balanceOf(account) >=
-                ((tokenRequiredPreFund * priceMarkup) / PRICE_DENOMINATOR),
+            IERC20(feeToken).balanceOf(account) >= ((tokenRequiredPreFund * priceMarkup) / PRICE_DENOMINATOR),
             "BTPM: account does not have enough token balance"
         );
 
-        context = abi.encode(
-            account,
-            feeToken,
-            priceSource,
-            exchangeRate,
-            priceMarkup,
-            userOpHash
-        );
+        context = abi.encode(account, feeToken, priceSource, exchangeRate, priceMarkup, userOpHash);
 
-        return (
-            context,
-            Helpers._packValidationData(false, validUntil, validAfter)
-        );
+        return (context, Helpers._packValidationData(false, validUntil, validAfter));
     }
 
     /**
@@ -411,11 +354,7 @@ contract BiconomyTokenPaymaster is
      * @param context payment conditions signed by the paymaster in `validatePaymasterUserOp`
      * @param actualGasCost amount to be paid to the entry point in wei
      */
-    function _postOp(
-        PostOpMode mode,
-        bytes calldata context,
-        uint256 actualGasCost
-    ) internal virtual override {
+    function _postOp(PostOpMode mode, bytes calldata context, uint256 actualGasCost) internal virtual override {
         address account;
         IERC20 feeToken;
         ExchangeRateSource priceSource;
@@ -445,9 +384,7 @@ contract BiconomyTokenPaymaster is
 
         uint128 effectiveExchangeRate = exchangeRate;
 
-        if (
-            priceSource == ExchangeRateSource.ORACLE_BASED 
-        ) {
+        if (priceSource == ExchangeRateSource.ORACLE_BASED) {
             uint128 result = getTokenValueOfOneNativeToken(address(feeToken));
             if (result != 0) effectiveExchangeRate = result;
         }
@@ -455,36 +392,24 @@ contract BiconomyTokenPaymaster is
         // We could either touch the state for BASEFEE and calculate based on maxPriorityFee passed (to be added in context along with maxFeePerGas) or just use tx.gasprice
         uint256 charge; // Final amount to be charged from user account
         {
-            uint256 actualTokenCost = ((actualGasCost +
-                (unaccountedEPGasOverhead * tx.gasprice)) * effectiveExchangeRate) /
-                1e18;
+            uint256 actualTokenCost =
+                ((actualGasCost + (unaccountedEPGasOverhead * tx.gasprice)) * effectiveExchangeRate) / 1e18;
             charge = ((actualTokenCost * priceMarkup) / PRICE_DENOMINATOR);
         }
 
         if (mode != PostOpMode.postOpReverted) {
-            SafeTransferLib.safeTransferFrom(
-                address(feeToken),
-                account,
-                feeReceiver,
-                charge
-            );
+            SafeTransferLib.safeTransferFrom(address(feeToken), account, feeReceiver, charge);
             emit TokenPaymasterOperation(
-                account,
-                address(feeToken),
-                charge,
-                priceMarkup,
-                userOpHash,
-                effectiveExchangeRate,
-                priceSource
+                account, address(feeToken), charge, priceMarkup, userOpHash, effectiveExchangeRate, priceSource
             );
         } else {
             // In case transferFrom failed in first handlePostOp call, attempt to charge the tokens again
-            
-            // 1. 
+
+            // 1.
             // but if it reverts, let it revert with ERC20: insufficient allowance
             // safeTransferFrom => AA50 postOp revert
             // transferFrom => AA50 postOp reverted: ERC20: insufficient allowance
-            
+
             // Would be useful if paymaster already has allowance(not part of this op's exec)
             // SafeTransferLib.safeTransferFrom(
             //     address(feeToken),
@@ -493,17 +418,12 @@ contract BiconomyTokenPaymaster is
             //     charge
             // );
 
-            // 2. force revert 
+            // 2. force revert
             revert("BTPM PostOpReverted: Failed to charge tokens");
-
         }
     }
 
-    function _withdrawERC20(
-        IERC20 token,
-        address target,
-        uint256 amount
-    ) private {
+    function _withdrawERC20(IERC20 token, address target, uint256 amount) private {
         if (target == address(0)) revert CanNotWithdrawToZeroAddress();
         SafeTransferLib.safeTransfer(address(token), target, amount);
     }

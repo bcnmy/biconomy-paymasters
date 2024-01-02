@@ -8,14 +8,12 @@ interface IOracleAggregator {
     error PriceFeedStale();
     error OracleAddressCannotBeZero();
 
-     struct TokenInfo {
+    struct TokenInfo {
         uint8 tokenDecimals;
         address tokenOracle;
         address nativeOracle;
         bool isDerivedFeed;
-     }
+    }
 
-    function getTokenValueOfOneNativeToken(
-        address _token
-    ) external view returns (uint128 exchangeRate);
+    function getTokenValueOfOneNativeToken(address _token) external view returns (uint128 exchangeRate);
 }

@@ -4,7 +4,6 @@ pragma solidity ^0.8.20;
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
 contract MockOracle is AggregatorV3Interface {
-
     uint256 internal priceToReturn;
     string internal desc;
 
@@ -29,13 +28,7 @@ contract MockOracle is AggregatorV3Interface {
         public
         view
         override
-        returns (
-            uint80 roundId,
-            int256 answer,
-            uint256 startedAt,
-            uint256 updatedAt,
-            uint80 answeredInRound
-        )
+        returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound)
     {
         roundId = _roundId;
         answer = int256(priceToReturn);
@@ -48,13 +41,7 @@ contract MockOracle is AggregatorV3Interface {
         public
         view
         virtual
-        returns (
-            uint80 roundId,
-            int256 answer,
-            uint256 startedAt,
-            uint256 updatedAt,
-            uint80 answeredInRound
-        )
+        returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound)
     {
         roundId = 36893488147419318063;
         answer = int256(priceToReturn);

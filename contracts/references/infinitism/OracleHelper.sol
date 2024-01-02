@@ -13,11 +13,7 @@ import "./IOracle.sol";
 /// Also support tokens that have no direct price oracle to the native asset.
 /// Sometimes oracles provide the price in the opposite direction of what we need in the moment.
 abstract contract OracleHelper {
-    event TokenPriceUpdated(
-        uint256 currentPrice,
-        uint256 previousPrice,
-        uint256 cachedPriceTimestamp
-    );
+    event TokenPriceUpdated(uint256 currentPrice, uint256 previousPrice, uint256 cachedPriceTimestamp);
 
     uint256 private constant PRICE_DENOMINATOR = 1e26;
 
@@ -58,18 +54,11 @@ abstract contract OracleHelper {
         _setOracleConfiguration(_oracleHelperConfig);
     }
 
-    function _setOracleConfiguration(
-        OracleHelperConfig memory _oracleHelperConfig
-    ) private {
+    function _setOracleConfiguration(OracleHelperConfig memory _oracleHelperConfig) private {
         oracleHelperConfig = _oracleHelperConfig;
-        require(
-            _oracleHelperConfig.priceUpdateThreshold <= 1e6,
-            "TPM: update threshold too high"
-        );
-        tokenOracleDecimalPower =
-            10 ** oracleHelperConfig.tokenOracle.decimals();
-        nativeOracleDecimalPower =
-            10 ** oracleHelperConfig.nativeOracle.decimals();
+        require(_oracleHelperConfig.priceUpdateThreshold <= 1e6, "TPM: update threshold too high");
+        tokenOracleDecimalPower = 10 ** oracleHelperConfig.tokenOracle.decimals();
+        nativeOracleDecimalPower = 10 ** oracleHelperConfig.nativeOracle.decimals();
     }
 
     /// @notice Updates the token price by fetching the latest price from the Oracle.
@@ -91,16 +80,12 @@ abstract contract OracleHelper {
             nativeAssetPrice = fetchPrice(nativeOracle);
         }
         uint256 price = calculatePrice(
-            tokenPrice,
-            nativeAssetPrice,
-            oracleHelperConfig.tokenOracleReverse,
-            oracleHelperConfig.nativeOracleReverse
+            tokenPrice, nativeAssetPrice, oracleHelperConfig.tokenOracleReverse, oracleHelperConfig.nativeOracleReverse
         );
         uint256 priceNewByOld = (price * PRICE_DENOMINATOR) / _cachedPrice;
 
-        bool updateRequired = force ||
-            priceNewByOld > PRICE_DENOMINATOR + priceUpdateThreshold ||
-            priceNewByOld < PRICE_DENOMINATOR - priceUpdateThreshold;
+        bool updateRequired = force || priceNewByOld > PRICE_DENOMINATOR + priceUpdateThreshold
+            || priceNewByOld < PRICE_DENOMINATOR - priceUpdateThreshold;
         if (!updateRequired) {
             return _cachedPrice;
         }
@@ -108,11 +93,7 @@ abstract contract OracleHelper {
         _cachedPrice = price;
         cachedPrice = _cachedPrice;
         cachedPriceTimestamp = block.timestamp;
-        emit TokenPriceUpdated(
-            _cachedPrice,
-            previousPrice,
-            cachedPriceTimestamp
-        );
+        emit TokenPriceUpdated(_cachedPrice, previousPrice, cachedPriceTimestamp);
         return _cachedPrice;
     }
 
@@ -134,14 +115,10 @@ abstract contract OracleHelper {
         // tokenPrice is normalized as dollars-per-token
         if (tokenOracleReverse) {
             // inverting tokenPrice that was tokens-per-dollar (or tokens-per-ether)
-            tokenPrice =
-                (PRICE_DENOMINATOR * tokenOracleDecimalPower) /
-                tokenPrice;
+            tokenPrice = (PRICE_DENOMINATOR * tokenOracleDecimalPower) / tokenPrice;
         } else {
             // tokenPrice already dollars-per-token (or ethers-per-token)
-            tokenPrice =
-                (PRICE_DENOMINATOR * tokenPrice) /
-                tokenOracleDecimalPower;
+            tokenPrice = (PRICE_DENOMINATOR * tokenPrice) / tokenOracleDecimalPower;
         }
 
         if (nativeOracleReverse) {
@@ -160,19 +137,10 @@ abstract contract OracleHelper {
     /// @param _oracle The Oracle contract to fetch the price from.
     /// @return price The latest price fetched from the Oracle.
     function fetchPrice(IOracle _oracle) internal view returns (uint256 price) {
-        (
-            uint80 roundId,
-            int256 answer,
-            ,
-            uint256 updatedAt,
-            uint80 answeredInRound
-        ) = _oracle.latestRoundData();
+        (uint80 roundId, int256 answer,, uint256 updatedAt, uint80 answeredInRound) = _oracle.latestRoundData();
         require(answer > 0, "TPM: Chainlink price <= 0");
         // 2 days old price is considered stale since the price is updated every 24 hours
-        require(
-            updatedAt >= block.timestamp - 60 * 60 * 24 * 2,
-            "TPM: Incomplete round"
-        );
+        require(updatedAt >= block.timestamp - 60 * 60 * 24 * 2, "TPM: Incomplete round");
         require(answeredInRound >= roundId, "TPM: Stale price");
         price = uint256(answer);
     }

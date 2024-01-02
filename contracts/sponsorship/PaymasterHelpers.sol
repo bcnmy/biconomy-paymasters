@@ -29,7 +29,10 @@ library PaymasterHelpers {
      * @param data PaymasterData passed
      */
     function paymasterContext(
-        UserOperation calldata /** op */,
+        UserOperation calldata,
+        /**
+         * op
+         */
         PaymasterData memory data,
         uint256 maxFeePerGas,
         uint256 maxPriorityFeePerGas
@@ -40,38 +43,19 @@ library PaymasterHelpers {
     /**
      * @dev Decodes paymaster data assuming it follows PaymasterData
      */
-    function _decodePaymasterData(
-        UserOperation calldata op
-    ) internal pure returns (PaymasterData memory) {
+    function _decodePaymasterData(UserOperation calldata op) internal pure returns (PaymasterData memory) {
         bytes calldata paymasterAndData = op.paymasterAndData;
-        (
-            address paymasterId,
-            uint48 validUntil,
-            uint48 validAfter,
-            bytes memory signature
-        ) = abi.decode(paymasterAndData[20:], (address, uint48, uint48, bytes));
-        return
-            PaymasterData(
-                paymasterId,
-                validUntil,
-                validAfter,
-                signature,
-                signature.length
-            );
+        (address paymasterId, uint48 validUntil, uint48 validAfter, bytes memory signature) =
+            abi.decode(paymasterAndData[20:], (address, uint48, uint48, bytes));
+        return PaymasterData(paymasterId, validUntil, validAfter, signature, signature.length);
     }
 
     /**
      * @dev Decodes paymaster context assuming it follows PaymasterContext
      */
-    function _decodePaymasterContext(
-        bytes memory context
-    ) internal pure returns (PaymasterContext memory) {
-        (
-            address paymasterId,
-            uint256 maxFeePerGas,
-            uint256 maxPriorityFeePerGas
-        ) = abi.decode(context, (address, uint256, uint256));
-        return
-            PaymasterContext(paymasterId, maxFeePerGas, maxPriorityFeePerGas);
+    function _decodePaymasterContext(bytes memory context) internal pure returns (PaymasterContext memory) {
+        (address paymasterId, uint256 maxFeePerGas, uint256 maxPriorityFeePerGas) =
+            abi.decode(context, (address, uint256, uint256));
+        return PaymasterContext(paymasterId, maxFeePerGas, maxPriorityFeePerGas);
     }
 }

@@ -9,25 +9,24 @@ import {IEntryPoint} from "@account-abstraction/contracts/interfaces/IEntryPoint
 import {EntryPoint} from "@account-abstraction/contracts/core/EntryPoint.sol";
 import {IStakeManager} from "@account-abstraction/contracts/interfaces/IStakeManager.sol";
 import {UserOperation} from "@account-abstraction/contracts/interfaces/UserOperation.sol";
-import {SmartAccountFactory} from "@biconomy-devx/account-contracts-v2/contracts/smart-account/factory/SmartAccountFactory.sol";
+import {SmartAccountFactory} from
+    "@biconomy-devx/account-contracts-v2/contracts/smart-account/factory/SmartAccountFactory.sol";
 import {SmartAccount} from "@biconomy-devx/account-contracts-v2/contracts/smart-account/SmartAccount.sol";
-import {EcdsaOwnershipRegistryModule} from "@biconomy-devx/account-contracts-v2/contracts/smart-account/modules/EcdsaOwnershipRegistryModule.sol";
+import {EcdsaOwnershipRegistryModule} from
+    "@biconomy-devx/account-contracts-v2/contracts/smart-account/modules/EcdsaOwnershipRegistryModule.sol";
 import "../../BytesLib.sol";
 
 abstract contract SATestBase is Test {
     using ECDSA for bytes32;
 
     // Test Environment Configuration
-    string constant mnemonic =
-        "test test test test test test test test test test test junk";
+    string constant mnemonic = "test test test test test test test test test test test junk";
     uint256 constant testAccountCount = 10;
     uint256 constant initialMainAccountFunds = 100000 ether;
     uint256 constant defaultPreVerificationGas = 21000;
     // Event Topics
-    bytes32 constant userOperationEventTopic =
-        0x49628fd1471006c1482da88028e9ce4dbb080b815c9b0344d39e5a8e6ec1419f;
-    bytes32 constant userOperationRevertReasonTopic =
-        0x1c4fada7374c0a9ee8841fc38afe82932dc0f8e69012e927f061a8bae611a201;
+    bytes32 constant userOperationEventTopic = 0x49628fd1471006c1482da88028e9ce4dbb080b815c9b0344d39e5a8e6ec1419f;
+    bytes32 constant userOperationRevertReasonTopic = 0x1c4fada7374c0a9ee8841fc38afe82932dc0f8e69012e927f061a8bae611a201;
 
     uint32 nextKeyIndex;
 
@@ -86,9 +85,7 @@ abstract contract SATestBase is Test {
         // Generate Test Addresses
         for (uint256 i = 0; i < testAccountCount; i++) {
             uint256 privateKey = getNextPrivateKey();
-            testAccounts.push(
-                TestAccount(payable(vm.addr(privateKey)), privateKey)
-            );
+            testAccounts.push(TestAccount(payable(vm.addr(privateKey)), privateKey));
 
             deal(testAccounts[i].addr, initialMainAccountFunds);
         }
@@ -101,10 +98,7 @@ abstract contract SATestBase is Test {
         vm.label(bob.addr, string.concat("Bob", vm.toString(uint256(1))));
 
         charlie = testAccounts[2];
-        vm.label(
-            charlie.addr,
-            string.concat("Charlie", vm.toString(uint256(2)))
-        );
+        vm.label(charlie.addr, string.concat("Charlie", vm.toString(uint256(2))));
 
         dan = testAccounts[3];
         vm.label(dan.addr, string.concat("Dan", vm.toString(uint256(3))));
@@ -139,18 +133,12 @@ abstract contract SATestBase is Test {
         saImplementation = new SmartAccount(entryPoint);
         vm.label(address(saImplementation), "Smart Account Implementation");
 
-        factory = new SmartAccountFactory(
-            address(saImplementation),
-            owner.addr
-        );
+        factory = new SmartAccountFactory(address(saImplementation), owner.addr);
         vm.label(address(factory), "Smart Account Factory");
 
         // Deploy Modules
         ecdsaOwnershipRegistryModule = new EcdsaOwnershipRegistryModule();
-        vm.label(
-            address(ecdsaOwnershipRegistryModule),
-            "ECDSA Ownership Registry Module"
-        );
+        vm.label(address(ecdsaOwnershipRegistryModule), "ECDSA Ownership Registry Module");
     }
 
     // Utility Functions
@@ -160,29 +148,22 @@ abstract contract SATestBase is Test {
         uint256 _index,
         string memory _label
     ) internal returns (SmartAccount sa) {
-        sa = SmartAccount(
-            payable(
-                factory.deployCounterFactualAccount(
-                    _moduleSetupContract,
-                    _moduleSetupData,
-                    _index
-                )
-            )
-        );
+        sa = SmartAccount(payable(factory.deployCounterFactualAccount(_moduleSetupContract, _moduleSetupData, _index)));
         vm.label(address(sa), _label);
     }
 
-    function getSmartAccountExecuteCalldata(
-        address _dest,
-        uint256 _value,
-        bytes memory _calldata
-    ) internal pure returns (bytes memory) {
+    function getSmartAccountExecuteCalldata(address _dest, uint256 _value, bytes memory _calldata)
+        internal
+        pure
+        returns (bytes memory)
+    {
         return abi.encodeCall(SmartAccount.execute, (_dest, _value, _calldata));
     }
 
-    function getUserOperationEventData(
-        Vm.Log[] memory _entries
-    ) internal returns (UserOperationEventData memory data) {
+    function getUserOperationEventData(Vm.Log[] memory _entries)
+        internal
+        returns (UserOperationEventData memory data)
+    {
         for (uint256 i = 0; i < _entries.length; ++i) {
             if (_entries[i].topics[0] != userOperationEventTopic) {
                 continue;
@@ -190,58 +171,51 @@ abstract contract SATestBase is Test {
             data.userOpHash = _entries[i].topics[1];
             data.sender = address(uint160(uint256(_entries[i].topics[2])));
             data.paymaster = address(uint160(uint256(_entries[i].topics[3])));
-            (
-                data.nonce,
-                data.success,
-                data.actualGasCost,
-                data.actualGasUsed
-            ) = abi.decode(_entries[i].data, (uint256, bool, uint256, uint256));
+            (data.nonce, data.success, data.actualGasCost, data.actualGasUsed) =
+                abi.decode(_entries[i].data, (uint256, bool, uint256, uint256));
             return data;
         }
         fail("entries does not contain UserOperationEvent");
     }
 
-    function getUserOperationRevertReasonEventData(
-        Vm.Log[] memory _entries
-    ) internal returns (UserOperationRevertReasonEventData memory data) {
+    function getUserOperationRevertReasonEventData(Vm.Log[] memory _entries)
+        internal
+        returns (UserOperationRevertReasonEventData memory data)
+    {
         for (uint256 i = 0; i < _entries.length; ++i) {
             if (_entries[i].topics[0] != userOperationRevertReasonTopic) {
                 continue;
             }
             data.userOpHash = _entries[i].topics[1];
             data.sender = address(uint160(uint256(_entries[i].topics[2])));
-            (data.nonce, data.revertReason) = abi.decode(
-                _entries[i].data,
-                (uint256, bytes)
-            );
+            (data.nonce, data.revertReason) = abi.decode(_entries[i].data, (uint256, bytes));
             return data;
         }
         fail("entries does not contain UserOperationRevertReasonEvent");
     }
 
-    function arraifyOps(
-        UserOperation memory _op
-    ) internal pure returns (UserOperation[] memory) {
+    function arraifyOps(UserOperation memory _op) internal pure returns (UserOperation[] memory) {
         UserOperation[] memory ops = new UserOperation[](1);
         ops[0] = _op;
         return ops;
     }
 
-    function arraifyOps(
-        UserOperation memory _op1,
-        UserOperation memory _op2
-    ) internal pure returns (UserOperation[] memory) {
+    function arraifyOps(UserOperation memory _op1, UserOperation memory _op2)
+        internal
+        pure
+        returns (UserOperation[] memory)
+    {
         UserOperation[] memory ops = new UserOperation[](2);
         ops[0] = _op1;
         ops[1] = _op2;
         return ops;
     }
 
-    function arraifyOps(
-        UserOperation memory _op1,
-        UserOperation memory _op2,
-        UserOperation memory _op3
-    ) internal pure returns (UserOperation[] memory) {
+    function arraifyOps(UserOperation memory _op1, UserOperation memory _op2, UserOperation memory _op3)
+        internal
+        pure
+        returns (UserOperation[] memory)
+    {
         UserOperation[] memory ops = new UserOperation[](3);
         ops[0] = _op1;
         ops[1] = _op2;
@@ -250,14 +224,8 @@ abstract contract SATestBase is Test {
     }
 
     // Module Setup Data Helpers
-    function getEcdsaOwnershipRegistryModuleSetupData(
-        address _owner
-    ) internal pure returns (bytes memory) {
-        return
-            abi.encodeCall(
-                EcdsaOwnershipRegistryModule.initForSmartAccount,
-                (_owner)
-            );
+    function getEcdsaOwnershipRegistryModuleSetupData(address _owner) internal pure returns (bytes memory) {
+        return abi.encodeCall(EcdsaOwnershipRegistryModule.initForSmartAccount, (_owner));
     }
 
     // Validation Module Op Creation Helpers
@@ -290,50 +258,27 @@ abstract contract SATestBase is Test {
 
         // Sign the UserOp
         bytes32 userOpHash = entryPoint.getUserOpHash(op);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
-            _signer.privateKey,
-            userOpHash
-        );
-        op.signature = abi.encode(
-            abi.encodePacked(r, s, v),
-            ecdsaOwnershipRegistryModule
-        );
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(_signer.privateKey, userOpHash);
+        op.signature = abi.encode(abi.encodePacked(r, s, v), ecdsaOwnershipRegistryModule);
     }
 
-
-    function signUserOp(
-        UserOperation memory op,
-        uint256 _key
-    ) public returns (bytes memory signature) {
+    function signUserOp(UserOperation memory op, uint256 _key) public returns (bytes memory signature) {
         bytes32 hash = entryPoint.getUserOpHash(op);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
-            _key,
-            hash.toEthSignedMessageHash()
-        );
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(_key, hash.toEthSignedMessageHash());
         signature = abi.encodePacked(r, s, v);
-        signature = abi.encode(
-            signature,
-            address(ecdsaOwnershipRegistryModule)
-        );
+        signature = abi.encode(signature, address(ecdsaOwnershipRegistryModule));
     }
 
-        function simulateVerificationGas(
-        IEntryPoint _entrypoint,
-        UserOperation memory op
-    ) public returns (UserOperation memory, uint256 preFund) {
-        (bool success, bytes memory ret) = address(_entrypoint).call(
-            abi.encodeWithSelector(EntryPoint.simulateValidation.selector, op)
-        );
+    function simulateVerificationGas(IEntryPoint _entrypoint, UserOperation memory op)
+        public
+        returns (UserOperation memory, uint256 preFund)
+    {
+        (bool success, bytes memory ret) =
+            address(_entrypoint).call(abi.encodeWithSelector(EntryPoint.simulateValidation.selector, op));
         require(!success);
         bytes memory data = BytesLib.slice(ret, 4, ret.length - 4);
-        (IEntryPoint.ReturnInfo memory retInfo, , , ) = abi.decode(
-            data,
-            (
-                IEntryPoint.ReturnInfo,
-                IStakeManager.StakeInfo,
-                IStakeManager.StakeInfo,
-                IStakeManager.StakeInfo
-            )
+        (IEntryPoint.ReturnInfo memory retInfo,,,) = abi.decode(
+            data, (IEntryPoint.ReturnInfo, IStakeManager.StakeInfo, IStakeManager.StakeInfo, IStakeManager.StakeInfo)
         );
         op.preVerificationGas = retInfo.preOpGas;
         op.verificationGasLimit = retInfo.preOpGas;
@@ -342,10 +287,7 @@ abstract contract SATestBase is Test {
         return (op, retInfo.prefund);
     }
 
-    function simulateCallGas(
-        IEntryPoint _entrypoint,
-        UserOperation memory op
-    ) internal returns (uint256) {
+    function simulateCallGas(IEntryPoint _entrypoint, UserOperation memory op) internal returns (uint256) {
         try this.calcGas(_entrypoint, op.sender, op.callData) {
             revert("Should have failed");
         } catch Error(string memory reason) {
@@ -357,14 +299,10 @@ abstract contract SATestBase is Test {
     }
 
     // not used internally
-    function calcGas(
-        IEntryPoint _entrypoint,
-        address _to,
-        bytes memory _data
-    ) external {
+    function calcGas(IEntryPoint _entrypoint, address _to, bytes memory _data) external {
         vm.startPrank(address(_entrypoint));
         uint256 g = gasleft();
-        (bool success, ) = _to.call(_data);
+        (bool success,) = _to.call(_data);
         require(success);
         g = g - gasleft();
         bytes memory r = abi.encode(g);
@@ -372,14 +310,10 @@ abstract contract SATestBase is Test {
         require(false, string(r));
     }
 
-
-    function fillUserOp(
-        SmartAccount _sender,
-        uint256 _key,
-        address _to,
-        uint256 _value,
-        bytes memory _data
-    ) public returns (UserOperation memory op, uint256 prefund) {
+    function fillUserOp(SmartAccount _sender, uint256 _key, address _to, uint256 _value, bytes memory _data)
+        public
+        returns (UserOperation memory op, uint256 prefund)
+    {
         op.sender = address(_sender);
         op.nonce = entryPoint.getNonce(address(_sender), 0);
         op.callData = abi.encodeWithSelector(SmartAccount.execute_ncC.selector, _to, _value, _data);
@@ -394,9 +328,6 @@ abstract contract SATestBase is Test {
 
         //op.signature = signUserOp(op, _name);
 
-        op.signature = abi.encode(
-            op.signature,
-            address(ecdsaOwnershipRegistryModule)
-        );
+        op.signature = abi.encode(op.signature, address(ecdsaOwnershipRegistryModule));
     }
 }

@@ -16,8 +16,8 @@ import {IEntryPoint} from "@account-abstraction/contracts/interfaces/IEntryPoint
 import {UserOperation} from "@account-abstraction/contracts/interfaces/UserOperation.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {SmartAccount} from "@biconomy-devx/account-contracts-v2/contracts/smart-account/SmartAccount.sol";
-import {EcdsaOwnershipRegistryModule} from "@biconomy-devx/account-contracts-v2/contracts/smart-account/modules/EcdsaOwnershipRegistryModule.sol";
-
+import {EcdsaOwnershipRegistryModule} from
+    "@biconomy-devx/account-contracts-v2/contracts/smart-account/modules/EcdsaOwnershipRegistryModule.sol";
 
 import {MockToken} from "../../../contracts/test/helpers/MockToken.sol";
 // import {MockPriceFeed} from "../../../contracts/test/helpers/MockPriceFeed.sol";
@@ -49,14 +49,9 @@ contract TokenPaymasterTest is SATestBase {
 
         // Deploy Smart Account with default module
         uint256 smartAccountDeploymentIndex = 0;
-        bytes memory moduleSetupData = getEcdsaOwnershipRegistryModuleSetupData(
-            alice.addr
-        );
+        bytes memory moduleSetupData = getEcdsaOwnershipRegistryModuleSetupData(alice.addr);
         sa = getSmartAccountWithModule(
-            address(ecdsaOwnershipRegistryModule),
-            moduleSetupData,
-            smartAccountDeploymentIndex,
-            "aliceSA"
+            address(ecdsaOwnershipRegistryModule), moduleSetupData, smartAccountDeploymentIndex, "aliceSA"
         );
 
         keyUser = alice.privateKey;
@@ -64,29 +59,19 @@ contract TokenPaymasterTest is SATestBase {
 
         _btpm = new BiconomyTokenPaymaster(alice.addr, entryPoint, bob.addr);
         usdc = new MockToken();
-        nativeOracle = new MockOracle(82843594,"MATIC/USD");
-        tokenOracle = new MockOracle(100000000,"USDC/USD");
+        nativeOracle = new MockOracle(82843594, "MATIC/USD");
+        tokenOracle = new MockOracle(100000000, "USDC/USD");
         counter = new TestCounter();
 
         // setting price oracle for token
-        bytes memory _data = abi.encodeWithSelector(
-            FeedInterface.getThePrice.selector
-        );
+        bytes memory _data = abi.encodeWithSelector(FeedInterface.getThePrice.selector);
 
         vm.startPrank(alice.addr);
         // could also make a .call using selector and handle success
-        _btpm.setTokenOracle(
-            address(usdc),
-            usdc.decimals(),
-            address(tokenOracle),
-            address(nativeOracle),
-            true
-        );
+        _btpm.setTokenOracle(address(usdc), usdc.decimals(), address(tokenOracle), address(nativeOracle), true);
         vm.stopPrank();
 
-        uint256 priceToLog = _btpm.getTokenValueOfOneNativeToken(
-            (address(usdc))
-        );
+        uint256 priceToLog = _btpm.getTokenValueOfOneNativeToken((address(usdc)));
         // console2.log(priceToLog);
 
         address accountAddress = address(sa);
@@ -101,11 +86,7 @@ contract TokenPaymasterTest is SATestBase {
     }
 
     function testDeploy() external {
-        BiconomyTokenPaymaster testArtifact = new BiconomyTokenPaymaster(
-            alice.addr,
-            entryPoint,
-            bob.addr
-        );
+        BiconomyTokenPaymaster testArtifact = new BiconomyTokenPaymaster(alice.addr, entryPoint, bob.addr);
         assertEq(address(testArtifact.owner()), address(alice.addr));
         assertEq(address(testArtifact.entryPoint()), address(entryPoint));
         assertEq(address(testArtifact.verifyingSigner()), address(bob.addr));
@@ -149,19 +130,10 @@ contract TokenPaymasterTest is SATestBase {
     function testCall() external {
         vm.deal(address(sa), 1e18);
 
-         bytes memory data = getSmartAccountExecuteCalldata(
-            address(counter),
-            0,
-            abi.encodeWithSelector(TestCounter.count.selector)
-        );
+        bytes memory data =
+            getSmartAccountExecuteCalldata(address(counter), 0, abi.encodeWithSelector(TestCounter.count.selector));
 
-        UserOperation memory op = makeEcdsaModuleUserOp(
-            data,
-            sa,
-            0,
-            alice,
-            bytes("")
-        );
+        UserOperation memory op = makeEcdsaModuleUserOp(data, sa, 0, alice, bytes(""));
         entryPoint.handleOps(arraifyOps(op), dan.addr);
     }
 
@@ -170,56 +142,32 @@ contract TokenPaymasterTest is SATestBase {
         vm.deal(address(sa), 1e18);
         usdc.mint(address(sa), 100e6); // 100 usdc;
         usdc.mint(address(_btpm), 100e6); // 100 usdc;
-        console2.log(
-            "paymaster balance before ",
-            usdc.balanceOf(address(_btpm))
-        );
+        console2.log("paymaster balance before ", usdc.balanceOf(address(_btpm)));
 
         bytes memory data = getSmartAccountExecuteCalldata(
-            address(usdc),
-            0,
-            abi.encodeWithSelector(ERC20.approve.selector, address(_btpm), 10e6)
+            address(usdc), 0, abi.encodeWithSelector(ERC20.approve.selector, address(_btpm), 10e6)
         );
 
-        UserOperation memory op = makeEcdsaModuleUserOp(
-            data,
-            sa,
-            0,
-            alice,
-            bytes("")
-        );
+        UserOperation memory op = makeEcdsaModuleUserOp(data, sa, 0, alice, bytes(""));
 
         bytes memory pmSig = signPaymasterSignature(op, keyVerifyingSigner);
 
-        IBiconomyTokenPaymaster.ExchangeRateSource priceSource = IBiconomyTokenPaymaster
-                .ExchangeRateSource
-                .ORACLE_BASED;
+        IBiconomyTokenPaymaster.ExchangeRateSource priceSource = IBiconomyTokenPaymaster.ExchangeRateSource.ORACLE_BASED;
         uint48 validUntil = 3735928559;
         uint48 validAfter = 4660;
         uint128 exchangeRate = 977100;
         uint32 priceMarkup = 1100000;
 
         op.paymasterAndData = abi.encodePacked(
-            address(_btpm),
-            priceSource,
-            validUntil,
-            validAfter,
-            address(usdc),
-            exchangeRate,
-            priceMarkup,
-            pmSig
+            address(_btpm), priceSource, validUntil, validAfter, address(usdc), exchangeRate, priceMarkup, pmSig
         );
 
         op.signature = signUserOp(op, keyUser);
 
-
         entryPoint.handleOps(arraifyOps(op), dan.addr);
 
         // todo // review fails to validate updated balances
-        console2.log(
-            "paymaster balance after ",
-            usdc.balanceOf(address(_btpm))
-        );
+        console2.log("paymaster balance after ", usdc.balanceOf(address(_btpm)));
         assertNotEq(usdc.balanceOf(address(sa)), 100e6);
     }
 
@@ -227,16 +175,9 @@ contract TokenPaymasterTest is SATestBase {
         vm.deal(address(sa), 1e18);
         usdc.mint(address(sa), 100e6); // 100 usdc;
         usdc.mint(address(_btpm), 100e6); // 100 usdc;
-        console2.log(
-            "paymaster balance before ",
-            usdc.balanceOf(address(_btpm))
-        );
+        console2.log("paymaster balance before ", usdc.balanceOf(address(_btpm)));
         (UserOperation memory op, uint256 prefund) = fillUserOp(
-            sa,
-            keyUser,
-            address(usdc),
-            0,
-            abi.encodeWithSelector(ERC20.approve.selector, address(_btpm), 10e6)
+            sa, keyUser, address(usdc), 0, abi.encodeWithSelector(ERC20.approve.selector, address(_btpm), 10e6)
         );
 
         op.paymasterAndData = "0x1234";
@@ -251,16 +192,9 @@ contract TokenPaymasterTest is SATestBase {
         vm.deal(address(sa), 1e18);
         usdc.mint(address(sa), 100e6); // 100 usdc;
         usdc.mint(address(_btpm), 100e6); // 100 usdc;
-        console2.log(
-            "paymaster balance before ",
-            usdc.balanceOf(address(_btpm))
-        );
+        console2.log("paymaster balance before ", usdc.balanceOf(address(_btpm)));
         (UserOperation memory op, uint256 prefund) = fillUserOp(
-            sa,
-            keyUser,
-            address(usdc),
-            0,
-            abi.encodeWithSelector(ERC20.approve.selector, address(_btpm), 10e6)
+            sa, keyUser, address(usdc), 0, abi.encodeWithSelector(ERC20.approve.selector, address(_btpm), 10e6)
         );
 
         bytes memory pmSig = "0x1234";
@@ -270,9 +204,7 @@ contract TokenPaymasterTest is SATestBase {
         ops[0] = op;
         vm.expectRevert(
             abi.encodeWithSelector(
-                IEntryPoint.FailedOp.selector,
-                uint256(0),
-                "AA33 reverted: BTPM: Invalid length for paymasterAndData"
+                IEntryPoint.FailedOp.selector, uint256(0), "AA33 reverted: BTPM: Invalid length for paymasterAndData"
             )
         );
         entryPoint.handleOps(ops, dan.addr);
@@ -282,37 +214,21 @@ contract TokenPaymasterTest is SATestBase {
         vm.deal(address(sa), 1e18);
         usdc.mint(address(sa), 100e6); // 100 usdc;
         usdc.mint(address(_btpm), 100e6); // 100 usdc;
-        console2.log(
-            "paymaster balance before ",
-            usdc.balanceOf(address(_btpm))
-        );
+        console2.log("paymaster balance before ", usdc.balanceOf(address(_btpm)));
         (UserOperation memory op, uint256 prefund) = fillUserOp(
-            sa,
-            keyUser,
-            address(usdc),
-            0,
-            abi.encodeWithSelector(ERC20.approve.selector, address(_btpm), 10e6)
+            sa, keyUser, address(usdc), 0, abi.encodeWithSelector(ERC20.approve.selector, address(_btpm), 10e6)
         );
-        bytes
-            memory pmSig = "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
+        bytes memory pmSig =
+            "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
 
-        IBiconomyTokenPaymaster.ExchangeRateSource priceSource = IBiconomyTokenPaymaster
-                .ExchangeRateSource
-                .ORACLE_BASED;
+        IBiconomyTokenPaymaster.ExchangeRateSource priceSource = IBiconomyTokenPaymaster.ExchangeRateSource.ORACLE_BASED;
         uint48 validUntil = 3735928559;
         uint48 validAfter = 4660;
         uint128 exchangeRate = 977100;
         uint32 priceMarkup = 1100000;
 
         op.paymasterAndData = abi.encodePacked(
-            address(_btpm),
-            priceSource,
-            validUntil,
-            validAfter,
-            address(usdc),
-            exchangeRate,
-            priceMarkup,
-            pmSig
+            address(_btpm), priceSource, validUntil, validAfter, address(usdc), exchangeRate, priceMarkup, pmSig
         );
         op.signature = signUserOp(op, keyUser);
         UserOperation[] memory ops = new UserOperation[](1);
@@ -325,42 +241,23 @@ contract TokenPaymasterTest is SATestBase {
         vm.deal(address(sa), 1e18);
         usdc.mint(address(sa), 100e6); // 100 usdc;
         usdc.mint(address(_btpm), 100e6); // 100 usdc;
-        console2.log(
-            "paymaster balance before ",
-            usdc.balanceOf(address(_btpm))
-        );
+        console2.log("paymaster balance before ", usdc.balanceOf(address(_btpm)));
         (UserOperation memory op, uint256 prefund) = fillUserOp(
-            sa,
-            keyUser,
-            address(usdc),
-            0,
-            abi.encodeWithSelector(ERC20.approve.selector, address(_btpm), 10e6)
+            sa, keyUser, address(usdc), 0, abi.encodeWithSelector(ERC20.approve.selector, address(_btpm), 10e6)
         );
 
         bytes32 hash = keccak256((abi.encodePacked("some message")));
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
-            keyVerifyingSigner,
-            hash.toEthSignedMessageHash()
-        );
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(keyVerifyingSigner, hash.toEthSignedMessageHash());
         bytes memory pmSig = abi.encodePacked(r, s, v);
 
-        IBiconomyTokenPaymaster.ExchangeRateSource priceSource = IBiconomyTokenPaymaster
-                .ExchangeRateSource
-                .ORACLE_BASED;
+        IBiconomyTokenPaymaster.ExchangeRateSource priceSource = IBiconomyTokenPaymaster.ExchangeRateSource.ORACLE_BASED;
         uint48 validUntil = 3735928559;
         uint48 validAfter = 4660;
         uint128 exchangeRate = 977100;
         uint32 priceMarkup = 1100000;
 
         op.paymasterAndData = abi.encodePacked(
-            address(_btpm),
-            priceSource,
-            validUntil,
-            validAfter,
-            address(usdc),
-            exchangeRate,
-            priceMarkup,
-            pmSig
+            address(_btpm), priceSource, validUntil, validAfter, address(usdc), exchangeRate, priceMarkup, pmSig
         );
         op.signature = signUserOp(op, keyUser);
         UserOperation[] memory ops = new UserOperation[](1);
@@ -375,59 +272,30 @@ contract TokenPaymasterTest is SATestBase {
         vm.deal(address(sa), 1e18);
         usdc.mint(address(sa), 100e6); // 100 usdc;
         usdc.mint(address(_btpm), 100e6); // 100 usdc;
-        console2.log(
-            "paymaster balance before ",
-            usdc.balanceOf(address(_btpm))
-        );
+        console2.log("paymaster balance before ", usdc.balanceOf(address(_btpm)));
         (UserOperation memory op, uint256 prefund) = fillUserOp(
-            sa,
-            keyUser,
-            address(usdc),
-            0,
-            abi.encodeWithSelector(ERC20.approve.selector, address(_btpm), 10e6)
+            sa, keyUser, address(usdc), 0, abi.encodeWithSelector(ERC20.approve.selector, address(_btpm), 10e6)
         );
 
-        IBiconomyTokenPaymaster.ExchangeRateSource priceSource = IBiconomyTokenPaymaster
-                .ExchangeRateSource
-                .ORACLE_BASED;
+        IBiconomyTokenPaymaster.ExchangeRateSource priceSource = IBiconomyTokenPaymaster.ExchangeRateSource.ORACLE_BASED;
         uint48 validUntil = 3735928559;
         uint48 validAfter = 4660;
         uint128 exchangeRate = 977100;
         uint32 priceMarkup = 2200000;
 
-        bytes32 hash = _btpm.getHash(
-            op,
-            priceSource,
-            validUntil,
-            validAfter,
-            address(usdc),
-            exchangeRate,
-            priceMarkup
-        );
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
-            keyVerifyingSigner,
-            hash.toEthSignedMessageHash()
-        );
+        bytes32 hash = _btpm.getHash(op, priceSource, validUntil, validAfter, address(usdc), exchangeRate, priceMarkup);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(keyVerifyingSigner, hash.toEthSignedMessageHash());
         bytes memory pmSig = abi.encodePacked(r, s, v);
 
         op.paymasterAndData = abi.encodePacked(
-            address(_btpm),
-            priceSource,
-            validUntil,
-            validAfter,
-            address(usdc),
-            exchangeRate,
-            priceMarkup,
-            pmSig
+            address(_btpm), priceSource, validUntil, validAfter, address(usdc), exchangeRate, priceMarkup, pmSig
         );
         op.signature = signUserOp(op, keyUser);
         UserOperation[] memory ops = new UserOperation[](1);
         ops[0] = op;
         vm.expectRevert(
             abi.encodeWithSelector(
-                IEntryPoint.FailedOp.selector,
-                uint256(0),
-                "AA33 reverted: BTPM: price markup percentage too high"
+                IEntryPoint.FailedOp.selector, uint256(0), "AA33 reverted: BTPM: price markup percentage too high"
             )
         );
 
@@ -435,31 +303,15 @@ contract TokenPaymasterTest is SATestBase {
     }
 
     // TODO : move to separate PaymasterTestBase and rename to signTokenPaymasterSignature
-    function signPaymasterSignature(
-        UserOperation memory op,
-        uint256 _key
-    ) public returns (bytes memory signature) {
-        IBiconomyTokenPaymaster.ExchangeRateSource priceSource = IBiconomyTokenPaymaster
-                .ExchangeRateSource
-                .ORACLE_BASED;
+    function signPaymasterSignature(UserOperation memory op, uint256 _key) public returns (bytes memory signature) {
+        IBiconomyTokenPaymaster.ExchangeRateSource priceSource = IBiconomyTokenPaymaster.ExchangeRateSource.ORACLE_BASED;
         uint48 validUntil = 3735928559;
         uint48 validAfter = 4660;
         uint128 exchangeRate = 977100;
         uint32 priceMarkup = 1100000;
 
-        bytes32 hash = _btpm.getHash(
-            op,
-            priceSource,
-            validUntil,
-            validAfter,
-            address(usdc),
-            exchangeRate,
-            priceMarkup
-        );
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
-            _key,
-            hash.toEthSignedMessageHash()
-        );
+        bytes32 hash = _btpm.getHash(op, priceSource, validUntil, validAfter, address(usdc), exchangeRate, priceMarkup);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(_key, hash.toEthSignedMessageHash());
         signature = abi.encodePacked(r, s, v);
     }
 }

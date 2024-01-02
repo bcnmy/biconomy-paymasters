@@ -17,15 +17,13 @@ contract DerivedPriceFeed {
 
     string internal DESCRIPTION;
 
-    constructor(
-        address _nativeOracleAddress,
-        address _tokenOracleAddress,
-        string memory _description
-    ) {
-        if (_nativeOracleAddress == address(0))
+    constructor(address _nativeOracleAddress, address _tokenOracleAddress, string memory _description) {
+        if (_nativeOracleAddress == address(0)) {
             revert OracleAddressCannotBeZero();
-        if (_tokenOracleAddress == address(0))
+        }
+        if (_tokenOracleAddress == address(0)) {
             revert OracleAddressCannotBeZero();
+        }
         nativeOracle = AggregatorV3Interface(_nativeOracleAddress);
         tokenOracle = AggregatorV3Interface(_tokenOracleAddress);
 
@@ -54,8 +52,9 @@ contract DerivedPriceFeed {
     ) internal view {
         if (price <= 0) revert InvalidPriceFromRound();
         // 2 days old price is considered stale since the price is updated every 24 hours
-        if (updatedAt < block.timestamp - staleFeedThreshold)
+        if (updatedAt < block.timestamp - staleFeedThreshold) {
             revert PriceFeedStale();
+        }
         if (answeredInRound < roundId) revert PriceFeedStale();
     }
 
@@ -65,44 +64,20 @@ contract DerivedPriceFeed {
          * Returns the latest price of price feed 1
          */
 
-        (
-            uint80 roundID1,
-            int256 price1,
-            ,
-            uint256 updatedAt1,
-            uint80 answeredInRound1
-        ) = nativeOracle.latestRoundData();
+        (uint80 roundID1, int256 price1,, uint256 updatedAt1, uint80 answeredInRound1) = nativeOracle.latestRoundData();
 
         // By default 2 days old price is considered stale BUT it may vary per price feed
         // comapred to stable coin feeds this may have different heartbeat
-        validateRound(
-            roundID1,
-            price1,
-            updatedAt1,
-            answeredInRound1,
-            60 * 60 * 24 * 2
-        );
+        validateRound(roundID1, price1, updatedAt1, answeredInRound1, 60 * 60 * 24 * 2);
 
         /**
          * Returns the latest price of price feed 2
          */
 
-        (
-            uint80 roundID2,
-            int256 price2,
-            ,
-            uint256 updatedAt2,
-            uint80 answeredInRound2
-        ) = tokenOracle.latestRoundData();
+        (uint80 roundID2, int256 price2,, uint256 updatedAt2, uint80 answeredInRound2) = tokenOracle.latestRoundData();
 
         // By default 2 days old price is considered stale BUT it may vary per price feed
-        validateRound(
-            roundID2,
-            price2,
-            updatedAt2,
-            answeredInRound2,
-            60 * 60 * 24 * 2
-        );
+        validateRound(roundID2, price2, updatedAt2, answeredInRound2, 60 * 60 * 24 * 2);
 
         // Always using decimals 18 for derived price feeds
         int256 token_native = (price2 * (10 ** 18)) / price1;
