@@ -38,8 +38,6 @@ contract SponsorshipPaymaster is
     // paymasterAndData: concat of [paymasterAddress(address), paymasterId(20 bytes), validUntil(6 bytes), validAfter(6 bytes), priceMarkup(4 bytes), signature]
     uint256 private constant VALID_PND_OFFSET = 20;
 
-    uint256 private constant SIGNATURE_OFFSET = 56;
-
     // Gas used in EntryPoint._handlePostOp() method (including this#postOp() call)
     uint256 private unaccountedEPGasOverhead;
 
@@ -234,10 +232,10 @@ contract SponsorshipPaymaster is
         )
     {
         paymasterId = address(bytes20(paymasterAndData[VALID_PND_OFFSET:VALID_PND_OFFSET+20]));
-        validUntil = uint48(bytes6(paymasterAndData[40:46]));
-        validAfter = uint48(bytes6(paymasterAndData[46:52]));
-        priceMarkup = uint32(bytes4(paymasterAndData[52:56]));
-        signature = paymasterAndData[SIGNATURE_OFFSET:];
+        validUntil = uint48(bytes6(paymasterAndData[VALID_PND_OFFSET+20:VALID_PND_OFFSET+26]));
+        validAfter = uint48(bytes6(paymasterAndData[VALID_PND_OFFSET+26:VALID_PND_OFFSET+32]));
+        priceMarkup = uint32(bytes4(paymasterAndData[VALID_PND_OFFSET+32:VALID_PND_OFFSET+36]));
+        signature = paymasterAndData[VALID_PND_OFFSET+36:];
     }
 
     /**
