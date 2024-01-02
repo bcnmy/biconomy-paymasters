@@ -47,10 +47,5 @@ interface IBiconomyTokenPaymaster {
         ExchangeRateSource priceSource
     );
 
-    /**
-     * Notify in case paymaster failed to withdraw tokens from sender
-     */
-    event TokenPaymentDue(address indexed token, address indexed account, uint256 indexed charge);
-
     event Received(address indexed sender, uint256 value);
 }

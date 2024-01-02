@@ -226,10 +226,7 @@ contract SponsorshipPaymaster is BasePaymaster, ReentrancyGuard, SponsorshipPaym
      * @param actualGasCost amount to be paid to the entry point in wei
      */
     function _postOp(
-        PostOpMode,
-        /**
-         * mode
-         */
+        PostOpMode /** mode */,
         bytes calldata context,
         uint256 actualGasCost
     ) internal virtual override {

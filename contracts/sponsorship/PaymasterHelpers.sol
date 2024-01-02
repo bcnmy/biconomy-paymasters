@@ -29,10 +29,7 @@ library PaymasterHelpers {
      * @param data PaymasterData passed
      */
     function paymasterContext(
-        UserOperation calldata,
-        /**
-         * op
-         */
+        UserOperation calldata /** op */,
         PaymasterData memory data,
         uint256 maxFeePerGas,
         uint256 maxPriorityFeePerGas
