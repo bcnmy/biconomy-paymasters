@@ -6,20 +6,6 @@ import "./IOracleAggregator.sol";
 import "./FeedInterface.sol";
 
 abstract contract OracleAggregator is Ownable, IOracleAggregator {
-
-    error MismatchInBaseAndQuoteDecimals();
-    error InvalidPriceFromRound();
-    error LatestRoundIncomplete();
-    error PriceFeedStale();
-    error OracleAddressCannotBeZero();
-
-     struct TokenInfo {
-        uint8 tokenDecimals;
-        address tokenOracle;
-        address nativeOracle;
-        bool isDerivedFeed;
-     }
-
      mapping(address => TokenInfo) internal tokensInfo;
 
      constructor(address _owner) {
@@ -52,6 +38,7 @@ abstract contract OracleAggregator is Ownable, IOracleAggregator {
      * @dev exchangeRate : each aggregator implements this method based on how it sources the quote/price
      * @notice here it is token / native sourced from chainlink so in order to get defined exchangeRate we inverse the feed
      * @param token ERC20 token address
+     * @return exchangeRate : token price wrt native token
      */
     function getTokenValueOfOneNativeToken(
         address token
@@ -89,10 +76,12 @@ abstract contract OracleAggregator is Ownable, IOracleAggregator {
         }
     }
 
-     /// @notice Fetches the latest price from the given Oracle.
-    /// @dev This function is used to get the latest price from the tokenOracle or nativeOracle.
-    /// @param _oracle The Oracle contract to fetch the price from.
-    /// @return price The latest price fetched from the Oracle.
+    /**
+     * @dev This function is used to get the latest price from the tokenOracle or nativeOracle.
+     * @notice Fetches the latest price from the given Oracle.
+     * @param _oracle The Oracle contract to fetch the price from.
+     * @return price The latest price fetched from the Oracle.
+     */
     function fetchPrice(FeedInterface _oracle) internal view returns (uint256 price) {
         (
             uint80 roundId,

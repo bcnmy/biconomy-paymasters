@@ -119,15 +119,6 @@ contract BiconomyTokenPaymaster is
         ExchangeRateSource priceSource
     );
 
-    // Review can replace with this event // can add exchangeRate
-    // saves 1000 gas
-    /*event UserOperationSponsored(
-        address indexed sender,
-        address indexed token,
-        uint256 indexed totalCharge,
-        uint256 actualGasCost
-    );*/
-
     /**
      * Notify in case paymaster failed to withdraw tokens from sender
      */
@@ -464,7 +455,7 @@ contract BiconomyTokenPaymaster is
             );
         }
 
-        address account = userOp.sender;
+        address account = userOp.getSender();
 
         // This model assumes irrespective of priceSource exchangeRate is always sent from outside
         // for below checks you would either need maxCost or some exchangeRate
@@ -569,7 +560,6 @@ contract BiconomyTokenPaymaster is
                 effectiveExchangeRate,
                 priceSource
             );
-            // emit UserOperationSponsored(account, address(feeToken), charge, actualGasCost);
         } else {
             // In case transferFrom failed in first handlePostOp call, attempt to charge the tokens again
             
