@@ -21,7 +21,7 @@ contract SponsorshipPaymasterErrors {
     error VerifyingSignerCannotBeZero();
 
     /**
-     * @notice Throws when the paymaster id provided is a deployed contract   
+     * @notice Throws when the paymaster id provided is a deployed contract
      */
     error PaymasterIdCannotBeContract();
 

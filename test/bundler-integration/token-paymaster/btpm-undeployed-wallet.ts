@@ -12,10 +12,9 @@ import {
   BiconomyAccountFactory__factory,
   BiconomyTokenPaymaster,
   BiconomyTokenPaymaster__factory,
-  ChainlinkOracleAggregator,
-  ChainlinkOracleAggregator__factory,
   MockPriceFeed__factory,
   MockToken,
+  MockOracle__factory,
 } from "../../../typechain-types";
 import {
   EcdsaOwnershipRegistryModule,
@@ -56,24 +55,16 @@ export async function deployEntryPoint(
   return new EntryPoint__factory(provider.getSigner()).deploy();
 }
 
-export const encodePaymasterData = (
-  feeToken = ethers.constants.AddressZero,
-  oracleAggregator = ethers.constants.AddressZero,
-  exchangeRate: BigNumberish = ethers.constants.Zero,
-  priceMarkup: BigNumberish = ethers.constants.Zero
-) => {
-  return ethers.utils.defaultAbiCoder.encode(
-    ["uint48", "uint48", "address", "address", "uint256", "uint32"],
-    [
-      MOCK_VALID_UNTIL,
-      MOCK_VALID_AFTER,
-      feeToken,
-      oracleAggregator,
-      exchangeRate,
-      priceMarkup,
-    ]
-  );
-};
+// export const encodePaymasterData = (
+//   feeToken = ethers.constants.AddressZero,
+//   exchangeRate: BigNumberish = ethers.constants.Zero,
+//   priceMarkup: BigNumberish = ethers.constants.Zero
+// ) => {
+//   return ethers.utils.defaultAbiCoder.encode(
+//     ["uint48", "uint48", "address", "uint256", "uint32"],
+//     [MOCK_VALID_UNTIL, MOCK_VALID_AFTER, feeToken, exchangeRate, priceMarkup]
+//   );
+// };
 
 export const encodeERC20Approval = (
   account: BiconomyAccountImplementation,
@@ -98,7 +89,6 @@ describe("Biconomy Token Paymaster (with Bundler)", function () {
   let offchainSigner: Signer, deployer: Signer;
 
   let sampleTokenPaymaster: BiconomyTokenPaymaster;
-  let oracleAggregator: ChainlinkOracleAggregator;
 
   // Could also use published package or added submodule (for Account Implementation and Factory)
   let smartWalletImp: BiconomyAccountImplementation;
@@ -127,10 +117,6 @@ describe("Biconomy Token Paymaster (with Bundler)", function () {
     // const offchainSignerAddress = await deployer.getAddress();
     const walletOwnerAddress = await walletOwner.getAddress();
 
-    oracleAggregator = await new ChainlinkOracleAggregator__factory(
-      deployer
-    ).deploy(walletOwnerAddress);
-
     ecdsaModule = await new EcdsaOwnershipRegistryModule__factory(
       deployer
     ).deploy();
@@ -148,15 +134,13 @@ describe("Biconomy Token Paymaster (with Bundler)", function () {
       usdcMaticPriceFeedMock.address
     );
 
-    const priceFeedTxUsdc: any =
-      await priceFeedUsdc.populateTransaction.getThePrice();
-
-    await oracleAggregator.setTokenOracle(
-      token.address,
-      usdcMaticPriceFeedMock.address,
-      18,
-      priceFeedTxUsdc.data,
-      true
+    const nativeOracle = await new MockOracle__factory(deployer).deploy(
+      82843594,
+      "MATIC/USD"
+    );
+    const tokenOracle = await new MockOracle__factory(deployer).deploy(
+      100000000,
+      "USDC/USD"
     );
 
     sampleTokenPaymaster = await new BiconomyTokenPaymaster__factory(
@@ -166,6 +150,17 @@ describe("Biconomy Token Paymaster (with Bundler)", function () {
       entryPoint.address,
       await offchainSigner.getAddress()
     );
+
+    await sampleTokenPaymaster.setTokenOracle(
+      token.address,
+      await token.decimals(),
+      tokenOracle.address,
+      nativeOracle.address,
+      true
+    );
+
+    const priceResult =
+      await sampleTokenPaymaster.getTokenValueOfOneNativeToken(token.address);
 
     smartWalletImp = await new BiconomyAccountImplementation__factory(
       deployer
@@ -276,23 +271,27 @@ describe("Biconomy Token Paymaster (with Bundler)", function () {
         MOCK_VALID_UNTIL,
         MOCK_VALID_AFTER,
         token.address,
-        oracleAggregator.address,
         MOCK_FX,
         DEFAULT_FEE_MARKUP
       );
       const sig = await offchainSigner.signMessage(arrayify(hash));
+      const numVU = ethers.BigNumber.from(MOCK_VALID_UNTIL);
+      const numVA = ethers.BigNumber.from(MOCK_VALID_AFTER);
+      const numER = ethers.BigNumber.from(MOCK_FX);
       const userOp = await fillAndSign(
         {
           ...userOp1,
           paymasterAndData: ethers.utils.hexConcat([
             paymasterAddress,
             ethers.utils.hexlify(1).slice(0, 4),
-            encodePaymasterData(
-              token.address,
-              oracleAggregator.address,
-              MOCK_FX,
-              DEFAULT_FEE_MARKUP
-            ),
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(numVU.toNumber()), 6), // 6 byte
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(numVA.toNumber()), 6), // 6 byte
+            ethers.utils.hexZeroPad(token.address, 20), // 20 byte
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(numER.toNumber()), 16), // 16 byte
+            ethers.utils.hexZeroPad(
+              ethers.utils.hexlify(DEFAULT_FEE_MARKUP),
+              4
+            ), // 4 byte
             sig,
           ]),
         },

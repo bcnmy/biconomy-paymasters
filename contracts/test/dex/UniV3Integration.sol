@@ -4,8 +4,7 @@ pragma solidity ^0.8.20;
 import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 
 contract UniV3Integration {
-    ISwapRouter router =
-        ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
+    ISwapRouter router = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
 
     // note: deployed version of this contract can be used to query necessary calldata
     function prepareExactInputSingleCalldata(
@@ -15,22 +14,18 @@ contract UniV3Integration {
         address recipient,
         uint256 amountIn
     ) public view returns (bytes memory) {
-        ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
-            .ExactInputSingleParams({
-                tokenIn: tokenIn,
-                tokenOut: tokenOut,
-                fee: fee,
-                recipient: recipient,
-                deadline: block.timestamp + (2 hours),
-                amountIn: amountIn,
-                amountOutMinimum: 0,
-                sqrtPriceLimitX96: 0
-            });
+        ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
+            tokenIn: tokenIn,
+            tokenOut: tokenOut,
+            fee: fee,
+            recipient: recipient,
+            deadline: block.timestamp + (2 hours),
+            amountIn: amountIn,
+            amountOutMinimum: 0,
+            sqrtPriceLimitX96: 0
+        });
 
-        bytes memory _data = abi.encodeWithSelector(
-            ISwapRouter.exactInputSingle.selector,
-            params
-        );
+        bytes memory _data = abi.encodeWithSelector(ISwapRouter.exactInputSingle.selector, params);
 
         return _data;
     }

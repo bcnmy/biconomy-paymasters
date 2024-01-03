@@ -55,6 +55,4 @@ contract TokenPaymasterErrors {
     error NativeTokensWithdrawalFailed();
 
     error CannotBeUnrealisticValue();
-
-    error DEXRouterCannotBeZero();
 }
