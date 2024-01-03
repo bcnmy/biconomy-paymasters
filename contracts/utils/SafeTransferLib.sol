@@ -44,12 +44,7 @@ library SafeTransferLib {
     ///
     /// The `from` account must have at least `amount` approved for
     /// the current contract to manage.
-    function safeTransferFrom(
-        address token,
-        address from,
-        address to,
-        uint256 amount
-    ) internal {
+    function safeTransferFrom(address token, address from, address to, uint256 amount) internal {
         /// @solidity memory-safe-assembly
         assembly {
             let m := mload(0x40) // Cache the free memory pointer.
@@ -85,11 +80,7 @@ library SafeTransferLib {
     ///
     /// The `from` account must have at least `amount` approved for
     /// the current contract to manage.
-    function safeTransferAllFrom(
-        address token,
-        address from,
-        address to
-    ) internal returns (uint256 amount) {
+    function safeTransferAllFrom(address token, address from, address to) internal returns (uint256 amount) {
         /// @solidity memory-safe-assembly
         assembly {
             let m := mload(0x40) // Cache the free memory pointer.
@@ -167,10 +158,7 @@ library SafeTransferLib {
 
     /// @dev Sends all of ERC20 `token` from the current contract to `to`.
     /// Reverts upon failure.
-    function safeTransferAll(
-        address token,
-        address to
-    ) internal returns (uint256 amount) {
+    function safeTransferAll(address token, address to) internal returns (uint256 amount) {
         /// @solidity memory-safe-assembly
         assembly {
             mstore(0x00, 0x70a08231) // Store the function selector of `balanceOf(address)`.
@@ -244,23 +232,21 @@ library SafeTransferLib {
 
     /// @dev Returns the amount of ERC20 `token` owned by `account`.
     /// Returns zero if the `token` does not exist.
-    function balanceOf(
-        address token,
-        address account
-    ) internal view returns (uint256 amount) {
+    function balanceOf(address token, address account) internal view returns (uint256 amount) {
         /// @solidity memory-safe-assembly
         assembly {
             mstore(0x14, account) // Store the `account` argument.
             // Store the function selector of `balanceOf(address)`.
             mstore(0x00, 0x70a08231000000000000000000000000)
-            amount := mul(
-                mload(0x20),
-                and(
-                    // The arguments of `and` are evaluated from right to left.
-                    gt(returndatasize(), 0x1f), // At least 32 bytes returned.
-                    staticcall(gas(), token, 0x10, 0x24, 0x20, 0x20)
+            amount :=
+                mul(
+                    mload(0x20),
+                    and(
+                        // The arguments of `and` are evaluated from right to left.
+                        gt(returndatasize(), 0x1f), // At least 32 bytes returned.
+                        staticcall(gas(), token, 0x10, 0x24, 0x20, 0x20)
+                    )
                 )
-            )
         }
     }
 }

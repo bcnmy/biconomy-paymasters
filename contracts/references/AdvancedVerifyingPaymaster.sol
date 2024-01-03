@@ -33,16 +33,11 @@ contract StackupVerifyingPaymaster is BasePaymaster {
 
     uint256 public constant POST_OP_GAS = 35000;
 
-    constructor(
-        IEntryPoint _entryPoint,
-        address _owner
-    ) BasePaymaster(_entryPoint) {
+    constructor(IEntryPoint _entryPoint, address _owner) BasePaymaster(_entryPoint) {
         _transferOwnership(_owner);
     }
 
-    function pack(
-        UserOperation calldata userOp
-    ) internal pure returns (bytes memory ret) {
+    function pack(UserOperation calldata userOp) internal pure returns (bytes memory ret) {
         bytes calldata pnd = userOp.paymasterAndData;
         // solhint-disable-next-line no-inline-assembly
         assembly {
@@ -62,103 +57,69 @@ contract StackupVerifyingPaymaster is BasePaymaster {
         address erc20Token,
         uint256 exchangeRate
     ) public view returns (bytes32) {
-        return
-            keccak256(
-                abi.encode(
-                    pack(userOp),
-                    block.chainid,
-                    address(this),
-                    senderNonce[userOp.getSender()],
-                    validUntil,
-                    validAfter,
-                    erc20Token,
-                    exchangeRate
-                )
-            );
+        return keccak256(
+            abi.encode(
+                pack(userOp),
+                block.chainid,
+                address(this),
+                senderNonce[userOp.getSender()],
+                validUntil,
+                validAfter,
+                erc20Token,
+                exchangeRate
+            )
+        );
     }
 
-    function _validatePaymasterUserOp(
-        UserOperation calldata userOp,
-        bytes32 /*userOpHash*/,
-        uint256 requiredPreFund
-    ) internal override returns (bytes memory context, uint256 validationData) {
+    function _validatePaymasterUserOp(UserOperation calldata userOp, bytes32, /*userOpHash*/ uint256 requiredPreFund)
+        internal
+        override
+        returns (bytes memory context, uint256 validationData)
+    {
         (requiredPreFund);
 
-        (
-            uint48 validUntil,
-            uint48 validAfter,
-            address erc20Token,
-            uint256 exchangeRate,
-            bytes calldata signature
-        ) = parsePaymasterAndData(userOp.paymasterAndData);
+        (uint48 validUntil, uint48 validAfter, address erc20Token, uint256 exchangeRate, bytes calldata signature) =
+            parsePaymasterAndData(userOp.paymasterAndData);
         // solhint-disable-next-line reason-string
         require(
             signature.length == 64 || signature.length == 65,
             "VerifyingPaymaster: invalid signature length in paymasterAndData"
         );
-        bytes32 hash = ECDSA.toEthSignedMessageHash(
-            getHash(userOp, validUntil, validAfter, erc20Token, exchangeRate)
-        );
+        bytes32 hash = ECDSA.toEthSignedMessageHash(getHash(userOp, validUntil, validAfter, erc20Token, exchangeRate));
         senderNonce[userOp.getSender()]++;
         context = "";
         if (erc20Token != address(0)) {
-            context = abi.encode(
-                userOp.sender,
-                erc20Token,
-                exchangeRate,
-                userOp.maxFeePerGas,
-                userOp.maxPriorityFeePerGas
-            );
+            context =
+                abi.encode(userOp.sender, erc20Token, exchangeRate, userOp.maxFeePerGas, userOp.maxPriorityFeePerGas);
         }
 
         if (owner() != ECDSA.recover(hash, signature)) {
-            return (
-                context,
-                Helpers._packValidationData(true, validUntil, validAfter)
-            );
+            return (context, Helpers._packValidationData(true, validUntil, validAfter));
         }
 
-        return (
-            context,
-            Helpers._packValidationData(false, validUntil, validAfter)
-        );
+        return (context, Helpers._packValidationData(false, validUntil, validAfter));
     }
 
-    function _postOp(
-        PostOpMode mode,
-        bytes calldata context,
-        uint256 actualGasCost
-    ) internal override {
-        (
-            address sender,
-            IERC20 token,
-            uint256 exchangeRate,
-            uint256 maxFeePerGas,
-            uint256 maxPriorityFeePerGas
-        ) = abi.decode(context, (address, IERC20, uint256, uint256, uint256));
+    function _postOp(PostOpMode mode, bytes calldata context, uint256 actualGasCost) internal override {
+        (address sender, IERC20 token, uint256 exchangeRate, uint256 maxFeePerGas, uint256 maxPriorityFeePerGas) =
+            abi.decode(context, (address, IERC20, uint256, uint256, uint256));
 
         uint256 opGasPrice;
         unchecked {
             if (maxFeePerGas == maxPriorityFeePerGas) {
                 opGasPrice = maxFeePerGas;
             } else {
-                opGasPrice = Math.min(
-                    maxFeePerGas,
-                    maxPriorityFeePerGas + block.basefee
-                );
+                opGasPrice = Math.min(maxFeePerGas, maxPriorityFeePerGas + block.basefee);
             }
         }
 
-        uint256 actualTokenCost = ((actualGasCost +
-            (POST_OP_GAS * opGasPrice)) * exchangeRate) / 1e18;
+        uint256 actualTokenCost = ((actualGasCost + (POST_OP_GAS * opGasPrice)) * exchangeRate) / 1e18;
         if (mode != PostOpMode.postOpReverted) {
             token.safeTransferFrom(sender, owner(), actualTokenCost);
         }
     }
 
-    function parsePaymasterAndData(
-        bytes calldata paymasterAndData
-    )
+    function parsePaymasterAndData(bytes calldata paymasterAndData)
         public
         pure
         returns (
@@ -169,10 +130,8 @@ contract StackupVerifyingPaymaster is BasePaymaster {
             bytes calldata signature
         )
     {
-        (validUntil, validAfter, erc20Token, exchangeRate) = abi.decode(
-            paymasterAndData[VALID_PND_OFFSET:SIGNATURE_OFFSET],
-            (uint48, uint48, address, uint256)
-        );
+        (validUntil, validAfter, erc20Token, exchangeRate) =
+            abi.decode(paymasterAndData[VALID_PND_OFFSET:SIGNATURE_OFFSET], (uint48, uint48, address, uint256));
         signature = paymasterAndData[SIGNATURE_OFFSET:];
     }
 }
