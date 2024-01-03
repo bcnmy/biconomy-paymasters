@@ -12,11 +12,10 @@ import {
   BiconomyAccountFactory__factory,
   BiconomyTokenPaymaster,
   BiconomyTokenPaymaster__factory,
-  ChainlinkOracleAggregator,
-  ChainlinkOracleAggregator__factory,
   MockPriceFeed,
   MockPriceFeed__factory,
   MockToken,
+  MockOracle__factory,
 } from "../../typechain-types";
 
 // Review: Could import from scw-contracts submodules to be consistent
@@ -61,24 +60,16 @@ export async function deployEntryPoint(
   return new EntryPoint__factory(provider.getSigner()).deploy();
 }
 
-export const encodePaymasterData = (
-  feeToken = ethers.constants.AddressZero,
-  oracleAggregator = ethers.constants.AddressZero,
-  exchangeRate: BigNumberish = ethers.constants.Zero,
-  priceMarkup: BigNumberish = ethers.constants.Zero
-) => {
-  return ethers.utils.defaultAbiCoder.encode(
-    ["uint48", "uint48", "address", "address", "uint256", "uint32"],
-    [
-      MOCK_VALID_UNTIL,
-      MOCK_VALID_AFTER,
-      feeToken,
-      oracleAggregator,
-      exchangeRate,
-      priceMarkup,
-    ]
-  );
-};
+// export const encodePaymasterData = (
+//   feeToken = ethers.constants.AddressZero,
+//   exchangeRate: BigNumberish = ethers.constants.Zero,
+//   priceMarkup: BigNumberish = ethers.constants.Zero
+// ) => {
+//   return ethers.utils.defaultAbiCoder.encode(
+//     ["uint48", "uint48", "address", "uint256", "uint32"],
+//     [MOCK_VALID_UNTIL, MOCK_VALID_AFTER, feeToken, exchangeRate, priceMarkup]
+//   );
+// };
 
 export const encodeERC20Approval = (
   account: BiconomyAccountImplementation,
@@ -107,7 +98,6 @@ describe("Biconomy Token Paymaster", function () {
 
   let sampleTokenPaymaster: BiconomyTokenPaymaster;
   let mockPriceFeed: MockPriceFeed;
-  let oracleAggregator: ChainlinkOracleAggregator;
 
   // Could also use published package or added submodule (for Account Implementation and Factory)
   let smartWalletImp: BiconomyAccountImplementation;
@@ -127,10 +117,6 @@ describe("Biconomy Token Paymaster", function () {
 
     // const offchainSignerAddress = await deployer.getAddress();
     const walletOwnerAddress = await walletOwner.getAddress();
-
-    oracleAggregator = await new ChainlinkOracleAggregator__factory(
-      deployer
-    ).deploy(walletOwnerAddress);
 
     ecdsaModule = await new EcdsaOwnershipRegistryModule__factory(
       deployer
@@ -152,12 +138,13 @@ describe("Biconomy Token Paymaster", function () {
     const priceFeedTxUsdc: any =
       await priceFeedUsdc.populateTransaction.getThePrice();
 
-    await oracleAggregator.setTokenOracle(
-      token.address,
-      usdcMaticPriceFeedMock.address,
-      18,
-      priceFeedTxUsdc.data,
-      true
+    const nativeOracle = await new MockOracle__factory(deployer).deploy(
+      82843594,
+      "MATIC/USD"
+    );
+    const tokenOracle = await new MockOracle__factory(deployer).deploy(
+      100000000,
+      "USDC/USD"
     );
 
     sampleTokenPaymaster = await new BiconomyTokenPaymaster__factory(
@@ -167,6 +154,17 @@ describe("Biconomy Token Paymaster", function () {
       entryPoint.address,
       await offchainSigner.getAddress()
     );
+
+    await sampleTokenPaymaster.setTokenOracle(
+      token.address,
+      await token.decimals(),
+      tokenOracle.address,
+      nativeOracle.address,
+      true
+    );
+
+    const priceResult =
+      await sampleTokenPaymaster.getTokenValueOfOneNativeToken(token.address);
 
     smartWalletImp = await new BiconomyAccountImplementation__factory(
       deployer
@@ -205,15 +203,17 @@ describe("Biconomy Token Paymaster", function () {
 
   describe("Token Payamster read methods and state checks", () => {
     it("Should parse data properly", async () => {
+      const numVU = ethers.BigNumber.from(MOCK_VALID_UNTIL);
+      const numVA = ethers.BigNumber.from(MOCK_VALID_AFTER);
+      const numER = ethers.BigNumber.from(MOCK_FX);
       const paymasterAndData = ethers.utils.hexConcat([
         paymasterAddress,
         ethers.utils.hexlify(1).slice(0, 4),
-        encodePaymasterData(
-          token.address,
-          oracleAggregator.address,
-          MOCK_FX,
-          DEFAULT_FEE_MARKUP
-        ),
+        ethers.utils.hexZeroPad(ethers.utils.hexlify(numVU.toNumber()), 6), // 6 byte
+        ethers.utils.hexZeroPad(ethers.utils.hexlify(numVA.toNumber()), 6), // 6 byte
+        ethers.utils.hexZeroPad(token.address, 20), // 20 byte
+        ethers.utils.hexZeroPad(ethers.utils.hexlify(numER.toNumber()), 16), // 16 byte
+        ethers.utils.hexZeroPad(ethers.utils.hexlify(DEFAULT_FEE_MARKUP), 4), // 4 byte
         "0x" + "00".repeat(65),
       ]);
 
@@ -226,7 +226,6 @@ describe("Biconomy Token Paymaster", function () {
       expect(res.validUntil).to.equal(ethers.BigNumber.from(MOCK_VALID_UNTIL));
       expect(res.validAfter).to.equal(ethers.BigNumber.from(MOCK_VALID_AFTER));
       expect(res.feeToken).to.equal(token.address);
-      expect(res.oracleAggregator).to.equal(oracleAggregator.address);
       expect(res.exchangeRate).to.equal(MOCK_FX);
       expect(res.signature).to.equal("0x" + "00".repeat(65));
     });
@@ -300,23 +299,27 @@ describe("Biconomy Token Paymaster", function () {
         MOCK_VALID_UNTIL,
         MOCK_VALID_AFTER,
         token.address,
-        oracleAggregator.address,
         MOCK_FX,
         DEFAULT_FEE_MARKUP
       );
       const sig = await offchainSigner.signMessage(arrayify(hash));
+      const numVU = ethers.BigNumber.from(MOCK_VALID_UNTIL);
+      const numVA = ethers.BigNumber.from(MOCK_VALID_AFTER);
+      const numER = ethers.BigNumber.from(MOCK_FX);
       const userOp = await fillAndSign(
         {
           ...userOp1,
           paymasterAndData: ethers.utils.hexConcat([
             paymasterAddress,
             ethers.utils.hexlify(1).slice(0, 4),
-            encodePaymasterData(
-              token.address,
-              oracleAggregator.address,
-              MOCK_FX,
-              DEFAULT_FEE_MARKUP
-            ),
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(numVU.toNumber()), 6), // 6 byte
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(numVA.toNumber()), 6), // 6 byte
+            ethers.utils.hexZeroPad(token.address, 20), // 20 byte
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(numER.toNumber()), 16), // 16 byte
+            ethers.utils.hexZeroPad(
+              ethers.utils.hexlify(DEFAULT_FEE_MARKUP),
+              4
+            ), // 4 byte
             sig,
           ]),
         },

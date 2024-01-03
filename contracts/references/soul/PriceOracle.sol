@@ -17,16 +17,14 @@ contract PriceOracle is IPriceOracle {
         supportedToken[address(0)] = true;
     }
 
-    function exchangePrice(
-        address token
-    ) external view override returns (uint256 price, uint8 decimals) {
+    function exchangePrice(address token) external view override returns (uint256 price, uint8 decimals) {
         (token);
         (
             ,
-            /* uint80 roundID */ int256 _price /*uint256 startedAt*/ /*uint256 timeStamp*/ /*uint80 answeredInRound*/,
+            /* uint80 roundID */
+            int256 _price, /*uint256 startedAt*/ /*uint256 timeStamp*/ /*uint80 answeredInRound*/
             ,
             ,
-
         ) = priceFeed.latestRoundData();
         //  price -> uint256
         require(_price >= 0, "price is negative");
