@@ -17,13 +17,18 @@ import {ISponsorshipPaymaster} from "../interfaces/paymasters/ISponsorshipPaymas
  * @author livingrockrises<chirag@biconomy.io>
  * @notice Based on Infinitism 'VerifyingPaymaster' contract
  * @dev This contract is used to sponsor the transaction fees of the user operations
- * Uses a verifying signer to provide the signature if predetermined conditions are met
- * regarding the user operation calldata. Also this paymaster is Singleton in nature which
+ * Uses a verifying signer to provide the signature if predetermined conditions are met 
+ * regarding the user operation calldata. Also this paymaster is Singleton in nature which 
  * means multiple Dapps/Wallet clients willing to sponsor the transactions can share this paymaster.
- * Maintains it's own accounting of the gas balance for each Dapp/Wallet client
+ * Maintains it's own accounting of the gas balance for each Dapp/Wallet client 
  * and Manages it's own deposit on the EntryPoint.
  */
-contract SponsorshipPaymaster is BasePaymaster, ReentrancyGuard, SponsorshipPaymasterErrors, ISponsorshipPaymaster {
+contract SponsorshipPaymaster is
+    BasePaymaster,
+    ReentrancyGuard,
+    SponsorshipPaymasterErrors,
+    ISponsorshipPaymaster
+{
     using ECDSA for bytes32;
     using AddressUtils for address;
     using UserOperationLib for UserOperation;
@@ -36,29 +41,27 @@ contract SponsorshipPaymaster is BasePaymaster, ReentrancyGuard, SponsorshipPaym
     // Gas used in EntryPoint._handlePostOp() method (including this#postOp() call)
     uint256 private unaccountedEPGasOverhead;
 
-    uint32 private fixedPriceMarkup;
-
     mapping(address => uint256) public paymasterIdBalances;
 
     address public verifyingSigner;
 
     address public feeCollector;
 
-    constructor(address _owner, IEntryPoint _entryPoint, address _verifyingSigner, address _feeCollector)
-        payable
-        BasePaymaster(_owner, _entryPoint)
-    {
+    constructor(
+        address _owner,
+        IEntryPoint _entryPoint,
+        address _verifyingSigner,
+        address _feeCollector
+    ) payable BasePaymaster(_owner, _entryPoint) {
         if (address(_entryPoint) == address(0)) revert EntryPointCannotBeZero();
-        if (_verifyingSigner == address(0)) {
+        if (_verifyingSigner == address(0))
             revert VerifyingSignerCannotBeZero();
-        }
         if (_feeCollector == address(0)) revert FeeCollectorCannotBeZero();
         assembly {
             sstore(verifyingSigner.slot, _verifyingSigner)
             sstore(feeCollector.slot, _feeCollector)
         }
         unaccountedEPGasOverhead = 18500;
-        fixedPriceMarkup = 1100000; // 10%
     }
 
     /**
@@ -66,7 +69,7 @@ contract SponsorshipPaymaster is BasePaymaster, ReentrancyGuard, SponsorshipPaym
      * @param paymasterId dapp identifier for which deposit is being made
      */
     function depositFor(address paymasterId) external payable nonReentrant {
-        if (paymasterId.isContract()) revert PaymasterIdCannotBeContract();
+        if(paymasterId.isContract()) revert PaymasterIdCannotBeContract();
         if (paymasterId == address(0)) revert PaymasterIdCannotBeZero();
         if (msg.value == 0) revert DepositCanNotBeZero();
         paymasterIdBalances[paymasterId] += msg.value;
@@ -81,10 +84,11 @@ contract SponsorshipPaymaster is BasePaymaster, ReentrancyGuard, SponsorshipPaym
      * @notice If _newVerifyingSigner is set to zero address, it will revert with an error.
      * After setting the new signer address, it will emit an event VerifyingSignerChanged.
      */
-    function setSigner(address _newVerifyingSigner) external payable override onlyOwner {
-        if (_newVerifyingSigner == address(0)) {
+    function setSigner(
+        address _newVerifyingSigner
+    ) external payable override onlyOwner {
+        if (_newVerifyingSigner == address(0))
             revert VerifyingSignerCannotBeZero();
-        }
         address oldSigner = verifyingSigner;
         assembly {
             sstore(verifyingSigner.slot, _newVerifyingSigner)
@@ -99,8 +103,10 @@ contract SponsorshipPaymaster is BasePaymaster, ReentrancyGuard, SponsorshipPaym
      * @notice If _newFeeCollector is set to zero address, it will revert with an error.
      * After setting the new fee collector address, it will emit an event FeeCollectorChanged.
      */
-    function setFeeCollector(address _newFeeCollector) external payable onlyOwner {
-        if (_newFeeCollector.isContract()) revert FeeCollectorCannotBeContract();
+    function setFeeCollector(
+        address _newFeeCollector
+    ) external payable onlyOwner {
+        if(_newFeeCollector.isContract()) revert FeeCollectorCannotBeContract();
         if (_newFeeCollector == address(0)) revert FeeCollectorCannotBeZero();
         address oldFeeCollector = feeCollector;
         assembly {
@@ -114,7 +120,9 @@ contract SponsorshipPaymaster is BasePaymaster, ReentrancyGuard, SponsorshipPaym
      * @param value The new value to be set as the unaccountedEPGasOverhead.
      * @notice only to be called by the owner of the contract.
      */
-    function setUnaccountedEPGasOverhead(uint256 value) external payable onlyOwner {
+    function setUnaccountedEPGasOverhead(
+        uint256 value
+    ) external payable onlyOwner {
         require(value <= 200000, "Gas overhead too high");
         uint256 oldValue = unaccountedEPGasOverhead;
         unaccountedEPGasOverhead = value;
@@ -122,30 +130,17 @@ contract SponsorshipPaymaster is BasePaymaster, ReentrancyGuard, SponsorshipPaym
     }
 
     /**
-     * @dev Set a new fixedPriceMarkup value.
-     * @param _markup The new value to be set as the fixedPriceMarkup.
-     * @notice only to be called by the owner of the contract.
-     * @notice The markup is in percentage, so 1100000 is 10%.
-     * @notice The markup can not be higher than 100%
-     */
-    function setFixedPriceMarkup(uint32 _markup) external payable onlyOwner {
-        require(_markup <= PRICE_DENOMINATOR * 2, "Markup too high");
-        require(_markup >= PRICE_DENOMINATOR, "Markup too low"); // if allowed that would mean discounted
-        uint32 oldValue = fixedPriceMarkup;
-        fixedPriceMarkup = _markup;
-        emit FixedPriceMarkupChanged(oldValue, _markup);
-    }
-
-    /**
      * @dev get the current deposit for paymasterId (Dapp Depositor address)
      * @param paymasterId dapp identifier
      */
-    function getBalance(address paymasterId) external view returns (uint256 balance) {
+    function getBalance(
+        address paymasterId
+    ) external view returns (uint256 balance) {
         balance = paymasterIdBalances[paymasterId];
     }
 
     /**
-     * @dev Override the default implementation.
+     @dev Override the default implementation.
      */
     function deposit() public payable virtual override {
         revert("Use depositFor() instead");
@@ -156,7 +151,10 @@ contract SponsorshipPaymaster is BasePaymaster, ReentrancyGuard, SponsorshipPaym
      * @param withdrawAddress The address to which the gas tokens should be transferred.
      * @param amount The amount of gas tokens to withdraw.
      */
-    function withdrawTo(address payable withdrawAddress, uint256 amount) public override nonReentrant {
+    function withdrawTo(
+        address payable withdrawAddress,
+        uint256 amount
+    ) public override nonReentrant {
         if (withdrawAddress == address(0)) revert CanNotWithdrawToZeroAddress();
         uint256 currentBalance = paymasterIdBalances[msg.sender];
         require(amount <= currentBalance, "Sponsorship Paymaster: Insufficient funds to withdraw from gas tank");
@@ -180,28 +178,31 @@ contract SponsorshipPaymaster is BasePaymaster, ReentrancyGuard, SponsorshipPaym
         uint32 priceMarkup
     ) public view returns (bytes32) {
         //can't use userOp.hash(), since it contains also the paymasterAndData itself.
-        return keccak256(
-            abi.encode(
-                userOp.getSender(),
-                userOp.nonce,
-                userOp.initCode,
-                userOp.callData,
-                userOp.callGasLimit,
-                userOp.verificationGasLimit,
-                userOp.preVerificationGas,
-                userOp.maxFeePerGas,
-                userOp.maxPriorityFeePerGas,
-                block.chainid,
-                address(this),
-                paymasterId,
-                validUntil,
-                validAfter,
-                priceMarkup
-            )
-        );
+        return
+            keccak256(
+                abi.encode(
+                    userOp.getSender(),
+                    userOp.nonce,
+                    userOp.initCode,
+                    userOp.callData,
+                    userOp.callGasLimit,
+                    userOp.verificationGasLimit,
+                    userOp.preVerificationGas,
+                    userOp.maxFeePerGas,
+                    userOp.maxPriorityFeePerGas,
+                    block.chainid,
+                    address(this),
+                    paymasterId,
+                    validUntil,
+                    validAfter,
+                    priceMarkup
+                )
+            );
     }
 
-    function parsePaymasterAndData(bytes calldata paymasterAndData)
+    function parsePaymasterAndData(
+        bytes calldata paymasterAndData
+    )
         public
         pure
         returns (
@@ -237,11 +238,17 @@ contract SponsorshipPaymaster is BasePaymaster, ReentrancyGuard, SponsorshipPaym
             bytes32 userOpHash
         ) = abi.decode(context, (address, uint32, uint256, uint256, bytes32));
 
-        uint256 effectiveGasPrice = getGasPrice(maxFeePerGas, maxPriorityFeePerGas);
+        uint256 effectiveGasPrice = getGasPrice(
+            maxFeePerGas,
+            maxPriorityFeePerGas
+        );
 
-        uint256 balToDeduct = actualGasCost + unaccountedEPGasOverhead * effectiveGasPrice;
+        uint256 balToDeduct = actualGasCost +
+            unaccountedEPGasOverhead *
+            effectiveGasPrice;
 
-        uint256 costIncludingPremium = (balToDeduct * dynamicMarkup) / PRICE_DENOMINATOR;
+        uint256 costIncludingPremium = (balToDeduct * dynamicMarkup) /
+            PRICE_DENOMINATOR;
 
         // deduct with premium
         paymasterIdBalances[paymasterId] -= costIncludingPremium;
@@ -264,46 +271,70 @@ contract SponsorshipPaymaster is BasePaymaster, ReentrancyGuard, SponsorshipPaym
      * @return context A context string returned by the entry point after successful validation.
      * @return validationData An integer returned by the entry point after successful validation.
      */
-    function _validatePaymasterUserOp(UserOperation calldata userOp, bytes32 userOpHash, uint256 requiredPreFund)
-        internal
-        override
-        returns (bytes memory context, uint256 validationData)
-    {
-        (address paymasterId, uint48 validUntil, uint48 validAfter, uint32 priceMarkup, bytes calldata signature) =
-            parsePaymasterAndData(userOp.paymasterAndData);
+    function _validatePaymasterUserOp(
+        UserOperation calldata userOp,
+        bytes32 userOpHash,
+        uint256 requiredPreFund
+    ) internal override returns (bytes memory context, uint256 validationData) {
+        (
+            address paymasterId,
+            uint48 validUntil,
+            uint48 validAfter,
+            uint32 priceMarkup,
+            bytes calldata signature
+        ) = parsePaymasterAndData(userOp.paymasterAndData);
 
-        bytes32 hash = getHash(userOp, paymasterId, validUntil, validAfter, priceMarkup);
+        bytes32 hash = getHash(
+            userOp,
+            paymasterId,
+            validUntil,
+            validAfter,
+            priceMarkup
+        );
         uint256 sigLength = signature.length;
         // we only "require" it here so that the revert reason on invalid signature will be of "VerifyingPaymaster", and not "ECDSA"
         require(sigLength == 65, "Sponsorship Paymaster:invalid paymaster signature length");
         //don't revert on signature failure: return SIG_VALIDATION_FAILED
-        if (verifyingSigner != hash.toEthSignedMessageHash().recover(signature)) {
+        if (
+            verifyingSigner != hash.toEthSignedMessageHash().recover(signature)
+        ) {
             // empty context and sigFailed with time range provided
             return (context, _packValidationData(true, validUntil, validAfter));
         }
 
-        require(priceMarkup <= 2e6, "Sponsorship Paymaster: high markup %");
+        require(priceMarkup <= 2e6 && priceMarkup > 0, "Sponsorship Paymaster: Invalid markup %");
+        // Send 1e6 for No markup
+        // Send between 0 and 1e6 for discount
 
-        uint32 dynamicMarkup = MathLib.maxuint32(priceMarkup, fixedPriceMarkup);
+        uint256 effectiveCost = (requiredPreFund * priceMarkup) /
+            PRICE_DENOMINATOR;
 
-        uint256 effectiveCost = (requiredPreFund * dynamicMarkup) / PRICE_DENOMINATOR;
+        require(effectiveCost <= paymasterIdBalances[paymasterId], "Sponsorship Paymaster: paymasterId does not have enough deposit");
 
-        require(
-            effectiveCost <= paymasterIdBalances[paymasterId],
-            "Sponsorship Paymaster: paymasterId does not have enough deposit"
+        context = abi.encode(
+            paymasterId,
+            priceMarkup,
+            userOp.maxFeePerGas,
+            userOp.maxPriorityFeePerGas,
+            userOpHash
         );
-
-        context = abi.encode(paymasterId, dynamicMarkup, userOp.maxFeePerGas, userOp.maxPriorityFeePerGas, userOpHash);
 
         return (context, _packValidationData(false, validUntil, validAfter));
     }
 
     // Note: do not use this in validation phase
-    function getGasPrice(uint256 maxFeePerGas, uint256 maxPriorityFeePerGas) internal view returns (uint256) {
+    function getGasPrice(
+        uint256 maxFeePerGas,
+        uint256 maxPriorityFeePerGas
+    ) internal view returns (uint256) {
         if (maxFeePerGas == maxPriorityFeePerGas) {
             //legacy mode (for networks that don't support basefee opcode)
             return maxFeePerGas;
         }
-        return MathLib.minuint256(maxFeePerGas, maxPriorityFeePerGas + block.basefee);
+        return
+            MathLib.minuint256(
+                maxFeePerGas,
+                maxPriorityFeePerGas + block.basefee
+            );
     }
 }
