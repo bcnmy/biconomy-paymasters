@@ -35,10 +35,8 @@ contract SponsorshipPaymaster is
 
     uint32 private constant PRICE_DENOMINATOR = 1e6;
 
-    // paymasterAndData: concat of [paymasterAddress(address), abi.encode(paymasterId, validUntil, validAfter, priceMarkup): makes up 32*4 bytes, signature]
+    // paymasterAndData: concat of [paymasterAddress(address), paymasterId(20 bytes), validUntil(6 bytes), validAfter(6 bytes), priceMarkup(4 bytes), signature]
     uint256 private constant VALID_PND_OFFSET = 20;
-
-    uint256 private constant SIGNATURE_OFFSET = 148;
 
     // Gas used in EntryPoint._handlePostOp() method (including this#postOp() call)
     uint256 private unaccountedEPGasOverhead;
@@ -215,12 +213,11 @@ contract SponsorshipPaymaster is
             bytes calldata signature
         )
     {
-        (paymasterId, validUntil, validAfter, priceMarkup) = abi.decode(
-            paymasterAndData[VALID_PND_OFFSET:SIGNATURE_OFFSET],
-            (address, uint48, uint48, uint32)
-        );
-
-        signature = paymasterAndData[SIGNATURE_OFFSET:];
+        paymasterId = address(bytes20(paymasterAndData[VALID_PND_OFFSET:VALID_PND_OFFSET+20]));
+        validUntil = uint48(bytes6(paymasterAndData[VALID_PND_OFFSET+20:VALID_PND_OFFSET+26]));
+        validAfter = uint48(bytes6(paymasterAndData[VALID_PND_OFFSET+26:VALID_PND_OFFSET+32]));
+        priceMarkup = uint32(bytes4(paymasterAndData[VALID_PND_OFFSET+32:VALID_PND_OFFSET+36]));
+        signature = paymasterAndData[VALID_PND_OFFSET+36:];
     }
 
     /**

@@ -139,11 +139,16 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
       dynamicMarkup
     );
     const sig = await offchainSigner.signMessage(arrayify(hash));
-    const paymasterData = abi.encode(
-      ["address", "uint48", "uint48", "uint32"],
-      [paymasterId, MOCK_VALID_UNTIL, MOCK_VALID_AFTER, dynamicMarkup]
-    );
-    const paymasterAndData = hexConcat([paymasterAddress, paymasterData, sig]);
+    const numVU = ethers.BigNumber.from(MOCK_VALID_UNTIL);
+    const numVA = ethers.BigNumber.from(MOCK_VALID_AFTER);
+    const paymasterAndData = hexConcat([
+      paymasterAddress,
+      ethers.utils.hexZeroPad(paymasterId, 20),
+      ethers.utils.hexZeroPad(ethers.utils.hexlify(numVU.toNumber()), 6), // 6 byte
+      ethers.utils.hexZeroPad(ethers.utils.hexlify(numVA.toNumber()), 6), // 6 byte
+      ethers.utils.hexZeroPad(ethers.utils.hexlify(dynamicMarkup), 4), // 4 bytes
+      sig,
+    ]);
     return await fillAndSign(
       {
         ...userOp1,
@@ -210,15 +215,17 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
         dynamicMarkup
       );
       const sig = await offchainSigner.signMessage(arrayify(hash));
+      const numVU = ethers.BigNumber.from(MOCK_VALID_UNTIL);
+      const numVA = ethers.BigNumber.from(MOCK_VALID_AFTER);
       const userOp = await fillAndSign(
         {
           ...userOp1,
           paymasterAndData: hexConcat([
             paymasterAddress,
-            ethers.utils.defaultAbiCoder.encode(
-              ["address", "uint48", "uint48", "uint32"],
-              [fundingId, MOCK_VALID_UNTIL, MOCK_VALID_AFTER, dynamicMarkup]
-            ),
+            ethers.utils.hexZeroPad(fundingId, 20),
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(numVU.toNumber()), 6), // 6 byte
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(numVA.toNumber()), 6), // 6 byte
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(dynamicMarkup), 4), // 4 bytes
             sig,
           ]),
         },
@@ -339,15 +346,17 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
         dynamicMarkup
       );
       const sig = await offchainSigner.signMessage(arrayify(hash));
+      const numVU = ethers.BigNumber.from(MOCK_VALID_UNTIL);
+      const numVA = ethers.BigNumber.from(MOCK_VALID_AFTER);
       const userOp = await fillAndSign(
         {
           ...userOp1,
           paymasterAndData: hexConcat([
             paymasterAddress,
-            ethers.utils.defaultAbiCoder.encode(
-              ["address", "uint48", "uint48", "uint32"],
-              [fundingId, MOCK_VALID_UNTIL, MOCK_VALID_AFTER, dynamicMarkup]
-            ),
+            ethers.utils.hexZeroPad(fundingId, 20),
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(numVU.toNumber()), 6), // 6 byte
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(numVA.toNumber()), 6), // 6 byte
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(dynamicMarkup), 4), // 4 bytes
             sig,
           ]),
         },
@@ -470,15 +479,17 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
         dynamicMarkup
       );
       const sig = await offchainSigner.signMessage(arrayify(hash));
+      const numVU = ethers.BigNumber.from(MOCK_VALID_UNTIL);
+      const numVA = ethers.BigNumber.from(MOCK_VALID_AFTER);
       const userOp = await fillAndSign(
         {
           ...userOp1,
           paymasterAndData: hexConcat([
             paymasterAddress,
-            ethers.utils.defaultAbiCoder.encode(
-              ["address", "uint48", "uint48", "uint32"],
-              [fundingId, MOCK_VALID_UNTIL, MOCK_VALID_AFTER, dynamicMarkup]
-            ),
+            ethers.utils.hexZeroPad(fundingId, 20),
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(numVU.toNumber()), 6), // 6 byte
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(numVA.toNumber()), 6), // 6 byte
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(dynamicMarkup), 4), // 4 bytes
             sig,
           ]),
         },
@@ -591,15 +602,17 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
         dynamicMarkup
       );
       const sig = await offchainSigner.signMessage(arrayify(hash));
+      const numVU = ethers.BigNumber.from(MOCK_VALID_UNTIL);
+      const numVA = ethers.BigNumber.from(MOCK_VALID_AFTER);
       const userOp = await fillAndSign(
         {
           ...userOp1,
           paymasterAndData: hexConcat([
             paymasterAddress,
-            ethers.utils.defaultAbiCoder.encode(
-              ["address", "uint48", "uint48", "uint32"],
-              [fundingId, MOCK_VALID_UNTIL, MOCK_VALID_AFTER, dynamicMarkup]
-            ),
+            ethers.utils.hexZeroPad(fundingId, 20),
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(numVU.toNumber()), 6), // 6 byte
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(numVA.toNumber()), 6), // 6 byte
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(dynamicMarkup), 4), // 4 bytes
             sig,
           ]),
         },
@@ -625,17 +638,14 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
 
   describe("Sponsorship Paymaster - read methods and state checks", () => {
     it("Should parse data properly", async () => {
+      const numVU = ethers.BigNumber.from(MOCK_VALID_UNTIL);
+      const numVA = ethers.BigNumber.from(MOCK_VALID_AFTER);
       const paymasterAndData = hexConcat([
         paymasterAddress,
-        ethers.utils.defaultAbiCoder.encode(
-          ["address", "uint48", "uint48", "uint32"],
-          [
-            await offchainSigner.getAddress(),
-            MOCK_VALID_UNTIL,
-            MOCK_VALID_AFTER,
-            dynamicMarkup,
-          ]
-        ),
+        ethers.utils.hexZeroPad(await offchainSigner.getAddress(), 20),
+        ethers.utils.hexZeroPad(ethers.utils.hexlify(numVU.toNumber()), 6), // 6 byte
+        ethers.utils.hexZeroPad(ethers.utils.hexlify(numVA.toNumber()), 6), // 6 byte
+        ethers.utils.hexZeroPad(ethers.utils.hexlify(dynamicMarkup), 4), // 4 bytes
         "0x" + "00".repeat(65),
       ]);
 
@@ -652,7 +662,7 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
 
     it("Invalid paymasterAndData causes revert", async () => {
       const paymasterAndData =
-        "0x9c145aed00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000124468721a7000000000000000000000000831153c6b9537d0ff5b7db830c2749de3042e77600000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000649b890b7000000000000000000000000071bc333f52a7971dde5de5b6c1ab0e7341e9724c00000000000000000000000021a6f9fa7246de45762e6f9db1f55e3c0f8566db00000000000000000000000000000000000000000000000000000000000000";
+        "0x9c145aed0000000000000000000000000000000000000000000000";
 
       await expect(sponsorshipPaymaster.parsePaymasterAndData(paymasterAndData))
         .to.be.reverted;

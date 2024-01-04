@@ -151,17 +151,14 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
 
   describe("#validatePaymasterUserOp", () => {
     it("Should parse data properly", async () => {
+      const numVU = ethers.BigNumber.from(MOCK_VALID_UNTIL);
+      const numVA = ethers.BigNumber.from(MOCK_VALID_AFTER);
       const paymasterAndData = hexConcat([
         paymasterAddress,
-        ethers.utils.defaultAbiCoder.encode(
-          ["address", "uint48", "uint48", "uint32"],
-          [
-            await offchainSigner.getAddress(),
-            MOCK_VALID_UNTIL,
-            MOCK_VALID_AFTER,
-            dynamicMarkup,
-          ]
-        ),
+        ethers.utils.hexZeroPad(await offchainSigner.getAddress(), 20),
+        ethers.utils.hexZeroPad(ethers.utils.hexlify(numVU.toNumber()), 6), // 6 byte
+        ethers.utils.hexZeroPad(ethers.utils.hexlify(numVA.toNumber()), 6), // 6 byte
+        ethers.utils.hexZeroPad(ethers.utils.hexlify(dynamicMarkup), 4), // 4 bytes
         "0x" + "00".repeat(65),
       ]);
 
@@ -207,20 +204,17 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
         dynamicMarkup
       );
       const sig = await offchainSigner.signMessage(arrayify(hash));
+      const numVU = ethers.BigNumber.from(MOCK_VALID_UNTIL);
+      const numVA = ethers.BigNumber.from(MOCK_VALID_AFTER);
       const userOp = await fillAndSign(
         {
           ...userOp1,
           paymasterAndData: hexConcat([
             paymasterAddress,
-            ethers.utils.defaultAbiCoder.encode(
-              ["address", "uint48", "uint48", "uint32"],
-              [
-                await offchainSigner.getAddress(),
-                MOCK_VALID_UNTIL,
-                MOCK_VALID_AFTER,
-                dynamicMarkup,
-              ]
-            ),
+            ethers.utils.hexZeroPad(await offchainSigner.getAddress(), 20),
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(numVU.toNumber()), 6), // 6 byte
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(numVA.toNumber()), 6), // 6 byte
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(dynamicMarkup), 4), // 4 bytes
             sig,
           ]),
         },
@@ -295,20 +289,17 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
         dynamicMarkup
       );
       const sig = await offchainSigner.signMessage(arrayify(hash));
+      const numVU = ethers.BigNumber.from(MOCK_VALID_UNTIL);
+      const numVA = ethers.BigNumber.from(MOCK_VALID_AFTER);
       const userOp = await fillAndSign(
         {
           ...userOp1,
           paymasterAndData: hexConcat([
             paymasterAddress,
-            ethers.utils.defaultAbiCoder.encode(
-              ["address", "uint48", "uint48", "uint32"],
-              [
-                await offchainSigner.getAddress(),
-                MOCK_VALID_UNTIL,
-                MOCK_VALID_AFTER,
-                dynamicMarkup,
-              ]
-            ),
+            ethers.utils.hexZeroPad(await offchainSigner.getAddress(), 20),
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(numVU.toNumber()), 6), // 6 byte
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(numVA.toNumber()), 6), // 6 byte
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(dynamicMarkup), 4), // 4 bytes
             sig,
           ]),
         },
@@ -376,20 +367,17 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
         dynamicMarkup
       );
       const sig = await offchainSigner.signMessage(arrayify(hash));
+      const numVU = ethers.BigNumber.from(MOCK_VALID_UNTIL);
+      const numVA = ethers.BigNumber.from(MOCK_VALID_AFTER);
       const userOp = await fillAndSign(
         {
           ...userOp1,
           paymasterAndData: hexConcat([
             paymasterAddress,
-            ethers.utils.defaultAbiCoder.encode(
-              ["address", "uint48", "uint48", "uint32"],
-              [
-                await offchainSigner.getAddress(),
-                MOCK_VALID_UNTIL,
-                MOCK_VALID_AFTER,
-                dynamicMarkup,
-              ]
-            ),
+            ethers.utils.hexZeroPad(await offchainSigner.getAddress(), 20),
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(numVU.toNumber()), 6), // 6 byte
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(numVA.toNumber()), 6), // 6 byte
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(dynamicMarkup), 4), // 4 bytes
             sig,
           ]),
         },
