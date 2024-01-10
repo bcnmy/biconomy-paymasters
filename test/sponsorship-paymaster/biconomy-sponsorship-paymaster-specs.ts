@@ -32,8 +32,7 @@ const dynamicMarkup = 1100000; // or 0 or 1100000
 export async function deployEntryPoint(
   provider = ethers.provider
 ): Promise<EntryPoint> {
-  const epf = await (await ethers.getContractFactory("EntryPoint")).deploy();
-  return EntryPoint__factory.connect(epf.address, provider.getSigner());
+  return new EntryPoint__factory(provider.getSigner()).deploy();
 }
 
 describe("EntryPoint with VerifyingPaymaster Singleton", function () {
