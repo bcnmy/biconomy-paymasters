@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.23;
 
 // swap reference: https://solidity-by-example.org/defi/uniswap-v3-swap/ for adding tests
 // https://docs.uniswap.org/contracts/v3/reference/periphery/SwapRouter

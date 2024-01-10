@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.23;
 
 // Import the required libraries and contracts
 import "@account-abstraction/contracts/core/BasePaymaster.sol";

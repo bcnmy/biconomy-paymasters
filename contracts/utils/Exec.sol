@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: LGPL-3.0-only
-pragma solidity 0.8.20;
+pragma solidity ^0.8.23;
 
 /**
  * Utility functions helpful when making different kinds of contract calls in Solidity.
