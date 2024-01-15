@@ -15,6 +15,8 @@ import {
 import { mumbaiConfigInfoProd } from "../configs";
 import { TokenConfig } from "../utils/Types";
 
+// TODO : add chainId key in config.json and make it unified
+// filter based on chain and make single script based on chainId
 const tokenConfig: TokenConfig = mumbaiConfigInfoProd;
 
 const provider = ethers.provider;
