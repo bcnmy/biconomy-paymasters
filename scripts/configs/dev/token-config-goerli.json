@@ -5,10 +5,6 @@
         "address": "0xb5B640E6414b6DeF4FC9B3C1EeF373925effeCcF",
         "nativeOracleAddress": "0xD4a33860578De61DBAbDc8BFdb98FD742fA7028e",
         "tokenOracleAddress": "0xAb5c49580294Aff77670F839ea425f5b78ab3Ae7",
-        "description": "USDC / ETH",
-        "priceFeedFunction": "getThePrice()",
-        "priceFeedAddress": "0x000005ABaE3DEAdbe1FBD12105F950efbA9eaec4",
-        "feedSalt": "DEVX_PRICE_FEED_USDC_V0_27062023_uiaqdyv",
         "derivedFeed": true
       }
     ]

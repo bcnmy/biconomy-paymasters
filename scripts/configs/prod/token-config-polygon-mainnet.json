@@ -5,10 +5,6 @@
       "address": "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174",
       "nativeOracleAddress": "0xAB594600376Ec9fD91F8e885dADF0CE036862dE0",
       "tokenOracleAddress": "0xfE4A8cc5b5B2366C1B58Bea3858e81843581b2F7",
-      "description": "USDC / MATIC",
-      "priceFeedFunction": "getThePrice()",
-      "priceFeedAddress": "0x000005ABaE3DEAdbe1FBD12105F950efbA9eaec4",
-      "feedSalt": "DEVX_PRICE_FEED_USDC_V0_27062023_uiaqdyv",
       "derivedFeed": true
     },
     {
@@ -16,10 +12,6 @@
       "address": "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
       "nativeOracleAddress": "0xAB594600376Ec9fD91F8e885dADF0CE036862dE0",
       "tokenOracleAddress": "0x0A6513e40db6EB1b165753AD52E80663aeA50545",
-      "description": "USDT / MATIC",
-      "priceFeedFunction": "getThePrice()",
-      "priceFeedAddress": "0x000001E2C2B39542c30A3fE57c4487030bC03adF",
-      "feedSalt": "DEVX_PRICE_FEED_USDT_V0_27062023_dIos1Nw",
       "derivedFeed": true
     },
     {
@@ -27,10 +19,6 @@
       "address": "0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063",
       "nativeOracleAddress": "0xAB594600376Ec9fD91F8e885dADF0CE036862dE0",
       "tokenOracleAddress": "0x4746DeC9e833A82EC7C2C1356372CcF2cfcD2F3D",
-      "description": "DAI / MATIC",
-      "priceFeedFunction": "getThePrice()",
-      "priceFeedAddress": "0x000000d2Da196474046c7a4D94Ab0E566B26d054",
-      "feedSalt": "DEVX_PRICE_FEED_DAI_V0_27062023_1m7JNWQ",
       "derivedFeed": true
     },
     {
@@ -38,10 +26,6 @@
       "address": "0xBbba073C31bF03b8ACf7c28EF0738DeCF3695683",
       "nativeOracleAddress": "0xAB594600376Ec9fD91F8e885dADF0CE036862dE0",
       "tokenOracleAddress": "0x3D49406EDd4D52Fb7FFd25485f32E073b529C924",
-      "description": "SAND / MATIC",
-      "priceFeedFunction": "getThePrice()",
-      "priceFeedAddress": "0x00000980455EFB131c1908eFa908c1eaF19db352",
-      "feedSalt": "DEVX_PRICE_FEED_SAND_V0_27062023_eHPqgeR",
       "derivedFeed": true
     },
     {
@@ -49,10 +33,6 @@
       "address": "0x1B815d120B3eF02039Ee11dC2d33DE7aA4a8C603",
       "nativeOracleAddress": "0xAB594600376Ec9fD91F8e885dADF0CE036862dE0",
       "tokenOracleAddress": "0x6a99EC84819FB7007dd5D032068742604E755c56",
-      "description": "WOO / MATIC",
-      "priceFeedFunction": "getThePrice()",
-      "priceFeedAddress": "0x0000DE1c603c7272383E8a7Ed24a5B9941da36DF",
-      "feedSalt": "DEVX_PRICE_FEED_WOO_V0_27062023_zjZa7el",
       "derivedFeed": true
     },
     {
@@ -60,10 +40,6 @@
       "address": "0xD6DF932A45C0f255f85145f286eA0b292B21C90B",
       "nativeOracleAddress": "0xAB594600376Ec9fD91F8e885dADF0CE036862dE0",
       "tokenOracleAddress": "0x72484B12719E23115761D5DA1646945632979bB6",
-      "description": "AAVE / MATIC",
-      "priceFeedFunction": "getThePrice()",
-      "priceFeedAddress": "0x0000AF22A276F86B405835c18863e1C2A679D9e3",
-      "feedSalt": "DEVX_PRICE_FEED_AAVE_V0_28062023_HsugnpY",
       "derivedFeed": true
     },
     {
@@ -71,10 +47,6 @@
       "address": "0x9C9e5fD8bbc25984B178FdCE6117Defa39d2db39",
       "nativeOracleAddress": "0xAB594600376Ec9fD91F8e885dADF0CE036862dE0",
       "tokenOracleAddress": "0xE0dC07D5ED74741CeeDA61284eE56a2A0f7A4Cc9",
-      "description": "BUSD / MATIC",
-      "priceFeedFunction": "getThePrice()",
-      "priceFeedAddress": "0x000020c39775542112E3DB0DbAD0d47A44bEB49A",
-      "feedSalt": "DEVX_PRICE_FEED_BUSD_V0_27062023_J8nJR8O",
       "derivedFeed": true
     },
     {
@@ -82,10 +54,6 @@
       "address": "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619",
       "nativeOracleAddress": "0xAB594600376Ec9fD91F8e885dADF0CE036862dE0",
       "tokenOracleAddress": "0xF9680D99D6C9589e2a93a78A04A279e509205945",
-      "description": "ETH / MATIC",
-      "priceFeedFunction": "getThePrice()",
-      "priceFeedAddress": "0x00008cC9D5BF9F97AE2879163011707812561b42",
-      "feedSalt": "DEVX_PRICE_FEED_ETH_V0_27062023_jZ9Dvxh",
       "derivedFeed": true
     },
     {
@@ -93,10 +61,6 @@
       "address": "0xA1c57f48F0Deb89f569dFbE6E2B7f46D33606fD4",
       "nativeOracleAddress": "0xAB594600376Ec9fD91F8e885dADF0CE036862dE0",
       "tokenOracleAddress": "0xA1CbF3Fe43BC3501e3Fc4b573e822c70e76A7512",
-      "description": "MANA / MATIC",
-      "priceFeedFunction": "getThePrice()",
-      "priceFeedAddress": "0x0000De2Ed5b4f74b6f03539529E8Cb67545d7834",
-      "feedSalt": "DEVX_PRICE_FEED_MANA_V0_28062023_E87OPLB",
       "derivedFeed": true
     },
     {
@@ -104,10 +68,6 @@
       "address": "0xB5C064F955D8e7F38fE0460C556a72987494eE17",
       "nativeOracleAddress": "0xAB594600376Ec9fD91F8e885dADF0CE036862dE0",
       "tokenOracleAddress": "0xa058689f4bCa95208bba3F265674AE95dED75B6D",
-      "description": "QUICK / MATIC",
-      "priceFeedFunction": "getThePrice()",
-      "priceFeedAddress": "0x0000ABAe40C30ab8ac824ba01Eb1003A0d1a2754",
-      "feedSalt": "DEVX_PRICE_FEED_QUICK_V0_27062023_9UTXOsb",
       "derivedFeed": true
     },
     {
@@ -115,10 +75,6 @@
       "address": "0x0b3F868E0BE5597D5DB7fEB59E1CADBb0fdDa50a",
       "nativeOracleAddress": "0xAB594600376Ec9fD91F8e885dADF0CE036862dE0",
       "tokenOracleAddress": "0x49B0c695039243BBfEb8EcD054EB70061fd54aa0",
-      "description": "SUSHI / MATIC",
-      "priceFeedFunction": "getThePrice()",
-      "priceFeedAddress": "0x0000552E10e879F403dD5F041742E6356d031825",
-      "feedSalt": "DEVX_PRICE_FEED_SUSHI_V0_27062023_dyZta4I",
       "derivedFeed": true
     },
     {
@@ -126,10 +82,6 @@
       "address": "0x2e1AD108fF1D8C782fcBbB89AAd783aC49586756",
       "nativeOracleAddress": "0xAB594600376Ec9fD91F8e885dADF0CE036862dE0",
       "tokenOracleAddress": "0x7C5D415B64312D38c56B54358449d0a4058339d2",
-      "description": "TUSD / MATIC",
-      "priceFeedFunction": "getThePrice()",
-      "priceFeedAddress": "0x000064b138eDB97Ac8a3F4564E14d9a331288a6B",
-      "feedSalt": "DEVX_PRICE_FEED_TUSD_V0_27062023_QHVx0oQ",
       "derivedFeed": true
     },
     {
@@ -137,10 +89,6 @@
       "address": "0xb33EaAd8d922B1083446DC23f610c2567fB5180f",
       "nativeOracleAddress": "0xAB594600376Ec9fD91F8e885dADF0CE036862dE0",
       "tokenOracleAddress": "0xdf0Fb4e4F928d2dCB76f438575fDD8682386e13C",
-      "description": "UNI / MATIC",
-      "priceFeedFunction": "getThePrice()",
-      "priceFeedAddress": "0x0000095CcE092E83E5826cFeb0f03cFa74915b41",
-      "feedSalt": "DEVX_PRICE_FEED_UNI_V0_27062023_PBQ6vdq",
       "derivedFeed": true
     },
     {
@@ -148,21 +96,13 @@
       "address": "0x1bfd67037b42cf73acf2047067bd4f2c47d9bfd6",
       "nativeOracleAddress": "0xAB594600376Ec9fD91F8e885dADF0CE036862dE0",
       "tokenOracleAddress": "0xDE31F8bFBD8c84b5360CFACCa3539B938dd78ae6",
-      "description": "UNI / MATIC",
-      "priceFeedFunction": "getThePrice()",
-      "priceFeedAddress": "0x00002D444779516f9D60368f3fa1E2b036BCCc7D",
-      "feedSalt": "DEVX_PRICE_FEED_WBTC_V0_27062023_z41FLvK",
       "derivedFeed": true
     },
     {
       "symbol": "LINK",
       "address": "0x53E0bca35eC356BD5ddDFebbD1Fc0fD03FaBad39",
-      "nativeOracleAddress": "",
-      "tokenOracleAddress": "",
-      "description": "LINK / MATIC",
-      "priceFeedFunction": "latestAnswer()",
-      "priceFeedAddress": "0x5787BefDc0ECd210Dfa948264631CD53E68F7802",
-      "feedSalt": "DEVX_PRICE_FEED_LINK_V0_27062023_JHIxs6o",
+      "nativeOracleAddress": "0xAB594600376Ec9fD91F8e885dADF0CE036862dE0",
+      "tokenOracleAddress": "0x5787BefDc0ECd210Dfa948264631CD53E68F7802",
       "derivedFeed": false
     },
     {
@@ -170,10 +110,6 @@
       "address": "0xE0B52e49357Fd4DAf2c15e02058DCE6BC0057db4",
       "nativeOracleAddress": "0xAB594600376Ec9fD91F8e885dADF0CE036862dE0",
       "tokenOracleAddress": "0x9b88d07B2354eF5f4579690356818e07371c7BeD",
-      "description": "agEUR / MATIC",
-      "priceFeedFunction": "getThePrice()",
-      "priceFeedAddress": "0x00000a13B868fEed2De6ADC47B982caA875F1879",
-      "feedSalt": "DEVX_PRICE_FEED_AGEUR_V0_27062023_npeAxaf",
       "derivedFeed": true
     },
     {
@@ -181,10 +117,6 @@
       "address": "0x2C89bbc92BD86F8075d1DEcc58C7F4E0107f286b",
       "nativeOracleAddress": "0xAB594600376Ec9fD91F8e885dADF0CE036862dE0",
       "tokenOracleAddress": "0xe01eA2fbd8D76ee323FbEd03eB9a8625EC981A10",
-      "description": "AVAX / MATIC",
-      "priceFeedFunction": "getThePrice()",
-      "priceFeedAddress": "0x0000312944601e41a06Bc26C7B28912ff15248e1",
-      "feedSalt": "DEVX_PRICE_FEED_AVAX_V0_27062023_f9ygwpY",
       "derivedFeed": true
     },
     {
@@ -192,10 +124,6 @@
       "address": "0x9a71012B13CA4d3D0Cdc72A177DF3ef03b0E76A3",
       "nativeOracleAddress": "0xAB594600376Ec9fD91F8e885dADF0CE036862dE0",
       "tokenOracleAddress": "0xD106B538F2A868c28Ca1Ec7E298C3325E0251d66",
-      "description": "BAL / MATIC",
-      "priceFeedFunction": "getThePrice()",
-      "priceFeedAddress": "0x00002a35F6a70c64769D9FF26750f5b5cAE2bC88",
-      "feedSalt": "DEVX_PRICE_FEED_BAL_V0_27062023_IzEMruz",
       "derivedFeed": true
     },
     {
@@ -203,10 +131,6 @@
       "address": "0xD85d1e945766Fea5Eda9103F918Bd915FbCa63E6",
       "nativeOracleAddress": "0xAB594600376Ec9fD91F8e885dADF0CE036862dE0",
       "tokenOracleAddress": "0xc9ECF45956f576681bDc01F79602A79bC2667B0c",
-      "description": "CEL / MATIC",
-      "priceFeedFunction": "getThePrice()",
-      "priceFeedAddress": "0x0000c8EFFbE9d075B6e56C1Ab2d1De9952141C8D",
-      "feedSalt": "DEVX_PRICE_FEED_CEL_V0_28062023_ZALYl4b",
       "derivedFeed": true
     },
     {
@@ -214,10 +138,6 @@
       "address": "0x8505b9d2254A7Ae468c0E9dd10Ccea3A837aef5c",
       "nativeOracleAddress": "0xAB594600376Ec9fD91F8e885dADF0CE036862dE0",
       "tokenOracleAddress": "0x2A8758b7257102461BC958279054e372C2b1bDE6",
-      "description": "COMP / MATIC",
-      "priceFeedFunction": "getThePrice()",
-      "priceFeedAddress": "0x00003Fa408c59d15f1C43F07CBa2724d2D64Bc73",
-      "feedSalt": "DEVX_PRICE_FEED_COMP_V0_27062023_54gIpet",
       "derivedFeed": true
     },
     {
@@ -225,10 +145,6 @@
       "address": "0x172370d5Cd63279eFa6d502DAB29171933a610AF",
       "nativeOracleAddress": "0xAB594600376Ec9fD91F8e885dADF0CE036862dE0",
       "tokenOracleAddress": "0x336584C8E6Dc19637A5b36206B1c79923111b405",
-      "description": "CRV / MATIC",
-      "priceFeedFunction": "getThePrice()",
-      "priceFeedAddress": "0x0000ba91FB68ea2fF253328834CB9E1d0f427D83",
-      "feedSalt": "DEVX_PRICE_FEED_CRV_V0_27062023_GrIWEtf",
       "derivedFeed": true
     },
     {
@@ -236,10 +152,6 @@
       "address": "0x45c32fA6DF82ead1e2EF74d17b76547EDdFaFF89",
       "nativeOracleAddress": "0xAB594600376Ec9fD91F8e885dADF0CE036862dE0",
       "tokenOracleAddress": "0x00DBeB1e45485d53DF7C2F0dF1Aa0b6Dc30311d3",
-      "description": "FRAX / MATIC",
-      "priceFeedFunction": "getThePrice()",
-      "priceFeedAddress": "0x00005f9f7f943e3db079D3B9A7A86aa80b70898C",
-      "feedSalt": "DEVX_PRICE_FEED_FRAX_V0_27062023_MmgkOOQ",
       "derivedFeed": true
     },
     {
@@ -247,10 +159,6 @@
       "address": "0x385Eeac5cB85A38A9a07A70c73e0a3271CfB54A7",
       "nativeOracleAddress": "0xAB594600376Ec9fD91F8e885dADF0CE036862dE0",
       "tokenOracleAddress": "0xDD229Ce42f11D8Ee7fFf29bDB71C7b81352e11be",
-      "description": "GHST / MATIC",
-      "priceFeedFunction": "getThePrice()",
-      "priceFeedAddress": "0x0000Af2E95EcABCC7b2c03BF2Dd8e840554A98c4",
-      "feedSalt": "DEVX_PRICE_FEED_GHST_V0_27062023_GgAZpkz",
       "derivedFeed": true
     },
     {
@@ -258,10 +166,6 @@
       "address": "0x5fe2B58c013d7601147DcdD68C143A77499f5531",
       "nativeOracleAddress": "0xAB594600376Ec9fD91F8e885dADF0CE036862dE0",
       "tokenOracleAddress": "0x3FabBfb300B1e2D7c9B84512fe9D30aeDF24C410",
-      "description": "GRT / MATIC",
-      "priceFeedFunction": "getThePrice()",
-      "priceFeedAddress": "0x000005e5cC18cdb3cdB513caBAFb4d215Ae63235",
-      "feedSalt": "DEVX_PRICE_FEED_GRT_V0_27062023_uBLkfy1",
       "derivedFeed": true
     },
     {
@@ -269,10 +173,6 @@
       "address": "0x1C954E8fe737F99f68Fa1CCda3e51ebDB291948C",
       "nativeOracleAddress": "0xAB594600376Ec9fD91F8e885dADF0CE036862dE0",
       "tokenOracleAddress": "0x10e5f3DFc81B3e5Ef4e648C4454D04e79E1E41E2",
-      "description": "KNC / MATIC",
-      "priceFeedFunction": "getThePrice()",
-      "priceFeedAddress": "0x0000DB3bfA1c8c27e4b99e5b023bFD30F210c185",
-      "feedSalt": "DEVX_PRICE_FEED_KNC_V0_27062023_G3ECzSl",
       "derivedFeed": true
     },
     {
@@ -280,10 +180,6 @@
       "address": "0xa3Fa99A148fA48D14Ed51d610c367C61876997F1",
       "nativeOracleAddress": "0xAB594600376Ec9fD91F8e885dADF0CE036862dE0",
       "tokenOracleAddress": "0xd8d483d813547CfB624b8Dc33a00F2fcbCd2D428",
-      "description": "MIMATIC / MATIC",
-      "priceFeedFunction": "getThePrice()",
-      "priceFeedAddress": "0x0000A60ddc7E929Da83Af1821fb13B7BbC2Bf2C2",
-      "feedSalt": "DEVX_PRICE_FEED_MIMATIC_V0_27062023_IgmN8NM",
       "derivedFeed": true
     },
     {
@@ -291,10 +187,6 @@
       "address": "0xC3Ec80343D2bae2F8E680FDADDe7C17E71E114ea",
       "nativeOracleAddress": "0xAB594600376Ec9fD91F8e885dADF0CE036862dE0",
       "tokenOracleAddress": "0xc86105DccF9BD629Cea7Fd41f94c6050bF96D57F",
-      "description": "OM / MATIC",
-      "priceFeedFunction": "getThePrice()",
-      "priceFeedAddress": "0x00005AFae4A06322ce9B08bB930eC175BD35FA53",
-      "feedSalt": "DEVX_PRICE_FEED_OM_V0_27062023_moV4Zhy",
       "derivedFeed": true
     },
     {
@@ -302,10 +194,6 @@
       "address": "0x8765f05ADce126d70bcdF1b0a48Db573316662eB",
       "nativeOracleAddress": "0xAB594600376Ec9fD91F8e885dADF0CE036862dE0",
       "tokenOracleAddress": "0x24C0e0FC8cCb21e2fb3e1A8A4eC4b29458664f79",
-      "description": "PLA / MATIC",
-      "priceFeedFunction": "getThePrice()",
-      "priceFeedAddress": "0x00007AdBC383D37A2F67D45544B677191D73d2Ba",
-      "feedSalt": "DEVX_PRICE_FEED_PLA_V0_27062023_BsEEM6r",
       "derivedFeed": true
     },
     {
@@ -313,10 +201,6 @@
       "address": "0x00e5646f60AC6Fb446f621d146B6E1886f002905",
       "nativeOracleAddress": "0xAB594600376Ec9fD91F8e885dADF0CE036862dE0",
       "tokenOracleAddress": "0x7f45273fD7C644714825345670414Ea649b50b16",
-      "description": "RAI / MATIC",
-      "priceFeedFunction": "getThePrice()",
-      "priceFeedAddress": "0x0000A3D0BEDB1f6533DB80ff63d33A3ccba4dDDE",
-      "feedSalt": "DEVX_PRICE_FEED_RAI_V0_27062023_GfS8MIt",
       "derivedFeed": true
     },
     {
@@ -324,10 +208,6 @@
       "address": "0x50B728D8D964fd00C2d0AAD81718b71311feF68a",
       "nativeOracleAddress": "0xAB594600376Ec9fD91F8e885dADF0CE036862dE0",
       "tokenOracleAddress": "0xbF90A5D9B6EE9019028dbFc2a9E50056d5252894",
-      "description": "SNX / MATIC",
-      "priceFeedFunction": "getThePrice()",
-      "priceFeedAddress": "0x0000f303a2ED1eDF64C3B41E937028b7140d94c8",
-      "feedSalt": "DEVX_PRICE_FEED_SNX_V0_27062023_4DrwwXZ",
       "derivedFeed": true
     },
     {
@@ -335,10 +215,6 @@
       "address": "0xd93f7E271cB87c23AaA73edC008A79646d1F9912",
       "nativeOracleAddress": "0xAB594600376Ec9fD91F8e885dADF0CE036862dE0",
       "tokenOracleAddress": "0x10C8264C0935b3B9870013e057f330Ff3e9C56dC",
-      "description": "SOL / MATIC",
-      "priceFeedFunction": "getThePrice()",
-      "priceFeedAddress": "0x0000daa8f8e278521abE99805113c0Cc157Acb97",
-      "feedSalt": "DEVX_PRICE_FEED_SOL_V0_27062023_tnr0Rv6",
       "derivedFeed": true
     },
     {
@@ -346,10 +222,6 @@
       "address": "0xEFeE2de82343BE622Dcb4E545f75a3b9f50c272D",
       "nativeOracleAddress": "0xAB594600376Ec9fD91F8e885dADF0CE036862dE0",
       "tokenOracleAddress": "0xd78325DcA0F90F0FFe53cCeA1B02Bb12E1bf8FdB",
-      "description": "TRY / MATIC",
-      "priceFeedFunction": "getThePrice()",
-      "priceFeedAddress": "0x000017bbc04B0b1EFd0372E1f353BC5aaDD4c659",
-      "feedSalt": "DEVX_PRICE_FEED_TRY_V0_27062023_CDdLFlo",
       "derivedFeed": true
     }
   ]

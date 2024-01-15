@@ -200,7 +200,6 @@ async function main() {
       address,
       nativeOracleAddress,
       tokenOracleAddress,
-      priceFeedAddress,
       derivedFeed,
     } = token;
 
