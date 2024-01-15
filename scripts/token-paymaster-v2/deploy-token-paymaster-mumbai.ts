@@ -5,7 +5,17 @@ import {
   encodeParam,
   isContract,
 } from "../utils";
-import { Deployer, Deployer__factory } from "../../typechain-types";
+import {
+  BiconomyTokenPaymaster,
+  BiconomyTokenPaymaster__factory,
+  Deployer,
+  Deployer__factory,
+  ERC20__factory,
+} from "../../typechain-types";
+import { mumbaiConfigInfoProd } from "../configs";
+import { TokenConfig } from "../utils/Types";
+
+const tokenConfig: TokenConfig = mumbaiConfigInfoProd;
 
 const provider = ethers.provider;
 const entryPointAddress =
@@ -104,6 +114,58 @@ async function getPredeployedDeployerContractInstance(): Promise<Deployer> {
   }
 }
 
+async function setTokenOracle(
+  tokenPaymasterInstance: BiconomyTokenPaymaster,
+  tokenAddress: string,
+  tokenDecimals: number,
+  tokenOracle: string,
+  nativeOracle: string,
+  isDerivedFeed: boolean
+) {
+  // Connect as the owner of the token paymaster
+  const tx = await tokenPaymasterInstance.setTokenOracle(
+    tokenAddress,
+    tokenDecimals,
+    tokenOracle,
+    nativeOracle,
+    isDerivedFeed
+  );
+  const receipt = await tx.wait();
+  console.log(
+    `Oracle set for ${tokenAddress} with tx hash ${receipt.transactionHash}`
+  );
+}
+
+async function getTokenPaymasterContractInstance(
+  tokenPaymasterAddress: string
+): Promise<BiconomyTokenPaymaster> {
+  const code = await provider.getCode(tokenPaymasterAddress);
+  const chainId = (await provider.getNetwork()).chainId;
+  const [signer] = await ethers.getSigners();
+
+  if (code === "0x") {
+    console.log(
+      `Biconomy Token Paymaster not deployed on chain ${chainId}, It should have been deployed as part of this script.`
+    );
+    throw new Error("Biconomy Token Paymaster not deployed");
+  } else {
+    console.log(
+      "Returning instance connected with EOA %s and address %s",
+      signer.address,
+      tokenPaymasterAddress
+    );
+    return BiconomyTokenPaymaster__factory.connect(
+      tokenPaymasterAddress,
+      signer
+    );
+  }
+}
+
+async function getERC20TokenInstance(tokenAddress: string) {
+  const [signer] = await ethers.getSigners();
+  return ERC20__factory.connect(tokenAddress, signer);
+}
+
 async function main() {
   const accounts = await ethers.getSigners();
   const earlyOwner = await accounts[0].getAddress();
@@ -120,6 +182,47 @@ async function main() {
     "==================tokenPaymasterAddress=======================",
     tokenPaymasterAddress
   );
+
+  let tokenPaymasterInstance;
+  if (tokenPaymasterAddress) {
+    tokenPaymasterInstance = await getTokenPaymasterContractInstance(
+      tokenPaymasterAddress
+    );
+    console.log(
+      "==================tokenPaymasterInstance======================="
+    );
+  }
+
+  for (const token of tokenConfig.tokens) {
+    // Note: In the config priceFeedAddress becomes the tokenOracleAddress
+    const {
+      symbol,
+      address,
+      nativeOracleAddress,
+      tokenOracleAddress,
+      priceFeedAddress,
+      derivedFeed,
+    } = token;
+
+    let tokenDecimals = 18;
+
+    if (address) {
+      const tokenInstance = await getERC20TokenInstance(address);
+      tokenDecimals = await tokenInstance.decimals();
+    } else {
+      throw new Error("token address can not be undefined");
+    }
+    if (tokenPaymasterInstance) {
+      await setTokenOracle(
+        tokenPaymasterInstance,
+        address,
+        tokenDecimals,
+        nativeOracleAddress,
+        tokenOracleAddress,
+        derivedFeed
+      );
+    }
+  }
 }
 
 main().catch((error) => {

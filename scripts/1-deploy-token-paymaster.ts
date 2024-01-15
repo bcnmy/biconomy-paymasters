@@ -29,7 +29,7 @@ async function deployTokenPaymasterContract(
 ): Promise<string | undefined> {
   try {
     const salt = ethers.utils.keccak256(
-      ethers.utils.toUtf8Bytes(DEPLOYMENT_SALTS.TOKEN_PAYMASTER)
+      ethers.utils.toUtf8Bytes(DEPLOYMENT_SALTS.TOKEN_PAYMASTER_V2)
     );
 
     const BiconomyTokenPaymaster = await ethers.getContractFactory(
