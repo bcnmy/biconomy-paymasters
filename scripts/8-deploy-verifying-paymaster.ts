@@ -23,6 +23,9 @@ function delay(ms: number) {
   });
 }
 
+// This will deploy Verifying Paymaster V1.1.0
+// To deploy Verifying paymaster V1.0.0 checkout to this tag: https://github.com/bcnmy/biconomy-paymasters/blob/prod-v1.0.0/contracts/verifying/VerifyingSingletonPaymaster.sol
+
 async function deployVerifyingPaymasterContract(
   deployerInstance: Deployer,
   earlyOwnerAddress: string
