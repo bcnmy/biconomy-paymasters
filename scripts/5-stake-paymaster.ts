@@ -98,6 +98,18 @@ const paymasterStakeConfig: Record<number, PaymasterStakeConfig> = {
     unstakeDelayInSec: 60 * 60 * 24, // 1 Day
     paymasterStakeInWei: parseEther("0.06"), // 1 ETH = $1,674.88
   },
+  7116: {
+    unstakeDelayInSec: 60 * 60 * 24, // 1 Day
+    paymasterStakeInWei: parseEther("0.06"), // 1 ETH = $1,674.88
+  },
+  168587773: {
+    unstakeDelayInSec: 60 * 60 * 24, // 1 Day
+    paymasterStakeInWei: parseEther("0.06"), // 1 ETH = $1,674.88
+  },
+  534351: {
+    unstakeDelayInSec: 60 * 60 * 24, // 1 Day
+    paymasterStakeInWei: parseEther("0.06"), // 1 ETH = $1,674.88
+  },
 };
 
 async function stakePaymaster(deployerInstance: Deployer) {

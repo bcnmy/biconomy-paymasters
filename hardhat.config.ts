@@ -296,6 +296,26 @@ const config: HardhatUserConfig = {
       accounts: hardhatAccounts,
       chainId: 91715,
     },
+    arbitrumSepoliaTestnet: {
+      url: process.env.ARBITRUM_SEPOLIA_TESTNET_URL || "",
+      accounts: hardhatAccounts,
+      chainId: 421614,
+    },
+    capxTestnet: {
+      url: process.env.CAPX_TESTNET_URL || "",
+      accounts: hardhatAccounts,
+      chainId: 7116,
+    },
+    blastTestnet: {
+      url: process.env.BLAST_TESTNET_URL || "",
+      accounts: hardhatAccounts,
+      chainId: 168587773,
+    },
+    scrollTestnet: {
+      url: process.env.SCROLL_TESTNET_URL || "",
+      accounts: hardhatAccounts,
+      chainId: 534351,
+    },
   },
   gasReporter: {
     enabled: process.env.REPORT_GAS !== undefined,
@@ -331,6 +351,10 @@ const config: HardhatUserConfig = {
       zkEVMMainnet: process.env.ZKEVM_API_KEY || "",
       zkEVMGoerli: process.env.ZKEVM_API_KEY || "",
       arbitrumNova: process.env.ARBITRUM_NOVA_API_KEY || "",
+      arbitrumSepolia: process.env.ARBITRUM_API_KEY || "",
+      capxTestnet: "PLACEHOLDER_STRING",
+      scrollTestnet: process.env.SCROLL_API_KEY || "",
+      blastTestnet: "blastTestnet", // apiKey is not required, just set a placeholder
     },
     customChains: [
       {
@@ -443,6 +467,39 @@ const config: HardhatUserConfig = {
         urls: {
           apiURL: "https://api-testnet-zkevm.polygonscan.com/api",
           browserURL: "https://testnet-zkevm.polygonscan.com",
+        },
+      },
+      {
+        network: "blastTestnet",
+        chainId: 168587773,
+        urls: {
+          apiURL:
+            "https://api.routescan.io/v2/network/testnet/evm/168587773/etherscan",
+          browserURL: "https://testnet.blastscan.io",
+        },
+      },
+      {
+        network: "capxTestnet",
+        chainId: 7116,
+        urls: {
+          apiURL: "http://148.113.163.123:4010/api",
+          browserURL: "http://148.113.163.123:4010",
+        },
+      },
+      {
+        network: "scrollTestnet",
+        chainId: 534351,
+        urls: {
+          apiURL: `https://scrollscan.com/api/${process.env.SCROLL_API_KEY}`,
+          browserURL: "https://sepolia.scrollscan.com",
+        },
+      },
+      {
+        network: "arbitrumSepolia",
+        chainId: 421614,
+        urls: {
+          apiURL: "https://api-sepolia.arbiscan.io/api",
+          browserURL: "https://sepolia.arbiscan.io",
         },
       },
     ],
