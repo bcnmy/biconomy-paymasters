@@ -238,6 +238,11 @@ export const paymasterStakeConfigDevx: Record<number, PaymasterStakeConfig> = {
     unstakeDelayInSec: 60 * 60 * 24, // 1 Day
     stakeInWei: parseEther("0.001"),
   },
+  534351: {
+    unstakeDelayInSec: 60 * 60 * 24, // 1 Day
+    stakeInWei: parseEther("0.1"), // Stake amount in Wei
+  },
+  
 
   // Mainnets
   137: {
@@ -463,6 +468,10 @@ export const paymasterStakeConfigProd: Record<number, PaymasterStakeConfig> = {
     unstakeDelayInSec: 60 * 60 * 24, // 1 Day
     stakeInWei: parseEther("0.1"), // 1 ETH = $1,674.88
   },
+  534351: {
+    unstakeDelayInSec: 60 * 60 * 24, // 1 Day
+    stakeInWei: parseEther("0.1"), // Stake amount in Wei
+  },
 };
 
 export const DEPLOYMENT_CHAIN_GAS_PRICES: Record<
@@ -550,6 +559,9 @@ export const DEPLOYMENT_CHAIN_GAS_PRICES: Record<
     // gasPrice: parseUnits("1", "gwei"),
   },
   169: {},
+  534351: {
+   gasPrice: 50*1e9
+  }
 };
 
 // Marked for removal

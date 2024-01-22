@@ -1,7 +1,8 @@
 import { ethers, run, network } from "hardhat";
 import {
+  DEV_DEPLOYMENT_SALTS,
+  PROD_DEPLOYMENT_SALTS,
   deployContract,
-  DEPLOYMENT_SALTS,
   encodeParam,
   isContract,
 } from "./utils";
@@ -15,6 +16,9 @@ const owner = process.env.PAYMASTER_OWNER_ADDRESS_PROD || "";
 const verifyingSigner = process.env.PAYMASTER_SIGNER_ADDRESS_PROD || "";
 const DEPLOYER_CONTRACT_ADDRESS =
   process.env.DEPLOYER_CONTRACT_ADDRESS_PROD || "";
+
+  const DEPLOYMENT_SALTS =
+  process.env.DEPLOYMENT_MODE === "dev" ? DEV_DEPLOYMENT_SALTS : PROD_DEPLOYMENT_SALTS;
 
 function delay(ms: number) {
     return new Promise<void>((resolve) => {

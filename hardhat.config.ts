@@ -284,10 +284,17 @@ const config: HardhatUserConfig = {
       accounts: hardhatAccounts,
       chainId: 421614,
     },
+    scrollTestnet: {
+      url: process.env.SCROLL_TESTNET_URL || "",
+      accounts: hardhatAccounts,
+      chainId: 534351,
+      gasPrice: 50*1e9
+    },
   },
   gasReporter: {
     enabled: process.env.REPORT_GAS !== undefined,
     currency: "USD",
+
   },
   etherscan: {
     apiKey: {
@@ -329,6 +336,7 @@ const config: HardhatUserConfig = {
       mantaMainnet: "PLACEHOLDER_STRING",
       mantaTestnet: "PLACEHOLDER_STRING",
       arbitrumSepolia: process.env.ARBITRUM_API_KEY || "",
+      scrollTestnet: process.env.SCROLL_API_KEY || "",
     },
     customChains: [
       {
@@ -529,6 +537,15 @@ const config: HardhatUserConfig = {
         urls: {
           apiURL: "https://api-testnet-zkevm.polygonscan.com/api",
           browserURL: "https://testnet-zkevm.polygonscan.com",
+        },
+      },
+      {
+        network: "scrollTestnet",
+        chainId: 534351,
+        urls: {
+          apiURL: `https://api-sepolia.scrollscan.com/api`,
+          // apiURL: `https://scrollscan.com/api/${process.env.SCROLL_API_KEY}`,
+          browserURL: "https://sepolia.scrollscan.com",
         },
       },
     ],
