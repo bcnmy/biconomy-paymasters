@@ -1,15 +1,20 @@
 import { ethers, run } from "hardhat";
 import {
+  appendToDeploymentFile,
   deployContract,
-  DEPLOYMENT_SALTS,
   encodeParam,
+  getDeploymentSalt,
+  getEnvVariable,
   isContract,
 } from "./utils";
 import { Deployer, Deployer__factory } from "../typechain-types";
 
 const provider = ethers.provider;
-const DEPLOYER_CONTRACT_ADDRESS =
-  process.env.DEPLOYER_CONTRACT_ADDRESS_PROD || "";
+
+const DEPLOYER_CONTRACT_ADDRESS = getEnvVariable(
+  "DEPLOYER_CONTRACT_ADDRESS_DEV",
+  "DEPLOYER_CONTRACT_ADDRESS_PROD"
+);
 
 function delay(ms: number) {
   return new Promise<void>((resolve) => {
@@ -24,8 +29,10 @@ async function deployChainlinkOracleAggregatorContract(
   earlyOwnerAddress: string
 ): Promise<string | undefined> {
   try {
+    const oracleAggregatorSalt = getDeploymentSalt("ORACLE_AGGREGATOR");
+
     const ORACLE_AGGREGATOR_SALT = ethers.utils.keccak256(
-      ethers.utils.toUtf8Bytes(DEPLOYMENT_SALTS.ORACLE_AGGREGATOR)
+      ethers.utils.toUtf8Bytes(oracleAggregatorSalt)
     );
 
     const OracleAggregator = await ethers.getContractFactory(
@@ -50,23 +57,25 @@ async function deployChainlinkOracleAggregatorContract(
 
     if (!isOracleAggregatorDeployed) {
       await deployContract(
-        DEPLOYMENT_SALTS.ORACLE_AGGREGATOR,
+        oracleAggregatorSalt,
         oracleAggregatorComputedAddr,
         ORACLE_AGGREGATOR_SALT,
         oracleAggregatorBytecode,
         deployerInstance
       );
       await delay(10000);
-      await run(`verify:verify`, {
-        address: oracleAggregatorComputedAddr,
-        constructorArguments: [earlyOwnerAddress],
-      });
     } else {
       console.log(
         "Chainlink Oracle Aggregator is already deployed with address ",
         oracleAggregatorComputedAddr
       );
     }
+    await run(`verify:verify`, {
+      address: oracleAggregatorComputedAddr,
+      constructorArguments: [earlyOwnerAddress],
+      contract:
+        "contracts/token/oracles/ChainlinkOracleAggregator.sol:ChainlinkOracleAggregator",
+    });
     return oracleAggregatorComputedAddr;
   } catch (err) {
     console.log(err);
@@ -115,6 +124,7 @@ async function main() {
     "==================oracleAggregatorAddress=======================",
     oracleAggregatorAddress
   );
+  appendToDeploymentFile("OracleAggregator", oracleAggregatorAddress);
 }
 
 main().catch((error) => {

@@ -1,8 +1,10 @@
 import { ethers, run } from "hardhat";
 import {
+  appendToDeploymentFile,
   deployContract,
-  DEPLOYMENT_SALTS,
   encodeParam,
+  getDeploymentSalt,
+  getEnvVariable,
   isContract,
 } from "./utils";
 import { Deployer, Deployer__factory } from "../typechain-types";
@@ -11,9 +13,14 @@ const provider = ethers.provider;
 const entryPointAddress =
   process.env.ENTRY_POINT_ADDRESS ||
   "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
-const verifyingSigner = process.env.PAYMASTER_SIGNER_ADDRESS_PROD || "";
-const DEPLOYER_CONTRACT_ADDRESS =
-  process.env.DEPLOYER_CONTRACT_ADDRESS_PROD || "";
+const verifyingSigner = getEnvVariable(
+  "PAYMASTER_SIGNER_ADDRESS_DEV",
+  "PAYMASTER_SIGNER_ADDRESS_PROD"
+);
+const DEPLOYER_CONTRACT_ADDRESS = getEnvVariable(
+  "DEPLOYER_CONTRACT_ADDRESS_DEV",
+  "DEPLOYER_CONTRACT_ADDRESS_PROD"
+);
 
 function delay(ms: number) {
   return new Promise<void>((resolve) => {
@@ -31,8 +38,10 @@ async function deployVerifyingPaymasterContract(
   earlyOwnerAddress: string
 ): Promise<string | undefined> {
   try {
+    const singletonPaymasterSalt = getDeploymentSalt("SINGLETON_PAYMASTER");
+
     const salt = ethers.utils.keccak256(
-      ethers.utils.toUtf8Bytes(DEPLOYMENT_SALTS.SINGELTON_PAYMASTER)
+      ethers.utils.toUtf8Bytes(singletonPaymasterSalt)
     );
 
     const BiconomyVerifyingPaymaster = await ethers.getContractFactory(
@@ -58,27 +67,28 @@ async function deployVerifyingPaymasterContract(
     );
     if (!isContractDeployed) {
       await deployContract(
-        DEPLOYMENT_SALTS.SINGELTON_PAYMASTER,
+        singletonPaymasterSalt,
         verifyingPaymasterComputedAddr,
         salt,
         verifyingPaymasterBytecode,
         deployerInstance
       );
       await delay(5000);
-      await run(`verify:verify`, {
-        address: verifyingPaymasterComputedAddr,
-        constructorArguments: [
-          earlyOwnerAddress,
-          entryPointAddress,
-          verifyingSigner,
-        ],
-      });
     } else {
       console.log(
         "Verifying Paymaster is Already deployed with address ",
         verifyingPaymasterComputedAddr
       );
     }
+
+    await run(`verify:verify`, {
+      address: verifyingPaymasterComputedAddr,
+      constructorArguments: [
+        earlyOwnerAddress,
+        entryPointAddress,
+        verifyingSigner,
+      ],
+    });
     return verifyingPaymasterComputedAddr;
   } catch (err) {
     console.log(err);
@@ -125,6 +135,8 @@ async function main() {
     "==================verifyingPaymasterAddress=======================",
     verifyingPaymasterAddress
   );
+
+  appendToDeploymentFile("SponsorshipPaymaster", verifyingPaymasterAddress);
 }
 
 main().catch((error) => {
