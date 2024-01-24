@@ -318,17 +318,17 @@ const config: HardhatUserConfig = {
     },
     baseSepoliaTestnet: {
       url: "https://sepolia.base.org/",
-      accounts: [process.env.PRIVATE_KEY ?? ""], // you should have this in env
+      accounts: hardhatAccounts,
       chainId: 84532,
     },
     scrollMainnet: {
       url: "https://rpc.scroll.io/",
-      accounts: hardhatAccounts, // you should have this in env
+      accounts: hardhatAccounts,
       chainId: 534352,
     },
     zetaTestnet: {
       url: "https://rpc.ankr.com/zetachain_evm_athens_testnet",
-      accounts: hardhatAccounts, // You should have this in your environment variables or hardhat config
+      accounts: hardhatAccounts,
       chainId: 7001,
     },
   },
