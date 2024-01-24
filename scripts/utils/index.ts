@@ -1,14 +1,6 @@
-import { ethers as hardhatEthersInstance } from "hardhat";
+import { ethers as hardhatEthersInstance, network } from "hardhat";
+import { BigNumber, BigNumberish, Contract, ethers } from "ethers";
 import {
-  BigNumber,
-  BigNumberish,
-  Contract,
-  ethers,
-  Signer,
-  ContractFactory,
-} from "ethers";
-import {
-  getContractAddress,
   arrayify,
   hexConcat,
   hexlify,
@@ -18,6 +10,8 @@ import {
 } from "ethers/lib/utils";
 import { TransactionReceipt, Provider } from "@ethersproject/providers";
 import { Deployer, Deployer__factory } from "../../typechain-types";
+import * as fs from "fs";
+import * as path from "path";
 
 // { FACTORY_ADDRESS  } is deployed from chirag's private key for nonce 0
 // Marked for removal
@@ -29,6 +23,11 @@ export const factoryTx =
   "0xf9016c8085174876e8008303c4d88080b90154608060405234801561001057600080fd5b50610134806100206000396000f3fe6080604052348015600f57600080fd5b506004361060285760003560e01c80634af63f0214602d575b600080fd5b60cf60048036036040811015604157600080fd5b810190602081018135640100000000811115605b57600080fd5b820183602082011115606c57600080fd5b80359060200191846001830284011164010000000083111715608d57600080fd5b91908080601f016020809104026020016040519081016040528093929190818152602001838380828437600092019190915250929550509135925060eb915050565b604080516001600160a01b039092168252519081900360200190f35b6000818351602085016000f5939250505056fea26469706673582212206b44f8a82cb6b156bfcc3dc6aadd6df4eefd204bc928a4397fd15dacf6d5320564736f6c634300060200331b83247000822470";
 export const factoryTxHash =
   "0x803351deb6d745e91545a6a3e1c0ea3e9a6a02a1a4193b70edfcd2f40f71a01c";
+
+interface DeployedContracts {
+  prod?: { [key: string]: string };
+  dev?: { [key: string]: string };
+}
 
 const factoryDeploymentFee = (0.0247 * 1e18).toString(); // 0.0247
 const options = { gasLimit: 7000000 /*, gasPrice: 70000000000 */ };
@@ -52,10 +51,21 @@ const options = { gasLimit: 7000000 /*, gasPrice: 70000000000 */ };
   PRICE_FEED_UNI = "DEVX_PRICE_FEED_UNI_V0_27062023_PBQ6vdq" // 0x0000095cce092e83e5826cfeb0f03cfa74915b41 
 } */
 
-export enum DEPLOYMENT_SALTS { // PROD
+export enum DEPLOYMENT_SALTS {
+  // PROD
+  ORACLE_AGGREGATOR_PROD = "PROD_CHAINLINK_ORACLE_AGGREGATOR_V0_27062023_UT8R11e", // 0x00000f7748595e46527413574a9327942e744e91
+  TOKEN_PAYMASTER_PROD = "PROD_TOKEN_PAYMASTER_V0_08072023_cONP4xM", // 0x00000f7365ca6c59a2c93719ad53d567ed49c14c
+  SINGLETON_PAYMASTER_PROD = "PROD_SINGLETON_PAYMASTER_V1_06082023_II1mWTr", // 0x00000f79b7faf42eebadba19acc07cd08af44789
+
+  // DEV
+  ORACLE_AGGREGATOR_DEV = "DEVX_CHAINLINK_ORACLE_AGGREGATOR_V0_27062023_bBee55b", // 0x0000065b8abb967271817555f23945eedf08015c
+  TOKEN_PAYMASTER_DEV = "DEVX_TOKEN_PAYMASTER_V0_08072023_h5AFKLa", // 0x0000023d6c240ae3c9610d519510004d2616c9ec
+  SINGLETON_PAYMASTER_DEV = "DEVX_SINGLETON_PAYMASTER_V1_03082023_0Af0vtw", // 0x0000064e9c653e373af18ef27f70be83df5476b7
+
+  // PROD
   // 0x988C135a1049Ce61730724afD342fb7C56CD2776 : Deployer address
-  ORACLE_AGGREGATOR = "PROD_CHAINLINK_ORACLE_AGGREGATOR_V0_27062023_UT8R11e", // 0x00000f7748595e46527413574a9327942e744e91
-  TOKEN_PAYMASTER = "PROD_TOKEN_PAYMASTER_V0_08072023_cONP4xM", // 0x00000f7365ca6c59a2c93719ad53d567ed49c14c
+  // ORACLE_AGGREGATOR = "PROD_CHAINLINK_ORACLE_AGGREGATOR_V0_27062023_UT8R11e", // 0x00000f7748595e46527413574a9327942e744e91
+  // TOKEN_PAYMASTER = "PROD_TOKEN_PAYMASTER_V0_08072023_cONP4xM", // 0x00000f7365ca6c59a2c93719ad53d567ed49c14c
 
   // when using deployer DEV
   // ORACLE_AGGREGATOR = "DEVX_CHAINLINK_ORACLE_AGGREGATOR_V0_27062023_bBee55b", // 0x0000065b8abb967271817555f23945eedf08015c
@@ -64,7 +74,7 @@ export enum DEPLOYMENT_SALTS { // PROD
   // TOKEN_PAYMASTER = "DEVX_TOKEN_PAYMASTER_V0_08072023_h5AFKLa", // 0x0000023d6c240ae3c9610d519510004d2616c9ec
 
   // V1.1.0
-  SINGELTON_PAYMASTER = "PROD_SINGLETON_PAYMASTER_V1_06082023_II1mWTr", // 0x00000f79b7faf42eebadba19acc07cd08af44789
+  // SINGELTON_PAYMASTER = "PROD_SINGLETON_PAYMASTER_V1_06082023_II1mWTr", // 0x00000f79b7faf42eebadba19acc07cd08af44789
 
   // 0xD3f89753278E419c8bda1eFe1366206B3D30C44f : Deployer address
 
@@ -75,7 +85,6 @@ export enum DEPLOYMENT_SALTS { // PROD
   // V1.0.0
   // SINGELTON_PAYMASTER = "DEVX_SINGELTON_PAYMASTER_V0_30032023"
   // PROD_SINGLETON_PAYMASTER_V0_11042023_80LVBle // 0x000031DD6D9D3A133E663660b959162870D755D4
-
 
   PRICE_FEED_USDC = "DEVX_PRICE_FEED_USDC_V0_27062023_uiaqdyv", // 0x000005abae3deadbe1fbd12105f950efba9eaec4
   PRICE_FEED_USDT = "DEVX_PRICE_FEED_USDT_V0_27062023_dIos1Nw", // 0x000001e2c2b39542c30a3fe57c4487030bc03adf
@@ -272,8 +281,6 @@ export const deployContract = async (
   contractByteCode: string,
   deployerInstance: Deployer
 ): Promise<string> => {
-  // const { hash, wait } = await deployerInstance.deploy(salt, contractByteCode, {maxFeePerGas: 200e9, maxPriorityFeePerGas: 75e9});
-  // TODO
   // Review gas price
   const { hash, wait } = await deployerInstance.deploy(salt, contractByteCode, {
     maxFeePerGas: 3e9,
@@ -422,3 +429,64 @@ export const parseEvents = (
   receipt.logs
     .map((log) => contractInterface.parseLog(log))
     .filter((log) => log.name === eventName);
+
+export function getDeploymentSalt(key: keyof typeof DEPLOYMENT_SALTS): string {
+  const env = process.env.DEPLOYMENT_MODE || "dev"; // Default to 'dev' if not set
+  const suffix = env === "prod" ? "_PROD" : "_DEV";
+  return DEPLOYMENT_SALTS[(key + suffix) as keyof typeof DEPLOYMENT_SALTS];
+}
+
+export function appendToDeploymentFile(
+  contractName: string,
+  contractAddress: string
+) {
+  const networkName = network.name;
+  const environment = process.env.DEPLOYMENT_MODE === "prod" ? "prod" : "dev";
+
+  const fileName = `deployed-contracts-${networkName}.json`;
+  const directoryPath = path.join(__dirname, "..", "..", "deployed");
+  const filePath = path.join(directoryPath, fileName);
+
+  if (!fs.existsSync(directoryPath)) {
+    fs.mkdirSync(directoryPath, { recursive: true });
+  }
+
+  let deployedContracts: DeployedContracts = {};
+  if (fs.existsSync(filePath)) {
+    deployedContracts = JSON.parse(fs.readFileSync(filePath, "utf-8"));
+  }
+
+  deployedContracts[environment] = deployedContracts[environment] || {};
+  const envContracts = deployedContracts[environment];
+
+  if (!envContracts[contractName]) {
+    // If contract name does not exist, add it
+    envContracts[contractName] = contractAddress;
+  } else if (envContracts[contractName] === contractAddress) {
+    // If exact same contract name and address already exist, skip
+    console.log(`Duplicate entry for ${contractName}. Skipping.`);
+    return;
+  } else {
+    // If contract name exists but with a different address, append with a number
+    let counter = 1;
+    while (envContracts[`${contractName}_${counter}`]) {
+      counter++;
+    }
+    envContracts[`${contractName}_${counter}`] = contractAddress;
+  }
+
+  fs.writeFileSync(filePath, JSON.stringify(deployedContracts, null, 2));
+  console.log(`Updated ${filePath} with ${contractName}`);
+}
+
+export function getEnvVariable(envKeyDev: string, envKeyProd: string): string {
+  const deploymentMode = process.env.DEPLOYMENT_MODE?.toLowerCase();
+
+  if (deploymentMode !== "prod" && deploymentMode !== "dev") {
+    throw new Error("Invalid DEPLOYMENT_MODE. Must be 'prod' or 'dev'.");
+  }
+
+  return deploymentMode === "prod"
+    ? process.env[envKeyProd] || ""
+    : process.env[envKeyDev] || "";
+}
