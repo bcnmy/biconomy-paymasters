@@ -316,6 +316,21 @@ const config: HardhatUserConfig = {
       accounts: hardhatAccounts,
       chainId: 534351,
     },
+    baseSepoliaTestnet: {
+      url: "https://sepolia.base.org/",
+      accounts: [process.env.PRIVATE_KEY ?? ""], // you should have this in env
+      chainId: 84532,
+    },
+    scrollMainnet: {
+      url: "https://rpc.scroll.io/",
+      accounts: hardhatAccounts, // you should have this in env
+      chainId: 534352,
+    },
+    zetaTestnet: {
+      url: "https://rpc.ankr.com/zetachain_evm_athens_testnet",
+      accounts: hardhatAccounts, // You should have this in your environment variables or hardhat config
+      chainId: 7001,
+    },
   },
   gasReporter: {
     enabled: process.env.REPORT_GAS !== undefined,
@@ -339,10 +354,11 @@ const config: HardhatUserConfig = {
       arbitrumOne: process.env.ARBITRUM_API_KEY || "",
       optimisticGoerli: process.env.OPTIMISTIC_API_KEY || "",
       optimisticEthereum: process.env.OPTIMISTIC_API_KEY || "",
-      "base-goerli": "PLACEHOLDER_STRING",
-      "linea-goerli": "PLACEHOLDER_STRING",
-      "linea-mainnet": "PLACEHOLDER_STRING",
-      "base-mainnet": process.env.BASE_API_KEY || "",
+      baseGoerli: "PLACEHOLDER_STRING",
+      lineaGoerli: "PLACEHOLDER_STRING",
+      lineaMainnet: "PLACEHOLDER_STRING",
+      baseMainnet: process.env.BASE_API_KEY || "",
+      baseSepolia: process.env.BASE_API_KEY || "",
       opBNBTestnet: process.env.OP_BNB_API_KEY || "",
       opBNBMainnet: process.env.OP_BNB_API_KEY || "",
       mantleTestnet: "PLACEHOLDER_STRING",
@@ -354,19 +370,13 @@ const config: HardhatUserConfig = {
       arbitrumSepolia: process.env.ARBITRUM_API_KEY || "",
       capxTestnet: "PLACEHOLDER_STRING",
       scrollTestnet: process.env.SCROLL_API_KEY || "",
+      scrollMainnet: process.env.SCROLL_API_KEY || "",
       blastTestnet: "blastTestnet", // apiKey is not required, just set a placeholder
+      zetaTestnet: "PLACEHOLDER_STRING",
     },
     customChains: [
       {
-        network: "linea-goerli",
-        chainId: 59140,
-        urls: {
-          apiURL: "https://explorer.goerli.linea.build/api",
-          browserURL: "https://goerli.lineascan.build",
-        },
-      },
-      {
-        network: "linea-mainnet",
+        network: "lineaMainnet",
         chainId: 59144,
         urls: {
           apiURL: "https://api.lineascan.build/api",
@@ -390,7 +400,7 @@ const config: HardhatUserConfig = {
         },
       },
       {
-        network: "base-goerli",
+        network: "baseGoerli",
         chainId: 84531,
         urls: {
           apiURL: "https://api-goerli.basescan.org/api",
@@ -398,11 +408,19 @@ const config: HardhatUserConfig = {
         },
       },
       {
-        network: "base-mainnet",
+        network: "baseMainnet",
         chainId: 8453,
         urls: {
           apiURL: "https://api.basescan.org/api",
           browserURL: "https://basescan.org",
+        },
+      },
+      {
+        network: "baseSepolia",
+        chainId: 84532,
+        urls: {
+          apiURL: "https://api-sepolia.basescan.org/api",
+          browserURL: "https://sepolia.basescan.org",
         },
       },
       {
@@ -487,10 +505,18 @@ const config: HardhatUserConfig = {
         },
       },
       {
+        network: "scrollMainnet",
+        chainId: 534352,
+        urls: {
+          apiURL: `https://api.scrollscan.com/api`,
+          browserURL: "https://scrollscan.com",
+        },
+      },
+      {
         network: "scrollTestnet",
         chainId: 534351,
         urls: {
-          apiURL: `https://scrollscan.com/api/${process.env.SCROLL_API_KEY}`,
+          apiURL: `https://api-sepolia.scrollscan.com/api`,
           browserURL: "https://sepolia.scrollscan.com",
         },
       },
@@ -500,6 +526,14 @@ const config: HardhatUserConfig = {
         urls: {
           apiURL: "https://api-sepolia.arbiscan.io/api",
           browserURL: "https://sepolia.arbiscan.io",
+        },
+      },
+      {
+        network: "zetaTestnet",
+        chainId: 7001,
+        urls: {
+          apiURL: "https://eth-goerli.blockscout.com/api",
+          browserURL: "https://zetachain-athens-3.blockscout.com/",
         },
       },
     ],
