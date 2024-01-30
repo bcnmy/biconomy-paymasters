@@ -364,7 +364,7 @@ contract BiconomyTokenPaymaster is
         assembly ("memory-safe") {
             let offset := context.offset
 
-            account := calldataload(context.offset)
+            account := calldataload(offset)
             offset := add(offset, 0x20)
 
             feeToken := calldataload(offset)
