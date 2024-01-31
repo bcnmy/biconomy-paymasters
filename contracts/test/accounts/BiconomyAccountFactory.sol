@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20; // temp
+pragma solidity ^0.8.23; // temp
 
 // Could also use published package or added submodule.
 
