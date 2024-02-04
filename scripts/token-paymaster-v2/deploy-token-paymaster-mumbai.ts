@@ -4,6 +4,7 @@ import {
   DEPLOYMENT_SALTS,
   encodeParam,
   isContract,
+  delay,
 } from "../utils";
 import {
   BiconomyTokenPaymaster,
@@ -20,6 +21,7 @@ import { TokenConfig } from "../utils/Types";
 const tokenConfig: TokenConfig = mumbaiConfigInfoProd;
 
 const provider = ethers.provider;
+const contractsDeployed: Record<string, string> = {};
 const entryPointAddress =
   process.env.ENTRY_POINT_ADDRESS ||
   "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
@@ -27,12 +29,52 @@ const verifyingSigner = process.env.PAYMASTER_SIGNER_ADDRESS_PROD || "";
 const DEPLOYER_CONTRACT_ADDRESS =
   process.env.DEPLOYER_CONTRACT_ADDRESS_PROD || "";
 
-function delay(ms: number) {
-  return new Promise<void>((resolve) => {
-    setTimeout(() => {
-      resolve();
-    }, ms);
-  });
+export async function deployGeneric(
+  deployerInstance: Deployer,
+  salt: string,
+  bytecode: string,
+  contractName: string,
+  constructorArguments: any[]
+): Promise<string> {
+  try {
+    const derivedSalt = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(salt));
+    const computedAddress = await deployerInstance.addressOf(derivedSalt);
+
+    console.log(`${contractName} Computed Address: ${computedAddress}`);
+
+    const isDeployed = await isContract(computedAddress, provider); // true (deployed on-chain)
+    if (!isDeployed) {
+      await deployContract(
+        salt,
+        computedAddress,
+        derivedSalt,
+        bytecode,
+        deployerInstance
+      );
+    } else {
+      console.log(
+        `${contractName} is Already deployed with address ${computedAddress}`
+      );
+    }
+
+    await delay(10000);
+
+    try {
+      await run("verify:verify", {
+        address: computedAddress,
+        constructorArguments,
+      });
+    } catch (err) {
+      console.log(err);
+    }
+
+    contractsDeployed[contractName] = computedAddress;
+
+    return computedAddress;
+  } catch (err) {
+    console.log(err);
+    return "";
+  }
 }
 
 async function deployTokenPaymasterContract(
@@ -40,53 +82,19 @@ async function deployTokenPaymasterContract(
   earlyOwnerAddress: string
 ): Promise<string | undefined> {
   try {
-    const salt = ethers.utils.keccak256(
-      ethers.utils.toUtf8Bytes(DEPLOYMENT_SALTS.TOKEN_PAYMASTER_V2)
+    const tokenPaymasterAddress = await deployGeneric(
+      deployerInstance,
+      DEPLOYMENT_SALTS.TOKEN_PAYMASTER_V2,
+      `${BiconomyTokenPaymaster__factory.bytecode}${encodeParam(
+        "address",
+        earlyOwnerAddress
+      ).slice(2)}${encodeParam("address", entryPointAddress).slice(
+        2
+      )}${encodeParam("address", verifyingSigner).slice(2)}`,
+      "BiconomyTokenPaymasterV2",
+      [earlyOwnerAddress, entryPointAddress, verifyingSigner]
     );
-
-    const BiconomyTokenPaymaster = await ethers.getContractFactory(
-      "BiconomyTokenPaymaster"
-    );
-    const tokenPaymasterBytecode = `${
-      BiconomyTokenPaymaster.bytecode
-    }${encodeParam("address", earlyOwnerAddress).slice(2)}${encodeParam(
-      "address",
-      entryPointAddress
-    ).slice(2)}${encodeParam("address", verifyingSigner).slice(2)}`;
-
-    const tokenPaymasterComputedAddr = await deployerInstance.addressOf(salt);
-    console.log(
-      "Token paymaster Computed Address: ",
-      tokenPaymasterComputedAddr
-    );
-    const isContractDeployed = await isContract(
-      tokenPaymasterComputedAddr,
-      provider
-    );
-    if (!isContractDeployed) {
-      await deployContract(
-        DEPLOYMENT_SALTS.TOKEN_PAYMASTER,
-        tokenPaymasterComputedAddr,
-        salt,
-        tokenPaymasterBytecode,
-        deployerInstance
-      );
-      await delay(5000);
-      await run(`verify:verify`, {
-        address: tokenPaymasterComputedAddr,
-        constructorArguments: [
-          earlyOwnerAddress,
-          entryPointAddress,
-          verifyingSigner,
-        ],
-      });
-    } else {
-      console.log(
-        "Token Paymaster is Already deployed with address ",
-        tokenPaymasterComputedAddr
-      );
-    }
-    return tokenPaymasterComputedAddr;
+    return tokenPaymasterAddress;
   } catch (err) {
     console.log(err);
   }
@@ -171,6 +179,9 @@ async function getERC20TokenInstance(tokenAddress: string) {
 async function main() {
   const accounts = await ethers.getSigners();
   const earlyOwner = await accounts[0].getAddress();
+  if (earlyOwner === undefined) {
+    throw new Error("earlyOwner is undefined");
+  }
 
   const deployerInstance = await getPredeployedDeployerContractInstance();
   console.log("=========================================");
@@ -198,7 +209,7 @@ async function main() {
   for (const token of tokenConfig.tokens) {
     // Note: In the config priceFeedAddress becomes the tokenOracleAddress
     const {
-      symbol,
+      // symbol,
       address,
       nativeOracleAddress,
       tokenOracleAddress,
