@@ -80,7 +80,6 @@ abstract contract OracleAggregator is Ownable, IOracleAggregator {
             if (answer <= 0) return (0, true);
             // 2 days old price is considered stale since the price is updated every 24 hours
             if (updatedAt < block.timestamp - 60 * 60 * 24 * 2) return (0, true);
-            if (answeredInRound < roundId) return (0, true);
             price = uint256(answer);
             return (price, false);
         } catch Error(string memory reason) {
