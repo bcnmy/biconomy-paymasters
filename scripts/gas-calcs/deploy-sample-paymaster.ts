@@ -7,6 +7,9 @@ async function main() {
   const accounts = await ethers.getSigners();
 
   const earlyOwner = await accounts[0].getAddress();
+  if (earlyOwner === undefined) {
+    throw new Error("earlyOwner is undefined");
+  }
   const verifyingSigner = "0x37ca4D86A0e33502F7CD93e0C88AFa2F172d39a1";
   const entryPoint =
     process.env.ENTRY_POINT_ADDRESS ||
