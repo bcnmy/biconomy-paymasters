@@ -14,6 +14,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@account-abstraction/contracts/core/Helpers.sol" as Helpers;
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import "../utils/SafeTransferLib.sol";
+import {MathLib} from "../libs/MathLib.sol";
 import {TokenPaymasterErrors} from "./TokenPaymasterErrors.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import {OracleAggregator} from "./oracles/OracleAggregator.sol";
@@ -75,6 +76,10 @@ contract BiconomyTokenPaymaster is
             sstore(verifyingSigner.slot, _verifyingSigner)
             sstore(feeReceiver.slot, address()) // initialize with self (could also be _owner)
         }
+    }
+
+    receive() external payable {
+        emit Received(msg.sender, msg.value);
     }
 
     /**
@@ -178,11 +183,12 @@ contract BiconomyTokenPaymaster is
         onlyOwner
         nonReentrant
     {
-        if (token.length != amount.length) {
+        uint256 tokLen = token.length;
+        if (tokLen != amount.length) {
             revert TokensAndAmountsLengthMismatch();
         }
         unchecked {
-            for (uint256 i; i < token.length;) {
+            for (uint256 i; i < tokLen;) {
                 _withdrawERC20(token[i], target, amount[i]);
                 ++i;
             }
@@ -196,7 +202,8 @@ contract BiconomyTokenPaymaster is
      */
     function withdrawMultipleERC20Full(IERC20[] calldata token, address target) public payable onlyOwner nonReentrant {
         unchecked {
-            for (uint256 i; i < token.length;) {
+            uint256 tokLen = token.length;
+            for (uint256 i; i < tokLen;) {
                 uint256 amount = token[i].balanceOf(address(this));
                 _withdrawERC20(token[i], target, amount);
                 ++i;
@@ -283,6 +290,94 @@ contract BiconomyTokenPaymaster is
         signature = paymasterAndData[VALID_PND_OFFSET + 53:];
     }
 
+    /**
+     * @dev Executes the paymaster's payment conditions
+     * @param mode tells whether the op succeeded, reverted, or if the op succeeded but cause the postOp to revert
+     * @param context payment conditions signed by the paymaster in `validatePaymasterUserOp`
+     * @param actualGasCost amount to be paid to the entry point in wei
+     */
+    function _postOp(PostOpMode mode, bytes calldata context, uint256 actualGasCost) internal virtual override {
+        address account;
+        IERC20 feeToken;
+        ExchangeRateSource priceSource;
+        uint128 exchangeRate;
+        uint32 priceMarkup;
+        uint256 maxFeePerGas;
+        uint256 maxPriorityFeePerGas;
+        bytes32 userOpHash;
+        assembly ("memory-safe") {
+            let offset := context.offset
+
+            account := calldataload(offset)
+            offset := add(offset, 0x20)
+
+            feeToken := calldataload(offset)
+            offset := add(offset, 0x20)
+
+            priceSource := calldataload(offset)
+            offset := add(offset, 0x20)
+
+            exchangeRate := calldataload(offset)
+            offset := add(offset, 0x20)
+
+            priceMarkup := calldataload(offset)
+            offset := add(offset, 0x20)
+
+            maxFeePerGas := calldataload(offset)
+            offset := add(offset, 0x20)
+
+            maxPriorityFeePerGas := calldataload(offset)
+            offset := add(offset, 0x20)
+
+            userOpHash := calldataload(offset)
+        }
+
+        uint128 effectiveExchangeRate = exchangeRate;
+
+        if (priceSource == ExchangeRateSource.ORACLE_BASED) {
+            uint128 result = getTokenValueOfOneNativeToken(address(feeToken));
+            if (result != 0) effectiveExchangeRate = result;
+        }
+
+        uint256 effectiveGasPrice = getGasPrice(
+            maxFeePerGas,
+            maxPriorityFeePerGas
+        );
+
+        // We could either touch the state for BASEFEE and calculate based on maxPriorityFee passed (to be added in context along with maxFeePerGas) or just use tx.gasprice
+        uint256 charge; // Final amount to be charged from user account
+        {
+            uint256 actualTokenCost =
+                ((actualGasCost + (unaccountedEPGasOverhead * effectiveGasPrice)) * effectiveExchangeRate) / 1e18;
+            charge = ((actualTokenCost * priceMarkup) / PRICE_DENOMINATOR);
+        }
+
+        if (mode != PostOpMode.postOpReverted) {
+            SafeTransferLib.safeTransferFrom(address(feeToken), account, feeReceiver, charge);
+            emit TokenPaymasterOperation(
+                account, address(feeToken), charge, priceMarkup, userOpHash, effectiveExchangeRate, priceSource
+            );
+        } else {
+            // In case transferFrom failed in first handlePostOp call, attempt to charge the tokens again
+
+            // 1.
+            // but if it reverts, let it revert with ERC20: insufficient allowance
+            // safeTransferFrom => AA50 postOp revert
+            // transferFrom => AA50 postOp reverted: ERC20: insufficient allowance
+
+            // Would be useful if paymaster already has allowance(not part of this op's exec)
+            // SafeTransferLib.safeTransferFrom(
+            //     address(feeToken),
+            //     account,
+            //     feeReceiver,
+            //     charge
+            // );
+
+            // 2. force revert
+            revert("BTPM PostOpReverted: Failed to charge tokens");
+        }
+    }
+
     function _getRequiredPrefund(UserOperation calldata userOp) internal view returns (uint256 requiredPrefund) {
         unchecked {
             uint256 requiredGas =
@@ -290,6 +385,22 @@ contract BiconomyTokenPaymaster is
 
             requiredPrefund = requiredGas * userOp.maxFeePerGas;
         }
+    }
+
+    // Note: do not use this in validation phase
+    function getGasPrice(
+        uint256 maxFeePerGas,
+        uint256 maxPriorityFeePerGas
+    ) internal view returns (uint256) {
+        if (maxFeePerGas == maxPriorityFeePerGas) {
+            //legacy mode (for networks that don't support basefee opcode)
+            return maxFeePerGas;
+        }
+        return
+            MathLib.minuint256(
+                maxFeePerGas,
+                maxPriorityFeePerGas + block.basefee
+            );
     }
 
     /**
@@ -343,92 +454,14 @@ contract BiconomyTokenPaymaster is
             "BTPM: account does not have enough token balance"
         );
 
-        context = abi.encode(account, feeToken, priceSource, exchangeRate, priceMarkup, userOpHash);
+        context = abi.encode(account, feeToken, priceSource, exchangeRate, priceMarkup, userOp.maxFeePerGas, userOp.maxPriorityFeePerGas, userOpHash);
 
         return (context, Helpers._packValidationData(false, validUntil, validAfter));
-    }
-
-    /**
-     * @dev Executes the paymaster's payment conditions
-     * @param mode tells whether the op succeeded, reverted, or if the op succeeded but cause the postOp to revert
-     * @param context payment conditions signed by the paymaster in `validatePaymasterUserOp`
-     * @param actualGasCost amount to be paid to the entry point in wei
-     */
-    function _postOp(PostOpMode mode, bytes calldata context, uint256 actualGasCost) internal virtual override {
-        address account;
-        IERC20 feeToken;
-        ExchangeRateSource priceSource;
-        uint128 exchangeRate;
-        uint32 priceMarkup;
-        bytes32 userOpHash;
-        assembly ("memory-safe") {
-            let offset := context.offset
-
-            account := calldataload(context.offset)
-            offset := add(offset, 0x20)
-
-            feeToken := calldataload(offset)
-            offset := add(offset, 0x20)
-
-            priceSource := calldataload(offset)
-            offset := add(offset, 0x20)
-
-            exchangeRate := calldataload(offset)
-            offset := add(offset, 0x20)
-
-            priceMarkup := calldataload(offset)
-            offset := add(offset, 0x20)
-
-            userOpHash := calldataload(offset)
-        }
-
-        uint128 effectiveExchangeRate = exchangeRate;
-
-        if (priceSource == ExchangeRateSource.ORACLE_BASED) {
-            uint128 result = getTokenValueOfOneNativeToken(address(feeToken));
-            if (result != 0) effectiveExchangeRate = result;
-        }
-
-        // We could either touch the state for BASEFEE and calculate based on maxPriorityFee passed (to be added in context along with maxFeePerGas) or just use tx.gasprice
-        uint256 charge; // Final amount to be charged from user account
-        {
-            uint256 actualTokenCost =
-                ((actualGasCost + (unaccountedEPGasOverhead * tx.gasprice)) * effectiveExchangeRate) / 1e18;
-            charge = ((actualTokenCost * priceMarkup) / PRICE_DENOMINATOR);
-        }
-
-        if (mode != PostOpMode.postOpReverted) {
-            SafeTransferLib.safeTransferFrom(address(feeToken), account, feeReceiver, charge);
-            emit TokenPaymasterOperation(
-                account, address(feeToken), charge, priceMarkup, userOpHash, effectiveExchangeRate, priceSource
-            );
-        } else {
-            // In case transferFrom failed in first handlePostOp call, attempt to charge the tokens again
-
-            // 1.
-            // but if it reverts, let it revert with ERC20: insufficient allowance
-            // safeTransferFrom => AA50 postOp revert
-            // transferFrom => AA50 postOp reverted: ERC20: insufficient allowance
-
-            // Would be useful if paymaster already has allowance(not part of this op's exec)
-            // SafeTransferLib.safeTransferFrom(
-            //     address(feeToken),
-            //     account,
-            //     feeReceiver,
-            //     charge
-            // );
-
-            // 2. force revert
-            revert("BTPM PostOpReverted: Failed to charge tokens");
-        }
     }
 
     function _withdrawERC20(IERC20 token, address target, uint256 amount) private {
         if (target == address(0)) revert CanNotWithdrawToZeroAddress();
         SafeTransferLib.safeTransfer(address(token), target, amount);
-    }
-
-    receive() external payable {
-        emit Received(msg.sender, msg.value);
+        emit TokensWithdrawn(address(token), target, amount, msg.sender);
     }
 }

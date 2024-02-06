@@ -32,6 +32,8 @@ interface IBiconomyTokenPaymaster {
      */
     event FeeReceiverChanged(address indexed _oldfeeReceiver, address indexed _newfeeReceiver, address indexed _actor);
 
+    event TokensWithdrawn(address indexed _token, address indexed _to, uint256 indexed _amount, address actor);
+
     /**
      * Designed to enable tracking how much fees were charged from the sender and in which ERC20 token
      * More information can be emitted like exchangeRate used, what was the source of exchangeRate etc
