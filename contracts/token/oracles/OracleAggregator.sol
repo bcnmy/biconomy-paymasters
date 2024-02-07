@@ -17,7 +17,8 @@ abstract contract OracleAggregator is Ownable, IOracleAggregator {
         uint8 tokenDecimals,
         address tokenOracle,
         address nativeOracle,
-        bool isDerivedFeed
+        bool isDerivedFeed,
+        uint24 priceUpdateThreshold
     ) external onlyOwner {
         if (tokenOracle == address(0)) revert OracleAddressCannotBeZero();
         if (nativeOracle == address(0)) revert OracleAddressCannotBeZero();
@@ -29,6 +30,7 @@ abstract contract OracleAggregator is Ownable, IOracleAggregator {
         tokensInfo[token].nativeOracle = nativeOracle;
         tokensInfo[token].tokenDecimals = tokenDecimals;
         tokensInfo[token].isDerivedFeed = isDerivedFeed;
+        tokensInfo[token].priceUpdateThreshold = priceUpdateThreshold;
     }
 
     /**
@@ -52,16 +54,17 @@ abstract contract OracleAggregator is Ownable, IOracleAggregator {
     {
         TokenInfo storage tokenInfo = tokensInfo[token];
         tokenDecimals = tokenInfo.tokenDecimals;
+        uint24 priceUpdateThreshold = tokenInfo.priceUpdateThreshold;
 
         if (tokenInfo.isDerivedFeed) {
-            (uint256 price1, bool isError1) = fetchPrice(FeedInterface(tokenInfo.nativeOracle));
-            (uint256 price2, bool isError2) = fetchPrice(FeedInterface(tokenInfo.tokenOracle));
+            (uint256 price1, bool isError1) = fetchPrice(FeedInterface(tokenInfo.nativeOracle), priceUpdateThreshold);
+            (uint256 price2, bool isError2) = fetchPrice(FeedInterface(tokenInfo.tokenOracle), priceUpdateThreshold);
             isError = isError1 || isError2;
             if (isError) return (0, 0, 0, isError);
             tokenPrice = (price2 * (10 ** 18)) / price1;
             tokenOracleDecimals = 18;
         } else {
-            (tokenPrice, isError) = fetchPrice(FeedInterface(tokenInfo.tokenOracle));
+            (tokenPrice, isError) = fetchPrice(FeedInterface(tokenInfo.tokenOracle), priceUpdateThreshold);
             tokenOracleDecimals = FeedInterface(tokenInfo.tokenOracle).decimals();
         }
     }
@@ -72,14 +75,14 @@ abstract contract OracleAggregator is Ownable, IOracleAggregator {
      * @param _oracle The Oracle contract to fetch the price from.
      * @return price The latest price fetched from the Oracle.
      */
-    function fetchPrice(FeedInterface _oracle) internal view returns (uint256 price, bool isError) {
+    function fetchPrice(FeedInterface _oracle, uint24 _priceUpdateThreshold) internal view returns (uint256 price, bool isError) {
         try _oracle.latestRoundData() returns (
             uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound
         ) {
             // validateRound
             if (answer <= 0) return (0, true);
             // 2 days old price is considered stale since the price is updated every 24 hours
-            if (updatedAt < block.timestamp - 60 * 60 * 24 * 2) return (0, true);
+            if (updatedAt < block.timestamp - _priceUpdateThreshold) return (0, true);
             price = uint256(answer);
             return (price, false);
         } catch Error(string memory reason) {

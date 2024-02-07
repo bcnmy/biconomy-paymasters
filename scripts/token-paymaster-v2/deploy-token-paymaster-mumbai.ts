@@ -130,7 +130,8 @@ async function setTokenOracle(
   tokenDecimals: number,
   tokenOracle: string,
   nativeOracle: string,
-  isDerivedFeed: boolean
+  isDerivedFeed: boolean,
+  priceUpdateThreshold: number = 172800 // 2 days
 ) {
   // Connect as the owner of the token paymaster
   const tx = await tokenPaymasterInstance.setTokenOracle(
@@ -138,7 +139,8 @@ async function setTokenOracle(
     tokenDecimals,
     tokenOracle,
     nativeOracle,
-    isDerivedFeed
+    isDerivedFeed,
+    priceUpdateThreshold
   );
   const receipt = await tx.wait();
   console.log(
@@ -216,6 +218,12 @@ async function main() {
       derivedFeed,
     } = token;
 
+    let priceUpdateThreshold = token.priceUpdateThreshold;
+
+    if (priceUpdateThreshold === null || priceUpdateThreshold === undefined) {
+      priceUpdateThreshold = 172800; // 2 days default
+    }
+
     let tokenDecimals = 18;
 
     if (address) {
@@ -231,7 +239,8 @@ async function main() {
         tokenDecimals,
         nativeOracleAddress,
         tokenOracleAddress,
-        derivedFeed
+        derivedFeed,
+        priceUpdateThreshold
       );
     }
   }

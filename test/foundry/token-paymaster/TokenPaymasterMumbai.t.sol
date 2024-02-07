@@ -68,7 +68,7 @@ contract TokenPaymasterMumbaiTest is SATestBase {
         vm.startPrank(alice.addr);
         // could also make a .call using selector and handle success
         _btpm.setTokenOracle(
-            address(usdc), ERC20(address(usdc)).decimals(), address(tokenOracle), address(nativeOracle), true
+            address(usdc), ERC20(address(usdc)).decimals(), address(tokenOracle), address(nativeOracle), true, 172800
         );
         vm.stopPrank();
 

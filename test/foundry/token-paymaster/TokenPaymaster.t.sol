@@ -68,7 +68,8 @@ contract TokenPaymasterTest is SATestBase {
 
         vm.startPrank(alice.addr);
         // could also make a .call using selector and handle success
-        _btpm.setTokenOracle(address(usdc), usdc.decimals(), address(tokenOracle), address(nativeOracle), true);
+        // append 2 days price threshold
+        _btpm.setTokenOracle(address(usdc), usdc.decimals(), address(tokenOracle), address(nativeOracle), true, 172800);
         vm.stopPrank();
 
         uint256 priceToLog = _btpm.getTokenValueOfOneNativeToken((address(usdc)));

@@ -4,6 +4,7 @@ export interface Token {
   tokenOracleAddress: string;
   symbol: string;
   derivedFeed: boolean;
+  priceUpdateThreshold?: number;
   // Add any other required properties for each token
 }
 
