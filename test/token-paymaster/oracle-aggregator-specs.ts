@@ -150,7 +150,8 @@ describe("Biconomy Token Paymaster", function () {
       await token.decimals(),
       tokenOracle.address,
       nativeOracle.address,
-      true
+      true,
+      172800 // 2 days
     );
 
     const priceResult =
@@ -340,7 +341,8 @@ describe("Biconomy Token Paymaster", function () {
         await token.decimals(),
         staleFeed.address,
         nativeOracle.address,
-        true
+        true,
+        172800 // 2 days
       );
 
       // this is not expected to revert
