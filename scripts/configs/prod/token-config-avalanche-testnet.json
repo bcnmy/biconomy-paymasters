@@ -5,10 +5,6 @@
         "address": "0xA7b3002ec739077057689A389460a0E7c0367369",
         "nativeOracleAddress": "0x5498BB86BC934c8D34FDA08E81D444153d0D06aD",
         "tokenOracleAddress": "0x7898AcCC83587C3C55116c5230C17a6Cd9C71bad",
-        "description": "USDT / AVAX",
-        "priceFeedFunction": "getThePrice()",
-        "priceFeedAddress": "0x000001E2C2B39542c30A3fE57c4487030bC03adF",
-        "feedSalt": "DEVX_PRICE_FEED_USDT_V0_27062023_dIos1Nw",
         "derivedFeed": true
       }
     ]

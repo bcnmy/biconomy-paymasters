@@ -4,6 +4,7 @@ import {
   DEPLOYMENT_SALTS,
   encodeParam,
   isContract,
+  delay,
 } from "./utils";
 import { Deployer, Deployer__factory } from "../typechain-types";
 
@@ -15,21 +16,13 @@ const verifyingSigner = process.env.PAYMASTER_SIGNER_ADDRESS_PROD || "";
 const DEPLOYER_CONTRACT_ADDRESS =
   process.env.DEPLOYER_CONTRACT_ADDRESS_PROD || "";
 
-function delay(ms: number) {
-  return new Promise<void>((resolve) => {
-    setTimeout(() => {
-      resolve();
-    }, ms);
-  });
-}
-
 async function deployTokenPaymasterContract(
   deployerInstance: Deployer,
   earlyOwnerAddress: string
 ): Promise<string | undefined> {
   try {
     const salt = ethers.utils.keccak256(
-      ethers.utils.toUtf8Bytes(DEPLOYMENT_SALTS.TOKEN_PAYMASTER)
+      ethers.utils.toUtf8Bytes(DEPLOYMENT_SALTS.TOKEN_PAYMASTER_V2)
     );
 
     const BiconomyTokenPaymaster = await ethers.getContractFactory(
@@ -107,6 +100,9 @@ async function getPredeployedDeployerContractInstance(): Promise<Deployer> {
 async function main() {
   const accounts = await ethers.getSigners();
   const earlyOwner = await accounts[0].getAddress();
+  if (earlyOwner === undefined) {
+    throw new Error("earlyOwner is undefined");
+  }
 
   const deployerInstance = await getPredeployedDeployerContractInstance();
   console.log("=========================================");

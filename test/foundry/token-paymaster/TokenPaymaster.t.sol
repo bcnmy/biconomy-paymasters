@@ -166,7 +166,6 @@ contract TokenPaymasterTest is SATestBase {
 
         entryPoint.handleOps(arraifyOps(op), dan.addr);
 
-        // todo // review fails to validate updated balances
         console2.log("paymaster balance after ", usdc.balanceOf(address(_btpm)));
         assertNotEq(usdc.balanceOf(address(sa)), 100e6);
     }

@@ -1,14 +1,6 @@
 import { ethers as hardhatEthersInstance } from "hardhat";
+import { BigNumber, BigNumberish, Contract, ethers } from "ethers";
 import {
-  BigNumber,
-  BigNumberish,
-  Contract,
-  ethers,
-  Signer,
-  ContractFactory,
-} from "ethers";
-import {
-  getContractAddress,
   arrayify,
   hexConcat,
   hexlify,
@@ -16,6 +8,7 @@ import {
   keccak256,
   Interface,
 } from "ethers/lib/utils";
+// eslint-disable-next-line node/no-extraneous-import
 import { TransactionReceipt, Provider } from "@ethersproject/providers";
 import { Deployer, Deployer__factory } from "../../typechain-types";
 
@@ -38,13 +31,15 @@ export enum DEPLOYMENT_SALTS { // PROD
   ORACLE_AGGREGATOR = "PROD_CHAINLINK_ORACLE_AGGREGATOR_V0_27062023_UT8R11e", // 0x00000f7748595e46527413574a9327942e744e91
   TOKEN_PAYMASTER = "PROD_TOKEN_PAYMASTER_V0_08072023_cONP4xM", // 0x00000f7365ca6c59a2c93719ad53d567ed49c14c
 
+  TOKEN_PAYMASTER_V2 = "PROD_TOKEN_PAYMASTER_V2_04022024_cONP4xM", // 0x00000f7365ca6c59a2c93719ad53d567ed49c14c
+
   // when using deployer DEV
   // ORACLE_AGGREGATOR = "DEVX_CHAINLINK_ORACLE_AGGREGATOR_V0_27062023_bBee55b", // 0x0000065b8abb967271817555f23945eedf08015c
 
   // when using deployer DEV
   // TOKEN_PAYMASTER = "DEVX_TOKEN_PAYMASTER_V0_08072023_h5AFKLa", // 0x0000023d6c240ae3c9610d519510004d2616c9ec
 
-  SPONSORSHIP_PAYMASTER = "PROD_SPONSORSHIP_PAYMASTER_V2",
+  SPONSORSHIP_PAYMASTER = "PROD_SPONSORSHIP_PAYMASTER_040124_V2",
 
   PRICE_FEED_USDC = "DEVX_PRICE_FEED_USDC_V0_27062023_uiaqdyv", // 0x000005abae3deadbe1fbd12105f950efba9eaec4
   PRICE_FEED_USDT = "DEVX_PRICE_FEED_USDT_V0_27062023_dIos1Nw", // 0x000001e2c2b39542c30a3fe57c4487030bc03adf
@@ -285,6 +280,14 @@ export const deployContract = async (
   }
 
   return "0x";
+};
+
+export const delay = (ms: number) => {
+  return new Promise<void>((resolve) => {
+    setTimeout(() => {
+      resolve();
+    }, ms);
+  });
 };
 
 /**
