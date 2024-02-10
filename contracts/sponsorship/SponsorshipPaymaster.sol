@@ -69,7 +69,6 @@ contract SponsorshipPaymaster is
      * @param paymasterId dapp identifier for which deposit is being made
      */
     function depositFor(address paymasterId) external payable nonReentrant {
-        if(paymasterId.isContract()) revert PaymasterIdCannotBeContract();
         if (paymasterId == address(0)) revert PaymasterIdCannotBeZero();
         if (msg.value == 0) revert DepositCanNotBeZero();
         paymasterIdBalances[paymasterId] += msg.value;
@@ -87,6 +86,7 @@ contract SponsorshipPaymaster is
     function setSigner(
         address _newVerifyingSigner
     ) external payable override onlyOwner {
+        if(_newVerifyingSigner.isContract()) revert VerifyingSignerCannotBeContract();
         if (_newVerifyingSigner == address(0))
             revert VerifyingSignerCannotBeZero();
         address oldSigner = verifyingSigner;
@@ -106,7 +106,6 @@ contract SponsorshipPaymaster is
     function setFeeCollector(
         address _newFeeCollector
     ) external payable onlyOwner {
-        if(_newFeeCollector.isContract()) revert FeeCollectorCannotBeContract();
         if (_newFeeCollector == address(0)) revert FeeCollectorCannotBeZero();
         address oldFeeCollector = feeCollector;
         assembly {
