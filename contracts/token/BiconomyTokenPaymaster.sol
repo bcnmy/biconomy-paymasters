@@ -48,7 +48,9 @@ contract BiconomyTokenPaymaster is
     uint32 private constant PRICE_DENOMINATOR = 1e6;
 
     // Gas used in EntryPoint._handlePostOp() method (including this#postOp() call)
-    uint256 public unaccountedEPGasOverhead = 45000;
+    // postOp() with ORACLE BASED priceSource = 28420
+    // max postOp() plus EP buffer
+    uint256 public unaccountedEPGasOverhead = 35000; 
 
     // Always rely on verifyingSigner..
     address public verifyingSigner;
@@ -364,7 +366,7 @@ contract BiconomyTokenPaymaster is
         assembly ("memory-safe") {
             let offset := context.offset
 
-            account := calldataload(context.offset)
+            account := calldataload(offset)
             offset := add(offset, 0x20)
 
             feeToken := calldataload(offset)
