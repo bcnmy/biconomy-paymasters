@@ -4,10 +4,10 @@ pragma solidity ^0.8.23;
 interface IOracleAggregator {
     struct TokenInfo {
         uint8 tokenDecimals;
+        uint24 priceUpdateThreshold;
         address tokenOracle;
         address nativeOracle;
         bool isDerivedFeed;
-        uint24 priceUpdateThreshold;
     }
 
     error MismatchInBaseAndQuoteDecimals();
