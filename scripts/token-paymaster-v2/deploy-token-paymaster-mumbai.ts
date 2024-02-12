@@ -11,7 +11,6 @@ import {
   BiconomyTokenPaymaster__factory,
   Deployer,
   Deployer__factory,
-  ERC20__factory,
 } from "../../typechain-types";
 import { mumbaiConfigInfoProd } from "../configs";
 import { TokenConfig } from "../utils/Types";
@@ -127,7 +126,6 @@ async function getPredeployedDeployerContractInstance(): Promise<Deployer> {
 async function setTokenOracle(
   tokenPaymasterInstance: BiconomyTokenPaymaster,
   tokenAddress: string,
-  tokenDecimals: number,
   tokenOracle: string,
   nativeOracle: string,
   isDerivedFeed: boolean,
@@ -136,7 +134,6 @@ async function setTokenOracle(
   // Connect as the owner of the token paymaster
   const tx = await tokenPaymasterInstance.setTokenOracle(
     tokenAddress,
-    tokenDecimals,
     tokenOracle,
     nativeOracle,
     isDerivedFeed,
@@ -171,11 +168,6 @@ async function getTokenPaymasterContractInstance(
       signer
     );
   }
-}
-
-async function getERC20TokenInstance(tokenAddress: string) {
-  const [signer] = await ethers.getSigners();
-  return ERC20__factory.connect(tokenAddress, signer);
 }
 
 async function main() {
@@ -224,19 +216,13 @@ async function main() {
       priceUpdateThreshold = 172800; // 2 days default
     }
 
-    let tokenDecimals = 18;
-
-    if (address) {
-      const tokenInstance = await getERC20TokenInstance(address);
-      tokenDecimals = await tokenInstance.decimals();
-    } else {
+    if (!address) {
       throw new Error("token address can not be undefined");
     }
     if (tokenPaymasterInstance) {
       await setTokenOracle(
         tokenPaymasterInstance,
         address,
-        tokenDecimals,
         nativeOracleAddress,
         tokenOracleAddress,
         derivedFeed,

@@ -68,14 +68,12 @@ contract TokenPaymasterMumbaiTest is SATestBase {
         vm.startPrank(alice.addr);
         // could also make a .call using selector and handle success
         _btpm.setTokenOracle(
-            address(usdc), ERC20(address(usdc)).decimals(), address(tokenOracle), address(nativeOracle), true, 172800
+            address(usdc), address(tokenOracle), address(nativeOracle), true, 172800
         );
         vm.stopPrank();
 
         uint256 priceToLog = _btpm.getTokenValueOfOneNativeToken((address(usdc)));
-        // console2.log(priceToLog);
-
-        address accountAddress = address(sa);
+        console2.log(priceToLog);
 
         vm.startPrank(charlie.addr);
         entryPoint.depositTo{value: 2 ether}(address(_btpm));

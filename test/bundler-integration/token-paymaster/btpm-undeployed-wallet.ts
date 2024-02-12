@@ -153,7 +153,6 @@ describe("Biconomy Token Paymaster (with Bundler)", function () {
 
     await sampleTokenPaymaster.setTokenOracle(
       token.address,
-      await token.decimals(),
       tokenOracle.address,
       nativeOracle.address,
       true,
