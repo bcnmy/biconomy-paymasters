@@ -52,7 +52,7 @@ abstract contract OracleAggregator is Ownable, IOracleAggregator {
         view
         returns (uint256 tokenPrice, uint8 tokenOracleDecimals, uint8 tokenDecimals, bool isError)
     {
-        TokenInfo storage tokenInfo = tokensInfo[token];
+        TokenInfo memory tokenInfo = tokensInfo[token];
         tokenDecimals = tokenInfo.tokenDecimals;
         uint24 priceUpdateThreshold = tokenInfo.priceUpdateThreshold;
 

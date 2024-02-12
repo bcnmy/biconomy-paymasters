@@ -175,9 +175,12 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
     it("succeed with valid signature", async () => {
       const fundingId = await offchainSigner.getAddress();
 
+      // TODO: find accurate value of unaccountedEPGasOverhead based on userOpGasPrice calculation flip (maxFeePerGas vs block.gasprice + priorityFee)
+
+      // already bit high here because of first txn
       await sponsorshipPaymaster
         .connect(deployer)
-        .setUnaccountedEPGasOverhead(35500);
+        .setUnaccountedEPGasOverhead(55500);
 
       await sponsorshipPaymaster.depositFor(fundingId, {
         value: ethers.utils.parseEther("1"),
@@ -307,9 +310,10 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
     it("succeed with valid signature - second transaction ", async () => {
       const fundingId = await offchainSigner.getAddress();
 
+      // TODO: find accurate value of unaccountedEPGasOverhead based on userOpGasPrice calculation flip (maxFeePerGas vs block.gasprice + priorityFee)
       await sponsorshipPaymaster
         .connect(deployer)
-        .setUnaccountedEPGasOverhead(18500);
+        .setUnaccountedEPGasOverhead(38500);
 
       await sponsorshipPaymaster.depositFor(fundingId, {
         value: ethers.utils.parseEther("1"),
@@ -440,9 +444,10 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
     it("succeed with valid signature - same account - different funding id ", async () => {
       const fundingId = await secondFundingId.getAddress();
 
+      // TODO: find accurate value of unaccountedEPGasOverhead based on userOpGasPrice calculation flip (maxFeePerGas vs block.gasprice + priorityFee)
       await sponsorshipPaymaster
         .connect(deployer)
-        .setUnaccountedEPGasOverhead(18500);
+        .setUnaccountedEPGasOverhead(38500);
 
       await sponsorshipPaymaster.depositFor(fundingId, {
         value: ethers.utils.parseEther("1"),
@@ -573,9 +578,10 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
     it("fails for fundingId which does not have enough deposit", async () => {
       const fundingId = await thirdFundingId.getAddress();
 
+      // TODO: find accurate value of unaccountedEPGasOverhead based on userOpGasPrice calculation flip (maxFeePerGas vs block.gasprice + priorityFee)
       await sponsorshipPaymaster
         .connect(deployer)
-        .setUnaccountedEPGasOverhead(18500);
+        .setUnaccountedEPGasOverhead(38500);
 
       // do not deposit
 
