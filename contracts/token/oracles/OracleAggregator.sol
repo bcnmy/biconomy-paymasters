@@ -2,6 +2,7 @@
 pragma solidity ^0.8.23;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "./IOracleAggregator.sol";
 import "./FeedInterface.sol";
 
@@ -14,7 +15,6 @@ abstract contract OracleAggregator is Ownable, IOracleAggregator {
 
     function setTokenOracle(
         address token,
-        uint8 tokenDecimals,
         address tokenOracle,
         address nativeOracle,
         bool isDerivedFeed,
@@ -28,7 +28,7 @@ abstract contract OracleAggregator is Ownable, IOracleAggregator {
         if (decimals1 != decimals2) revert MismatchInBaseAndQuoteDecimals();
         tokensInfo[token].tokenOracle = tokenOracle;
         tokensInfo[token].nativeOracle = nativeOracle;
-        tokensInfo[token].tokenDecimals = tokenDecimals;
+        tokensInfo[token].tokenDecimals = ERC20(token).decimals();
         tokensInfo[token].isDerivedFeed = isDerivedFeed;
         tokensInfo[token].priceUpdateThreshold = priceUpdateThreshold;
     }
