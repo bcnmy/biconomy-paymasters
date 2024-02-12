@@ -4,9 +4,9 @@ pragma solidity ^0.8.23;
 library MathLib {
     function minuint256(uint256 a, uint256 b) internal pure returns (uint256 result) {
         assembly {
-            result := xor(b, mul(xor(b, a), gt(a, b)))
-        }
+        result := xor(b, mul(xor(b, a), gt(b, a)))
     }
+}
 
     function maxuint256(uint256 a, uint256 b) internal pure returns (uint256 result) {
         assembly {
@@ -14,11 +14,11 @@ library MathLib {
         }
     }
 
-    function minuint32(uint32 a, uint32 b) internal pure returns (uint32 result) {
+   function minuint32(uint32 a, uint32 b) internal pure returns (uint32 result) {
         assembly {
-            result := xor(b, mul(xor(b, a), gt(a, b)))
-        }
+            result := xor(b, mul(xor(b, a), gt(b, a)))
     }
+}
 
     function maxuint32(uint32 a, uint32 b) internal pure returns (uint32 result) {
         assembly {

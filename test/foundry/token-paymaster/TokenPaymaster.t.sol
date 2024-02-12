@@ -24,6 +24,7 @@ import {MockToken} from "../../../contracts/test/helpers/MockToken.sol";
 import {MockOracle} from "../../../contracts/test/helpers/MockOracle.sol";
 import {FeedInterface} from "../../../contracts/token/oracles/FeedInterface.sol";
 import {SATestBase} from "../base/SATestBase.sol";
+import { MathLib } from "../../../contracts/libs/MathLib.sol";
 
 error SetupIncomplete();
 
@@ -43,6 +44,20 @@ contract TokenPaymasterTest is SATestBase {
 
     function setUp() public virtual override {
         super.setUp();
+
+        /*uint256 testResult =  MathLib.minuint256(
+                50,
+                60
+            );
+
+        console2.log("testResult ", testResult);
+
+        uint256 testResult2 =  MathLib.minuint32(
+                50,
+                60
+            );
+
+        console2.log("testResult2 ", testResult2);*/
 
         vm.warp(1680509051);
         console2.log("current block timestamp ", block.timestamp);
