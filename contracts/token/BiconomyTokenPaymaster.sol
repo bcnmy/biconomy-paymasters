@@ -453,7 +453,7 @@ contract BiconomyTokenPaymaster is
         require(priceMarkup <= 2e6, "BTPM: price markup percentage too high");
         require(
             IERC20(feeToken).balanceOf(account) >= ((tokenRequiredPreFund * priceMarkup) / PRICE_DENOMINATOR),
-            "BTPM: account does not have enough token balance"
+            "BTPM: Insufficient token balance"
         );
 
         context = abi.encode(account, feeToken, priceSource, exchangeRate, priceMarkup, userOp.maxFeePerGas, userOp.maxPriorityFeePerGas, userOpHash);
