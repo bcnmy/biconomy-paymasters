@@ -139,10 +139,10 @@ describe("Biconomy Token Paymaster (With Bundler)", function () {
 
     await sampleTokenPaymaster.setTokenOracle(
       token.address,
-      await token.decimals(),
       tokenOracle.address,
       nativeOracle.address,
-      true
+      true,
+      172800 // 2 days
     );
     const priceResult =
       await sampleTokenPaymaster.getTokenValueOfOneNativeToken(token.address);

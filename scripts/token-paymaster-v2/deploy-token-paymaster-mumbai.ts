@@ -11,7 +11,6 @@ import {
   BiconomyTokenPaymaster__factory,
   Deployer,
   Deployer__factory,
-  ERC20__factory,
 } from "../../typechain-types";
 import { mumbaiConfigInfoProd } from "../configs";
 import { TokenConfig } from "../utils/Types";
@@ -127,18 +126,18 @@ async function getPredeployedDeployerContractInstance(): Promise<Deployer> {
 async function setTokenOracle(
   tokenPaymasterInstance: BiconomyTokenPaymaster,
   tokenAddress: string,
-  tokenDecimals: number,
   tokenOracle: string,
   nativeOracle: string,
-  isDerivedFeed: boolean
+  isDerivedFeed: boolean,
+  priceUpdateThreshold: number = 172800 // 2 days
 ) {
   // Connect as the owner of the token paymaster
   const tx = await tokenPaymasterInstance.setTokenOracle(
     tokenAddress,
-    tokenDecimals,
     tokenOracle,
     nativeOracle,
-    isDerivedFeed
+    isDerivedFeed,
+    priceUpdateThreshold
   );
   const receipt = await tx.wait();
   console.log(
@@ -169,11 +168,6 @@ async function getTokenPaymasterContractInstance(
       signer
     );
   }
-}
-
-async function getERC20TokenInstance(tokenAddress: string) {
-  const [signer] = await ethers.getSigners();
-  return ERC20__factory.connect(tokenAddress, signer);
 }
 
 async function main() {
@@ -216,22 +210,23 @@ async function main() {
       derivedFeed,
     } = token;
 
-    let tokenDecimals = 18;
+    let priceUpdateThreshold = token.priceUpdateThreshold;
 
-    if (address) {
-      const tokenInstance = await getERC20TokenInstance(address);
-      tokenDecimals = await tokenInstance.decimals();
-    } else {
+    if (priceUpdateThreshold === null || priceUpdateThreshold === undefined) {
+      priceUpdateThreshold = 172800; // 2 days default
+    }
+
+    if (!address) {
       throw new Error("token address can not be undefined");
     }
     if (tokenPaymasterInstance) {
       await setTokenOracle(
         tokenPaymasterInstance,
         address,
-        tokenDecimals,
         nativeOracleAddress,
         tokenOracleAddress,
-        derivedFeed
+        derivedFeed,
+        priceUpdateThreshold
       );
     }
   }

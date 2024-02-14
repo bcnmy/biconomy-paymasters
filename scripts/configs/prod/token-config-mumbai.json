@@ -26,7 +26,8 @@
         "address": "0xE03489D4E90b22c59c5e23d45DFd59Fc0dB8a025",
         "nativeOracleAddress": "0xd0D5e3DB44DE05E9F294BB0a3bEEaF030DE24Ada",
         "tokenOracleAddress": "0x9dd18534b8f456557d11B9DDB14dA89b2e52e308",
-        "derivedFeed": true
+        "derivedFeed": true,
+        "priceUpdateThreshold": 43200
       }
     ]
 }
