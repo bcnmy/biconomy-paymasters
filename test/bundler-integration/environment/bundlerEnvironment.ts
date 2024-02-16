@@ -46,6 +46,16 @@ export type EthGetUserOperationReceipt = JsonRpcResponse<{
   receipt: any;
 }>;
 
+export type EthEstimateUserOperationGasResult = JsonRpcResponse<{
+  callGasLimit: string;
+  verificationGasLimit: string;
+  preVerificationGas: string;
+  validUntil: string;
+  validAfteR: string;
+  maxFeePerGas?: string;
+  maxPriorityFeePerGas?: string;
+}>;
+
 export const serializeUserOp = (op: UserOperation) => ({
   sender: op.sender,
   nonce: hexValue(op.nonce),
@@ -137,6 +147,29 @@ export class BundlerTestEnvironment {
   snapshot = async (): Promise<Snapshot> => ({
     blockNumber: await this.provider.getBlockNumber(),
   });
+
+  estimateUserOperation = async (
+    userOperation: UserOperation,
+    entrypointAddress: string
+  ): Promise<EthEstimateUserOperationGasResult> => {
+    const result = await this.apiClient.post("/rpc", {
+      jsonrpc: "2.0",
+      method: "eth_estimateUserOperationGas",
+      params: [serializeUserOp(userOperation), entrypointAddress],
+    });
+    if (result.status !== 200) {
+      throw new Error(
+        `Failed to estimate user operation: ${JSON.stringify(
+          result.data.error.message
+        )}`
+      );
+    }
+    if (result.data.error) {
+      throw new UserOperationSubmissionError(JSON.stringify(result.data.error));
+    }
+
+    return result.data;
+  };
 
   sendUserOperation = async (
     userOperation: UserOperation,

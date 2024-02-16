@@ -24,12 +24,16 @@ import { arrayify, hexConcat, parseEther } from "ethers/lib/utils";
 import { BigNumber, Signer } from "ethers";
 import {
   BundlerTestEnvironment,
+  EthEstimateUserOperationGasResult,
   EthSendUserOperationResult,
   UserOperationSubmissionError,
 } from "../environment/bundlerEnvironment";
 import { parseEvent } from "../../utils/testUtils";
 
 export const AddressZero = ethers.constants.AddressZero;
+
+const dummyPndSuffix =
+  "ae7a11d86a6297844c6d71e916b2e7033de4b34b0000deadbeef00000000123400124f8077be2eb29dac58818ebf3baabfa471d5e1637d786f8bde1dd5d9d06a6f3c5b7e1f5ec86e19e2183b0a29819acec0912653a9eb87fc8fb8b6ffe726b9f72a671d1b";
 
 const UserOperationEventTopic =
   "0x49628fd1471006c1482da88028e9ce4dbb080b815c9b0344d39e5a8e6ec1419f";
@@ -130,6 +134,12 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
     paymasterAddress = sponsorshipPaymaster.address;
     console.log("Paymaster address is ", paymasterAddress);
 
+    // Sending eth to avoid AA21 in gas estimtion. as we can't use stateOverrideSet with this bundler
+    await deployer.sendTransaction({
+      to: walletAddress,
+      value: ethers.utils.parseEther("1"),
+    });
+
     await entryPoint
       .connect(deployer)
       .depositTo(paymasterAddress, { value: parseEther("1") });
@@ -196,6 +206,27 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
         "nonce"
       );
 
+      const dynamicPart = ecdsaModule.address.substring(2).padEnd(40, "0");
+      const dummySig = `0x0000000000000000000000000000000000000000000000000000000000000040000000000000000000000000${dynamicPart}000000000000000000000000000000000000000000000000000000000000004181d4b4981670cb18f99f0b4a66446df1bf5b204d24cfcb659bf38ba27a4359b5711649ec2423c5e1247245eba2964679b6a1dbb85c992ae40b9b00c6935b02ff1b00000000000000000000000000000000000000000000000000000000000000`;
+
+      userOp1.signature = dummySig;
+      userOp1.paymasterAndData = `${paymasterAddress}${dummyPndSuffix}`;
+
+      console.log("userOp1 ", userOp1);
+
+      const estimateResult: EthEstimateUserOperationGasResult =
+        await environment.estimateUserOperation(userOp1, entryPoint.address);
+
+      console.log("estimateResult ", estimateResult);
+      console.log(
+        "verification gas limit with dummyPnd ",
+        BigNumber.from(estimateResult.result.verificationGasLimit).toNumber()
+      );
+
+      userOp1.verificationGasLimit = BigNumber.from(
+        estimateResult.result.verificationGasLimit
+      ).toNumber();
+
       const hash = await sponsorshipPaymaster.getHash(
         userOp1,
         await offchainSigner.getAddress(),
@@ -231,6 +262,9 @@ describe("EntryPoint with VerifyingPaymaster Singleton", function () {
 
       console.log("userop VGL ", userOp.verificationGasLimit.toString());
       console.log("userop PVG ", userOp.preVerificationGas.toString());
+
+      console.log("sponsorship paymaster pnd ", userOp.paymasterAndData);
+      console.log("final vgl ", userOp.verificationGasLimit);
 
       const result: EthSendUserOperationResult =
         await environment.sendUserOperation(userOp, entryPoint.address);
