@@ -28,7 +28,9 @@ import {
 export const AddressZero = ethers.constants.AddressZero;
 import { arrayify, parseEther } from "ethers/lib/utils";
 import { BigNumber, BigNumberish, Signer } from "ethers";
-import { BundlerTestEnvironment } from "../environment/bundlerEnvironment";
+import { BundlerTestEnvironment, EthEstimateUserOperationGasResult } from "../environment/bundlerEnvironment";
+
+const dummyPndSuffix = "0100000000000000000000000000000000000000000000000000000000deadbeef00000000000000000000000000000000000000000000000000000000000012340000000000000000000000000595ffc66a8470a73675d908099e3b7e1b18760900000000000000000000000058ea6ed41cc9d921dcac000cc5ab3e75324b5d8700000000000000000000000000000000000000000000000000000000000ee8cc000000000000000000000000000000000000000000000000000000000010c8e012ae4bff68c7b87b3f30917540608fb7fe00097f081552f5e1c3436ee07c19ee529f4a1595dabe0600b8c1a0c53408f5eabc7487fdb7536fc5febac6d1002a491c";
 
 const MOCK_VALID_UNTIL = "0x00000000deadbeef";
 const MOCK_VALID_AFTER = "0x0000000000001234";
@@ -186,6 +188,12 @@ describe("Biconomy Token Paymaster (with Bundler)", function () {
       .connect(deployer)
       .addStake(1, { value: parseEther("2") });
 
+    // Sending eth to avoid AA21 in gas estimtion. as we can't use stateOverrideSet with this bundler
+    await deployer.sendTransaction({
+      to: walletAddress,
+      value: ethers.utils.parseEther("1"),
+    });
+
     await entryPoint.depositTo(paymasterAddress, { value: parseEther("2") });
 
     await sampleTokenPaymaster.addStake(100, {
@@ -219,19 +227,39 @@ describe("Biconomy Token Paymaster (with Bundler)", function () {
       const userOp1 = await fillAndSign(
         {
           sender: walletAddress,
-          verificationGasLimit: 200000,
+          verificationGasLimit: 200000, // for positive case 200k. initial value
           callData: encodeERC20Approval(
             userSCW,
             token,
             paymasterAddress,
             ethers.constants.MaxUint256
           ),
-          preVerificationGas: 55000,
+          preVerificationGas: 55000, // min expected by bundler is 46k
         },
         walletOwner,
         entryPoint,
         "nonce"
       );
+
+      const dummySig = "0xba4ba51dec9d5023f0cd56a916b51fa44066de7a986fb0e27885154ff90dfe3c7eb76ad08b012c6515af93881370c04a336e8df9c8ecbf2987cf5c8216a42de61b";
+
+      userOp1.signature = dummySig;
+      userOp1.paymasterAndData = `${paymasterAddress}${dummyPndSuffix}`;
+
+      console.log("userOp1 ", userOp1);
+
+      const estimateResult: EthEstimateUserOperationGasResult =
+      await environment.estimateUserOperation(userOp1, entryPoint.address);
+
+      console.log("estimateResult ", estimateResult);
+      console.log(
+      "verification gas limit with dummyPnd ",
+      BigNumber.from(estimateResult.result.verificationGasLimit).toNumber()
+      );
+
+      userOp1.verificationGasLimit = BigNumber.from(
+        estimateResult.result.verificationGasLimit
+      ).toNumber();
 
       const hash = await sampleTokenPaymaster.getHash(
         userOp1,
@@ -264,6 +292,9 @@ describe("Biconomy Token Paymaster (with Bundler)", function () {
         entryPoint,
         "nonce"
       );
+
+      console.log("token paymaster pnd ", userOp.paymasterAndData);
+      console.log("final vgl ", userOp.verificationGasLimit);
 
       await environment.sendUserOperation(userOp, entryPoint.address);
 
