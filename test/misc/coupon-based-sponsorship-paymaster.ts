@@ -106,11 +106,12 @@ describe("EntryPoint with Coupon Paymaster", function () {
     await entryPoint.depositTo(paymasterAddress, { value: parseEther("1") });
 
     // coupon1
-    const leafData = ethers.utils.defaultAbiCoder.encode(
+    const leafData1 = ethers.utils.defaultAbiCoder.encode(
       ["bytes32"],
       [ethers.utils.formatBytes32String("abc123")]
     );
 
+    // coupon2
     const leafData2 = ethers.utils.defaultAbiCoder.encode(
       ["bytes32"],
       [ethers.utils.formatBytes32String("abc12345")]
@@ -119,7 +120,7 @@ describe("EntryPoint with Coupon Paymaster", function () {
     // hexConcat([hexZeroPad("0xabc123", 32)]);
 
     merkleTree = new MerkleTree(
-      [ethers.utils.keccak256(leafData), ethers.utils.keccak256(leafData2)],
+      [ethers.utils.keccak256(leafData1), ethers.utils.keccak256(leafData2)],
       keccak256,
       {
         sortPairs: true,
@@ -148,7 +149,7 @@ describe("EntryPoint with Coupon Paymaster", function () {
 
       const leafData = ethers.utils.defaultAbiCoder.encode(
         ["bytes32"],
-        [ethers.utils.formatBytes32String("abc12345")]
+        [ethers.utils.formatBytes32String("abc123")]
       );
 
       const proof = merkleTree.getHexProof(ethers.utils.keccak256(leafData));
@@ -162,7 +163,7 @@ describe("EntryPoint with Coupon Paymaster", function () {
             paymasterAddress,
             ethers.utils.defaultAbiCoder.encode(
               ["bytes32", "bytes32[]"],
-              [ethers.utils.formatBytes32String("abc12345"), proof]
+              [ethers.utils.formatBytes32String("abc123"), proof]
             ),
           ]),
         },
