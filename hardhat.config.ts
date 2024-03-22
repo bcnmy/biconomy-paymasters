@@ -90,6 +90,15 @@ const config: HardhatUserConfig = {
           ? [process.env.PRIVATE_KEY]
           : walletUtils.makeKeyList(),
     },
+    polygon_amoy: {
+      url:
+        process.env.POLYGON_AMOY_URL || "https://rpc-amoy.polygon.technology/",
+      chainId: 80002,
+      accounts:
+        process.env.PRIVATE_KEY !== undefined
+          ? [process.env.PRIVATE_KEY]
+          : walletUtils.makeKeyList(),
+    },
     bnb_mainnet: {
       url: "https://bsc-dataseed2.binance.org",
       chainId: 56,
@@ -108,6 +117,11 @@ const config: HardhatUserConfig = {
           ? [process.env.PRIVATE_KEY]
           : walletUtils.makeKeyList(),
       gasPrice: 50e9,
+    },
+    blastMainnet: {
+      url: process.env.BLAST_MAINNET_URL || "",
+      accounts: hardhatAccounts,
+      chainId: 81457,
     },
     baseGoerli: {
       url:
@@ -220,6 +234,15 @@ const config: HardhatUserConfig = {
       gasPrice: 10e9,
       chainId: 420,
     },
+    optimismSepolia: {
+      url: `https://sepolia.optimism.io/`,
+      accounts:
+        process.env.PRIVATE_KEY !== undefined
+          ? [process.env.PRIVATE_KEY]
+          : walletUtils.makeKeyList(),
+      gasPrice: 1e9,
+      chainId: 11155420,
+    },
     optimismMainnet: {
       url: `https://mainnet.optimism.io`,
       accounts:
@@ -318,6 +341,7 @@ const config: HardhatUserConfig = {
       arbitrumTestnet: process.env.ARBITRUM_API_KEY || "",
       arbitrumOne: process.env.ARBITRUM_API_KEY || "",
       optimisticGoerli: process.env.OPTIMISTIC_API_KEY || "",
+      optimismSepolia: process.env.OPTIMISTIC_API_KEY || "",
       optimisticEthereum: process.env.OPTIMISTIC_API_KEY || "",
       "base-goerli": "PLACEHOLDER_STRING",
       "linea-goerli": "PLACEHOLDER_STRING",
@@ -443,6 +467,14 @@ const config: HardhatUserConfig = {
         urls: {
           apiURL: "https://api-testnet-zkevm.polygonscan.com/api",
           browserURL: "https://testnet-zkevm.polygonscan.com",
+        },
+      },
+      {
+        network: "optimismSepolia",
+        chainId: 11155420,
+        urls: {
+          apiURL: "https://api-sepolia-optimism.etherscan.io/api",
+          browserURL: "https://sepolia-optimism.etherscan.io/",
         },
       },
     ],
