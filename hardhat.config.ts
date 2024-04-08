@@ -7,6 +7,7 @@ import "@typechain/hardhat";
 import "hardhat-gas-reporter";
 import "solidity-coverage";
 import "@nomiclabs/hardhat-etherscan";
+// import "@nomicfoundation/hardhat-verify";
 
 const walletUtils = require("./walletUtils");
 
@@ -271,6 +272,28 @@ const config: HardhatUserConfig = {
       chainId: 245022926,
       // gasPrice: 6400000
     },
+    blastMainnet: {
+      url: process.env.BLAST_MAINNET_URL || "",
+      accounts: hardhatAccounts,
+      chainId: 81457,
+    },
+    degenChain: {
+      url: process.env.DEGEN_CHAIN_MAINNET || "https://rpc.degen.tips",
+      accounts: hardhatAccounts,
+      chainId: 666666666,
+    },
+    oliveTestnet: {
+      url:
+        process.env.OLIVE_TESTNET ||
+        "https://olive-network-testnet.rpc.caldera.xyz/http",
+      accounts: hardhatAccounts,
+      chainId: 8101902,
+    },
+    cardonaTestnet: {
+      url: process.env.OLIVE_TESTNET || "https://rpc.cardona.zkevm-rpc.com",
+      accounts: hardhatAccounts,
+      chainId: 2442,
+    },
     opBNBMainnet: {
       url: process.env.OP_BNB_MAINNET_URL || "",
       accounts: hardhatAccounts,
@@ -327,6 +350,10 @@ const config: HardhatUserConfig = {
       opBNBMainnet: process.env.OP_BNB_API_KEY || "",
       mantleTestnet: "PLACEHOLDER_STRING",
       mantleMainnet: "PLACEHOLDER_STRING",
+      blastMainnet: process.env.BLAST_API_KEY || "",
+      degenChain: "PLACEHOLDER_STRING",
+      oliveTestnet: "PLACEHOLDER_STRING",
+      cardonaTestnet: "PLACEHOLDER_STRING",
       comboTestnet: process.env.COMBO_API_KEY || "",
       zkEVMMainnet: process.env.ZKEVM_API_KEY || "",
       zkEVMGoerli: process.env.ZKEVM_API_KEY || "",
@@ -339,6 +366,38 @@ const config: HardhatUserConfig = {
         urls: {
           apiURL: "https://explorer.goerli.linea.build/api",
           browserURL: "https://goerli.lineascan.build",
+        },
+      },
+      {
+        network: "blastMainnet",
+        chainId: 81457,
+        urls: {
+          apiURL: "https://api.blastscan.io/api",
+          browserURL: "https://blastscan.io/",
+        },
+      },
+      {
+        network: "degenChain",
+        chainId: 666666666,
+        urls: {
+          apiURL: "https://explorer.degen.tips/api",
+          browserURL: "https://explorer.degen.tips",
+        },
+      },
+      {
+        network: "oliveTestnet",
+        chainId: 8101902,
+        urls: {
+          apiURL: "https://olive-network-testnet.explorer.caldera.xyz/api",
+          browserURL: "https://olive-network-testnet.explorer.caldera.xyz/",
+        },
+      },
+      {
+        network: "cardonaTestnet",
+        chainId: 2442,
+        urls: {
+          apiURL: "https://cardona-zkevm.polygonscan.com/api",
+          browserURL: "https://cardona-zkevm.polygonscan.com/",
         },
       },
       {

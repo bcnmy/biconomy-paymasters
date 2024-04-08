@@ -67,6 +67,10 @@ async function deployChainlinkOracleAggregatorContract(
         oracleAggregatorComputedAddr
       );
     }
+    await run(`verify:verify`, {
+      address: oracleAggregatorComputedAddr,
+      constructorArguments: [earlyOwnerAddress],
+    });
     return oracleAggregatorComputedAddr;
   } catch (err) {
     console.log(err);

@@ -271,8 +271,7 @@ export const deployContract = async (
   // TODO
   // Review gas price
   const { hash, wait } = await deployerInstance.deploy(salt, contractByteCode, {
-    maxFeePerGas: 3e9,
-    maxPriorityFeePerGas: 2e9,
+    gasPrice: 2e9,
   });
 
   console.log(`Submitted transaction ${hash} for deployment`);
