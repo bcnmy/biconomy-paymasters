@@ -684,13 +684,13 @@ describe("Biconomy Token Paymaster", function () {
 
       userOp.signature = signatureWithModuleAddress;
 
-      await entryPoint.handleOps([userOp], await offchainSigner.getAddress());
+      // await entryPoint.handleOps([userOp], await offchainSigner.getAddress());
 
-      const postBalance = await token.balanceOf(paymasterAddress);
+      // const postBalance = await token.balanceOf(paymasterAddress);
 
-      const ev = await getUserOpEvent(entryPoint);
-      // Review this because despite explicit revert bundler still pays gas
-      expect(ev.args.success).to.be.false;
+      // const ev = await getUserOpEvent(entryPoint);
+      // // Review this because despite explicit revert bundler still pays gas
+      // expect(ev.args.success).to.be.false;
 
       await expect(
         entryPoint.handleOps([userOp], await offchainSigner.getAddress())

@@ -598,22 +598,8 @@ contract BiconomyTokenPaymaster is
                 priceSource
             );
         } else {
-            // In case transferFrom failed in first handlePostOp call, attempt to charge the tokens again
-            bytes memory _data = abi.encodeWithSelector(
-                feeToken.transferFrom.selector,
-                account,
-                feeReceiver,
-                charge
-            );
-            (bool success,) = address(feeToken).call(
-                _data
-            );
-            if (!success) {
-                // In case above transferFrom failed, pay with deposit / notify at least
-                // Sender could be banned indefinitely or for certain period
-                emit TokenPaymentDue(address(feeToken), account, charge);
-                // Do nothing else here to not revert the whole bundle and harm reputation
-            }
+            // force revert
+            revert("BTPM PostOpReverted: Failed to charge tokens");
         }
     }
 

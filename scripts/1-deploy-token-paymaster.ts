@@ -73,6 +73,14 @@ async function deployTokenPaymasterContract(
         "Token Paymaster is Already deployed with address ",
         tokenPaymasterComputedAddr
       );
+      await run(`verify:verify`, {
+        address: tokenPaymasterComputedAddr,
+        constructorArguments: [
+          earlyOwnerAddress,
+          entryPointAddress,
+          verifyingSigner,
+        ],
+      });
     }
     return tokenPaymasterComputedAddr;
   } catch (err) {

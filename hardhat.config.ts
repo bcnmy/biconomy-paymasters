@@ -296,6 +296,11 @@ const config: HardhatUserConfig = {
       accounts: hardhatAccounts,
       chainId: 91715,
     },
+    blast: {
+      url: process.env.BLAST_MAINNET_URL || "",
+      accounts: hardhatAccounts,
+      chainId: 81457,
+    },
   },
   gasReporter: {
     enabled: process.env.REPORT_GAS !== undefined,
@@ -323,6 +328,7 @@ const config: HardhatUserConfig = {
       "linea-goerli": "PLACEHOLDER_STRING",
       "linea-mainnet": "PLACEHOLDER_STRING",
       "base-mainnet": process.env.BASE_API_KEY || "",
+      blast: "PLACEHOLDER_STRING",
       opBNBTestnet: process.env.OP_BNB_API_KEY || "",
       opBNBMainnet: process.env.OP_BNB_API_KEY || "",
       mantleTestnet: "PLACEHOLDER_STRING",
@@ -355,6 +361,15 @@ const config: HardhatUserConfig = {
         urls: {
           apiURL: "https://explorer.goerli.linea.build/api",
           browserURL: "https://goerli.lineascan.build",
+        },
+      },
+      {
+        network: "blast",
+        chainId: 81457,
+        urls: {
+          apiURL:
+            "https://api.routescan.io/v2/network/mainnet/evm/81457/etherscan",
+          browserURL: "https://blastexplorer.io",
         },
       },
       {
