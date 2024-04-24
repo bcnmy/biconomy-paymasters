@@ -1,40 +1,44 @@
-# biconomy-paymasters
+# Biconomy Paymasters
 
-### Playground for ERC4337 Paymasters built with :heart_eyes: by Biconomy
+![Biconomy Paymasters](https://img.shields.io/badge/Biconomy-Paymasters-blue.svg)
 
-#### Some examples
+## Playground for ERC4337 Paymasters built with :heart_eyes: by Biconomy
 
-1. Singleton Verifying Paymaster: Acts as a sponsorship paymaster and lets Dapps manage deposit without deploying a new one for each Dapp.
+### 🌟 Some examples
 
-2. Token Paymaster: Extended version of Verifying Paymaster which can accept fees from user by withdrawing ERC20 tokens
+1. Singleton Verifying Paymaster: Acts as a sponsorship paymaster and lets Dapps manage deposits without deploying a new one for each Dapp.
+1. Token Paymaster: Extended version of Verifying Paymaster which can accept fees from users by withdrawing ERC20 tokens.
 
-#### Other WIP
+### 🛠️ Other WIP
 
-Fiat Paymaster
+- FIAT Paymaster
+- Deposit Paymaster
+- Custom versions of the above Verifying (allow Dapp deposit sponsorship in different tokens) and Token Paymaster (acts as deposit paymaster also)
 
-Deposit Paymaster
+### 📚 Resources
 
-Custom versions of above Verifying (allow Dapp deposit sponsorship in different tokens) and Token Paymaster (acts as deposit paymaster also)
+- [Biconomy Documentation](https://docs.biconomy.io/)
+- [Biconomy Dashboard](https://dashboard.biconomy.io)
 
-# How to run the project
+## ⚙️ How to run the project
 
-#### You're going to need to place a private key in a .env file in the root.
+You're going to need to place a private key in a .env file in the root.
 
-#### In order to add/udpate git submodule account-abstraction:
+### In order to add/update the git submodule account-abstraction:
 
-.gitmodules file is already added. two submodules are being used in this project
+.gitmodules file is already added. Two submodules are being used in this project:
 
-1. git submodule update --init (This command will initialize and fetch the submodules listed in the .gitmodules file.)
+1. `git submodule update --init` (This command will initialize and fetch the submodules listed in the .gitmodules file.)
+2. `git submodule update --remote` (This will update the submodules to the latest commit in their respective repositories.)
 
-2. git submodule update --remote (This will update the submodules to the latest commit in their respective repositories.)
+You can also alternatively run `forge install` (or `forge install <repo_url>`)
 
-you can also alternatively run forge install (or forge install <repo_url>)
+If you encounter any issues during the submodule update process, you can try deleting the submodules directory and then running the `git submodule update --init` command again.
 
-If you encounter any issues during the submodule update process, you can try deleting the submodules directory and then running the git submodule update --init command again.
+### If you face the below error, make sure typechain artifacts are generated in the account-abstraction folder.
 
-#### If you face below error, make sure typechain artifacts are generated in account-abstraction folder.
-
-Error: Cannot find module '../typechain'
+> [!WARNING]
+> Error: Cannot find module '../typechain'
 
 1. cd lib/account-abstraction
 
@@ -67,22 +71,24 @@ npx solhint 'contracts/**/*.sol'
 npx solhint 'contracts/**/*.sol' --fix
 ```
 
-# Etherscan verification
+# 🗂️ Etherscan verification
 
-To try out Etherscan verification, you first need to deploy a contract to an Ethereum network that's supported by Etherscan, such as Ropsten.
+To try out [Etherscan](https://etherscan.io/) verification, you first need to deploy a contract to an Ethereum network that's supported by Etherscan, such as Ropsten.
 
-In this project, copy the .env.example file to a file named .env, and then edit it to fill in the details. Enter your Etherscan API key, your Ropsten node URL (eg from Alchemy), and the private key of the account which will send the deployment transaction. With a valid .env file in place, first deploy your contract:
+1. In this project, copy the .env.example file to a file named .env, and then edit it to fill in the details. 
+1. Enter your [Etherscan API key](https://docs.etherscan.io/getting-started/viewing-api-usage-statistics), your Ropsten node URL (eg from Alchemy), and the private key of the account which will send the deployment transaction.
+1. With a valid .env file in place, first deploy your contract:
 
 ```shell
 hardhat run --network polygon_mumbai scripts/deploy.ts
 ```
 
-Then, copy the deployment address and paste it in to replace `DEPLOYED_CONTRACT_ADDRESS` in this command:
+4. Then, copy the deployment address and paste it in to replace `DEPLOYED_CONTRACT_ADDRESS` in this command:
 
 ```shell
 npx hardhat verify --network polygon_mumbai DEPLOYED_CONTRACT_ADDRESS "Hello, Hardhat!"
 ```
 
-# Performance optimizations
+# 🚀 Performance optimizations
 
-For faster runs of your tests and scripts, consider skipping ts-node's type checking by setting the environment variable `TS_NODE_TRANSPILE_ONLY` to `1` in hardhat's environment. For more details see [the documentation](https://hardhat.org/guides/typescript.html#performance-optimizations).
+For faster runs of your tests and scripts, consider skipping ts-node's type checking by setting the environment variable `TS_NODE_TRANSPILE_ONLY` to `1` in Hardhat's environment. For more details see [the documentation](https://hardhat.org/guides/typescript.html#performance-optimizations).
