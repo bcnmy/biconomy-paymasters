@@ -54,6 +54,7 @@ const options = { gasLimit: 7000000 /*, gasPrice: 70000000000 */ };
 }*/
 
 export enum DEPLOYMENT_SALTS { // PROD
+  SINGELTON_PAYMASTER = "PROD_SINGLETON_PAYMASTER_V0_11042023_80LVBle",
   ORACLE_AGGREGATOR = "PROD_CHAINLINK_ORACLE_AGGREGATOR_V0_27062023_UT8R11e", // 0x00000f7748595e46527413574a9327942e744e91
   TOKEN_PAYMASTER = "PROD_TOKEN_PAYMASTER_V0_27062023_jzgUg02", // 0x00000080707b487ee6453ebbad8c55a5dc38d407
   PRICE_FEED_USDC = "DEVX_PRICE_FEED_USDC_V0_27062023_uiaqdyv", // 0x000005abae3deadbe1fbd12105f950efba9eaec4
@@ -245,7 +246,7 @@ export const deployContract = async (
   //const { hash, wait } = await deployerInstance.deploy(salt, contractByteCode, {maxFeePerGas: 200e9, maxPriorityFeePerGas: 75e9});
   // TODO
   // Review gas price
-  const { hash, wait } = await deployerInstance.deploy(salt, contractByteCode, {gasPrice: 10e9});
+  const { hash, wait } = await deployerInstance.deploy(salt, contractByteCode, {gasPrice: 2e9});
 
   console.log(`Submitted transaction ${hash} for deployment`);
 

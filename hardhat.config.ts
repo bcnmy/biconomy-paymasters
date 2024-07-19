@@ -241,6 +241,27 @@ networks: {
     chainId: 245022926,
     // gasPrice: 6400000
   },
+  seiAtlanticDevnet: {
+    url: "https://evm-rpc-testnet.sei-apis.com/",
+    accounts: process.env.PRIVATE_KEY !== undefined
+    ? [process.env.PRIVATE_KEY]
+    : walletUtils.makeKeyList(),
+    chainId: 1328,
+  },
+  comboTestnet: {
+    url: process.env.COMBO_TESTNET_URL,
+    accounts: process.env.PRIVATE_KEY !== undefined
+    ? [process.env.PRIVATE_KEY]
+    : walletUtils.makeKeyList(),
+    chainId: 1715,
+  },
+  baseSepoliaTestnet: {
+    url: process.env.BASE_SEPOLIA_URL || "https://sepolia.base.org/",
+    accounts: process.env.PRIVATE_KEY !== undefined
+    ? [process.env.PRIVATE_KEY]
+    : walletUtils.makeKeyList(),
+    chainId: 84532,
+  },
 },
 etherscan: {
   apiKey: {
