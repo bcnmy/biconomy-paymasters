@@ -317,7 +317,14 @@ const config: HardhatUserConfig = {
     comboTestnet: {
       url: process.env.COMBO_TESTNET_URL || "",
       accounts: hardhatAccounts,
-      chainId: 91715,
+      chainId: 1715,
+    },
+    seiAtlanticDevnet: {
+      url:
+        process.env.SEI_ATLANTIC_DENET_URL ||
+        "https://evm-rpc-testnet.sei-apis.com/",
+      accounts: hardhatAccounts,
+      chainId: 1328,
     },
   },
   gasReporter: {
@@ -474,7 +481,7 @@ const config: HardhatUserConfig = {
       },
       {
         network: "comboTestnet",
-        chainId: 91715,
+        chainId: 1715,
         urls: {
           apiURL: `https://open-platform.nodereal.io/${process.env.COMBO_API_KEY}/combotrace-testnet/contract/`,
           browserURL: "https://combotrace-testnet.nodereal.io",
