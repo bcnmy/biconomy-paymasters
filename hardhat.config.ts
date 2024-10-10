@@ -326,6 +326,61 @@ const config: HardhatUserConfig = {
       accounts: hardhatAccounts,
       chainId: 1328,
     },
+    kakarotTestnet: {
+      url: "https://sepolia-rpc-priority.kakarot.org/",
+      accounts: hardhatAccounts,
+      chainId: 1802203764,
+    },
+    fireChainTestnet: {
+      url: "https://rpc.testnet.5ire.network",
+      accounts: hardhatAccounts,
+      chainId: 997,
+    },
+    fireChainMainnet: {
+      url: "https://rpc.5ire.network",
+      accounts: hardhatAccounts,
+      chainId: 995,
+    },
+    bobaSepolia: {
+      url: "https://sepolia.boba.network",
+      accounts: hardhatAccounts,
+      chainId: 28882,
+    },
+    bobaMainnet: {
+      url: "https://mainnet.boba.network",
+      accounts: hardhatAccounts,
+      chainId: 288,
+    },
+    metalL2Testnet: {
+      url: "https://rpc-metal-l2-testnet-3bbzi9kufn.t.conduit.xyz/4nvN9tL8pppXKHkjWrT128yrFUMvXBxZL",
+      accounts: hardhatAccounts,
+      chainId: 1740,
+    },
+    metalL2Mainnet: {
+      url: "https://rpc-metal-mainnet-0.t.conduit.xyz/4nvN9tL8pppXKHkjWrT128yrFUMvXBxZL",
+      accounts: hardhatAccounts,
+      chainId: 1750,
+    },
+    metalL0Testnet: {
+      url: "https://tahoe.metalblockchain.org/ext/bc/C/rpc",
+      accounts: hardhatAccounts,
+      chainId: 381932,
+    },
+    metalL0Mainnet: {
+      url: "https://api.metalblockchain.org/ext/bc/C/rpc",
+      accounts: hardhatAccounts,
+      chainId: 381931,
+    },
+    liskTestnet: {
+      url: "https://rpc.sepolia-api.lisk.com",
+      accounts: hardhatAccounts,
+      chainId: 4202,
+    },
+    liskMainnet: {
+      url: "https://rpc.api.lisk.com",
+      accounts: hardhatAccounts,
+      chainId: 1135,
+    },
   },
   gasReporter: {
     enabled: process.env.REPORT_GAS !== undefined,
